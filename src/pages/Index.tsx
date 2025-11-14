@@ -7,6 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Package, 
@@ -20,7 +22,9 @@ import {
   RefreshCw,
   BarChart3,
   TrendingUp,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Pencil,
+  Trash2
 } from "lucide-react";
 import * as XLSX from 'xlsx';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
@@ -117,6 +121,12 @@ const Index = () => {
     unitPrice: 0,
     supplier: '',
   });
+
+  // Edit and delete states
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [deletingProduct, setDeletingProduct] = useState<Product | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   // Calculate metrics
   const totalItems = products.length;
@@ -273,6 +283,43 @@ const Index = () => {
       }
     };
     reader.readAsArrayBuffer(file);
+  };
+
+  // Edit product
+  const openEditDialog = (product: Product) => {
+    setEditingProduct({ ...product });
+    setIsEditDialogOpen(true);
+  };
+
+  const saveEdit = () => {
+    if (!editingProduct) return;
+
+    if (!editingProduct.userCode || !editingProduct.barcode || !editingProduct.productCode || !editingProduct.productName) {
+      toast({ title: "오류", description: "필수 항목을 모두 입력해주세요!", variant: "destructive" });
+      return;
+    }
+
+    setProducts(products.map(p => 
+      p.barcode === editingProduct.barcode ? editingProduct : p
+    ));
+    setIsEditDialogOpen(false);
+    setEditingProduct(null);
+    toast({ title: "수정 완료", description: `상품 '${editingProduct.productName}'이(가) 수정되었습니다.` });
+  };
+
+  // Delete product
+  const openDeleteDialog = (product: Product) => {
+    setDeletingProduct(product);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (!deletingProduct) return;
+
+    setProducts(products.filter(p => p.barcode !== deletingProduct.barcode));
+    setIsDeleteDialogOpen(false);
+    toast({ title: "삭제 완료", description: `상품 '${deletingProduct.productName}'이(가) 삭제되었습니다.` });
+    setDeletingProduct(null);
   };
 
   // Chart colors
@@ -540,6 +587,7 @@ const Index = () => {
                           <TableHead className="text-right">단가</TableHead>
                           <TableHead>공급업체</TableHead>
                           <TableHead>상태</TableHead>
+                          <TableHead className="text-center">작업</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -557,6 +605,26 @@ const Index = () => {
                               <Badge variant={product.currentStock < product.safetyStock ? "destructive" : "default"}>
                                 {product.currentStock < product.safetyStock ? '부족' : '정상'}
                               </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center justify-center gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="icon"
+                                  onClick={() => openEditDialog(product)}
+                                  className="h-8 w-8"
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="icon"
+                                  onClick={() => openDeleteDialog(product)}
+                                  className="h-8 w-8 text-destructive hover:text-destructive"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
                             </TableCell>
                           </TableRow>
                         ))}
@@ -840,6 +908,137 @@ const Index = () => {
           <p>🏥 로지붓 - 병원 물류 ERP 시스템 v3.0 | 엑셀 대량 등록 지원</p>
         </div>
       </div>
+
+      {/* Edit Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Pencil className="h-5 w-5" />
+              상품 수정
+            </DialogTitle>
+            <DialogDescription>
+              상품 정보를 수정하세요
+            </DialogDescription>
+          </DialogHeader>
+          {editingProduct && (
+            <div className="space-y-4 py-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>사용자코드 *</Label>
+                  <Input
+                    value={editingProduct.userCode}
+                    onChange={(e) => setEditingProduct({ ...editingProduct, userCode: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>바코드 *</Label>
+                  <Input
+                    value={editingProduct.barcode}
+                    onChange={(e) => setEditingProduct({ ...editingProduct, barcode: e.target.value })}
+                    disabled
+                    className="bg-muted"
+                  />
+                  <p className="text-xs text-muted-foreground">바코드는 수정할 수 없습니다</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>품목코드 *</Label>
+                  <Input
+                    value={editingProduct.productCode}
+                    onChange={(e) => setEditingProduct({ ...editingProduct, productCode: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>품목명 *</Label>
+                  <Input
+                    value={editingProduct.productName}
+                    onChange={(e) => setEditingProduct({ ...editingProduct, productName: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>현재수량</Label>
+                  <Input
+                    type="number"
+                    value={editingProduct.currentStock}
+                    onChange={(e) => setEditingProduct({ ...editingProduct, currentStock: Number(e.target.value) })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>안전재고</Label>
+                  <Input
+                    type="number"
+                    value={editingProduct.safetyStock}
+                    onChange={(e) => setEditingProduct({ ...editingProduct, safetyStock: Number(e.target.value) })}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>단가(원)</Label>
+                  <Input
+                    type="number"
+                    value={editingProduct.unitPrice}
+                    onChange={(e) => setEditingProduct({ ...editingProduct, unitPrice: Number(e.target.value) })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>공급업체</Label>
+                  <Input
+                    value={editingProduct.supplier}
+                    onChange={(e) => setEditingProduct({ ...editingProduct, supplier: e.target.value })}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+              취소
+            </Button>
+            <Button onClick={saveEdit}>
+              저장
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Trash2 className="h-5 w-5 text-destructive" />
+              상품 삭제 확인
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {deletingProduct && (
+                <div className="space-y-2">
+                  <p>다음 상품을 정말 삭제하시겠습니까?</p>
+                  <div className="p-3 bg-muted rounded-lg space-y-1 text-sm">
+                    <div><span className="font-medium">품목명:</span> {deletingProduct.productName}</div>
+                    <div><span className="font-medium">바코드:</span> {deletingProduct.barcode}</div>
+                    <div><span className="font-medium">품목코드:</span> {deletingProduct.productCode}</div>
+                  </div>
+                  <p className="text-destructive font-medium">이 작업은 되돌릴 수 없습니다.</p>
+                </div>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              삭제
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
