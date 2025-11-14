@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -103,6 +104,7 @@ const generatePurchaseData = (): PurchaseData[] => {
 };
 
 const Index = () => {
+  const navigate = useNavigate();
   const [products, setProducts] = useState<Product[]>(generateSampleProducts());
   const [orderData] = useState<OrderData[]>(generateOrderData());
   const [purchaseData] = useState<PurchaseData[]>(generatePurchaseData());
@@ -329,11 +331,22 @@ const Index = () => {
     <div className="min-h-screen bg-gradient-to-br from-background via-blue-50/30 to-background">
       {/* Header */}
       <div className="bg-gradient-to-r from-primary to-accent text-primary-foreground py-8 px-6 mb-8 shadow-lg">
-        <div className="max-w-7xl mx-auto">
-          <h1 className="text-4xl font-bold flex items-center gap-3">
-            🏥 로지붓 - 병원 물류 ERP 시스템
-          </h1>
-          <p className="text-primary-foreground/90 mt-2">Hospital Logistics Management System</p>
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <div>
+            <h1 className="text-4xl font-bold flex items-center gap-3">
+              🏥 로지붓 - 병원 물류 ERP 시스템
+            </h1>
+            <p className="text-primary-foreground/90 mt-2">Hospital Logistics Management System</p>
+          </div>
+          <Button 
+            onClick={() => navigate('/analytics')} 
+            variant="secondary"
+            size="lg"
+            className="gap-2"
+          >
+            <BarChart3 className="w-5 h-5" />
+            분석 대시보드
+          </Button>
         </div>
       </div>
 
