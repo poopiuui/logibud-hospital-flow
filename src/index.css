@@ -110,5 +110,38 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+    font-size: 16px;
+  }
+
+  /* Enhanced Typography for Better Visibility */
+  h1, .text-3xl, .text-4xl {
+    @apply text-foreground font-bold tracking-tight;
+  }
+
+  h2, .text-2xl {
+    @apply text-foreground font-semibold;
+  }
+
+  /* Large, bold text for KPIs and important numbers */
+  .kpi-value {
+    @apply text-4xl font-bold tracking-tight;
+  }
+
+  .kpi-label {
+    @apply text-base font-medium text-muted-foreground uppercase tracking-wide;
+  }
+
+  /* Table styling for better readability */
+  .data-table th {
+    @apply text-base font-semibold bg-muted/50;
+  }
+
+  .data-table td {
+    @apply text-base;
+  }
+
+  /* Card enhancements */
+  .stat-card {
+    @apply shadow-md hover:shadow-lg transition-shadow duration-200;
   }
 }
