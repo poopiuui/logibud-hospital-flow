@@ -41,9 +41,9 @@ const menuItems = [
   { title: "재고 관리", url: "/inventory", icon: ClipboardList },
   { title: "매입 관리", url: "/purchase", icon: ShoppingCart },
   { title: "출고 관리", url: "/outbound", icon: Truck },
+  { title: "배송 관리", url: "/shipping", icon: Truck },
   { title: "매출 관리", url: "/sales", icon: FileText },
   { title: "청구 관리", url: "/billing", icon: FileText },
-  { title: "배송 관리", url: "/shipping", icon: Truck },
   { title: "사용자 관리", url: "/users", icon: Users },
   { title: "설정", url: "/settings", icon: Settings },
 ];

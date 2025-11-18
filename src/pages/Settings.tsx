@@ -7,8 +7,24 @@ import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useToast } from "@/hooks/use-toast";
-import { Bell, Lock, Database, Mail, Type, Building, Upload, X, Menu, ArrowUp, ArrowDown, Eye, EyeOff } from "lucide-react";
+import { Bell, Lock, Database, Mail, Type, Building, Upload, X, Menu, GripVertical } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { SortableMenuItem } from '@/components/SortableMenuItem';
 
 const defaultMenuItems = [
   { title: "대시보드", visible: true },
@@ -127,14 +143,23 @@ export default function Settings() {
     }, 1000);
   };
 
-  const handleMenuOrderChange = (index: number, direction: 'up' | 'down') => {
-    const newMenuItems = [...menuItems];
-    const targetIndex = direction === 'up' ? index - 1 : index + 1;
-    
-    if (targetIndex < 0 || targetIndex >= newMenuItems.length) return;
-    
-    [newMenuItems[index], newMenuItems[targetIndex]] = [newMenuItems[targetIndex], newMenuItems[index]];
-    setMenuItems(newMenuItems);
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      setMenuItems((items) => {
+        const oldIndex = items.findIndex(item => item.title === active.id);
+        const newIndex = items.findIndex(item => item.title === over.id);
+        return arrayMove(items, oldIndex, newIndex);
+      });
+    }
   };
 
   const handleMenuVisibilityToggle = (index: number) => {
@@ -419,37 +444,28 @@ export default function Settings() {
             <CardDescription>사이드바 메뉴 순서 변경 및 표시/숨김 설정</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              {menuItems.map((item, index) => (
-                <div key={item.title} className="flex items-center gap-2 p-3 border rounded-lg bg-card">
-                  <Checkbox 
-                    checked={item.visible}
-                    onCheckedChange={() => handleMenuVisibilityToggle(index)}
-                  />
-                  <span className={`flex-1 ${!item.visible ? 'text-muted-foreground line-through' : ''}`}>
-                    {item.title}
-                  </span>
-                  <div className="flex gap-1">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handleMenuOrderChange(index, 'up')}
-                      disabled={index === 0}
-                    >
-                      <ArrowUp className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handleMenuOrderChange(index, 'down')}
-                      disabled={index === menuItems.length - 1}
-                    >
-                      <ArrowDown className="w-4 h-4" />
-                    </Button>
-                  </div>
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext
+                items={menuItems.map(item => item.title)}
+                strategy={verticalListSortingStrategy}
+              >
+                <div className="space-y-2">
+                  {menuItems.map((item, index) => (
+                    <SortableMenuItem
+                      key={item.title}
+                      id={item.title}
+                      title={item.title}
+                      visible={item.visible}
+                      onVisibilityToggle={() => handleMenuVisibilityToggle(index)}
+                    />
+                  ))}
                 </div>
-              ))}
-            </div>
+              </SortableContext>
+            </DndContext>
             <Button onClick={handleMenuSettingsSave} className="w-full">
               메뉴 설정 저장
             </Button>
