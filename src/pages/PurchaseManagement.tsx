@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, X, ChevronDown, ChevronUp, Calendar, FileDown, Trash2 } from "lucide-react";
+import { Search, X, ChevronDown, ChevronUp, Calendar, FileDown, Trash2, Plus } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
@@ -219,6 +219,10 @@ const PurchaseManagement = () => {
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-4xl font-bold">매입 관리</h1>
           <div className="flex gap-2">
+            <Button onClick={() => {/* 매입 등록 로직 */}} size="lg" className="gap-2">
+              <Plus className="w-4 h-4" />
+              매입 등록
+            </Button>
             <Button onClick={() => handleExcelDownload(false)} size="lg" variant="outline" className="gap-2">
               <FileDown className="w-4 h-4" />
               Excel (전체)
@@ -380,15 +384,15 @@ const PurchaseManagement = () => {
                           onCheckedChange={toggleSelectAll}
                         />
                       </TableHead>
-                      <TableHead className="text-base">매입번호</TableHead>
-                      <TableHead className="text-base">매입일시</TableHead>
-                      <TableHead className="text-base">매입처</TableHead>
-                      <TableHead className="text-base">제품명</TableHead>
-                      <TableHead className="text-base">수량</TableHead>
-                      <TableHead className="text-base">금액</TableHead>
-                      <TableHead className="text-base">유형</TableHead>
-                      <TableHead className="text-base">영업사원</TableHead>
-                      <TableHead className="text-base">상태</TableHead>
+                      <TableHead className="text-base whitespace-nowrap">매입번호</TableHead>
+                      <TableHead className="text-base whitespace-nowrap">매입일시</TableHead>
+                      <TableHead className="text-base whitespace-nowrap">매입처</TableHead>
+                      <TableHead className="text-base whitespace-nowrap">제품명</TableHead>
+                      <TableHead className="text-base whitespace-nowrap">수량</TableHead>
+                      <TableHead className="text-base whitespace-nowrap">금액</TableHead>
+                      <TableHead className="text-base whitespace-nowrap">유형</TableHead>
+                      <TableHead className="text-base whitespace-nowrap">영업사원</TableHead>
+                      <TableHead className="text-base whitespace-nowrap">상태</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>

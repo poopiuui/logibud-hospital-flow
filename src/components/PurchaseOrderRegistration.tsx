@@ -7,7 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { X, Plus } from "lucide-react";
+import { X, Plus, Search } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 interface Product {
   productCode: string;
@@ -46,6 +47,49 @@ export const PurchaseOrderRegistration = ({ isOpen, onClose, selectedProducts = 
   const [orderDate, setOrderDate] = useState(new Date().toISOString().split('T')[0]);
   const [deliveryDate, setDeliveryDate] = useState('');
   const [notes, setNotes] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showProductSearch, setShowProductSearch] = useState(false);
+  
+  // 샘플 상품 데이터 (실제로는 API에서 가져와야 함)
+  const availableProducts: Product[] = [
+    { productCode: 'A-001', productName: '주사기(5ml)', supplier: '㈜메디칼', unitPrice: 150, currentStock: 850, lastOrderQuantity: 1000 },
+    { productCode: 'B-012', productName: '거즈 패드', supplier: '㈜헬스케어', unitPrice: 80, currentStock: 2100, lastOrderQuantity: 2000 },
+    { productCode: 'C-045', productName: '일회용 장갑(M)', supplier: '㈜메디칼', unitPrice: 50, currentStock: 400, lastOrderQuantity: 5000 },
+    { productCode: 'D-078', productName: '알코올 솜', supplier: '㈜헬스케어', unitPrice: 30, currentStock: 8900, lastOrderQuantity: 10000 },
+    { productCode: 'E-092', productName: '링거 세트', supplier: '㈜파마텍', unitPrice: 200, currentStock: 500, lastOrderQuantity: 1500 },
+  ];
+  
+  const filteredProducts = availableProducts.filter(p => 
+    p.productName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    p.productCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    p.supplier.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+  
+  const addProductFromSearch = (product: Product) => {
+    const existingIndex = orderItems.findIndex(item => item.productCode === product.productCode);
+    if (existingIndex >= 0) {
+      toast({
+        title: "이미 추가된 상품입니다",
+        description: "수량을 변경해주세요.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setOrderItems([...orderItems, {
+      productCode: product.productCode,
+      productName: product.productName,
+      quantity: product.lastOrderQuantity || 0,
+      unitPrice: product.unitPrice,
+      supplier: product.supplier
+    }]);
+    setShowProductSearch(false);
+    setSearchTerm('');
+    toast({
+      title: "상품 추가됨",
+      description: `${product.productName}이(가) 발주서에 추가되었습니다.`
+    });
+  };
 
   const addNewItem = () => {
     setOrderItems([...orderItems, {
@@ -127,11 +171,75 @@ export const PurchaseOrderRegistration = ({ isOpen, onClose, selectedProducts = 
           <div className="space-y-4">
             <div className="flex justify-between items-center">
               <Label className="text-lg">발주 품목</Label>
-              <Button onClick={addNewItem} size="sm" variant="outline">
-                <Plus className="h-4 w-4 mr-2" />
-                품목 추가
-              </Button>
+              <div className="flex gap-2">
+                <Button onClick={() => setShowProductSearch(!showProductSearch)} size="sm" variant="secondary">
+                  <Search className="h-4 w-4 mr-2" />
+                  상품 검색
+                </Button>
+                <Button onClick={addNewItem} size="sm" variant="outline">
+                  <Plus className="h-4 w-4 mr-2" />
+                  직접 추가
+                </Button>
+              </div>
             </div>
+
+            {/* 상품 검색 패널 */}
+            {showProductSearch && (
+              <div className="border rounded-lg p-4 bg-muted/50 space-y-3">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="상품명, 코드, 공급처로 검색..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+                
+                {searchTerm && (
+                  <div className="max-h-64 overflow-y-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-24">코드</TableHead>
+                          <TableHead>상품명</TableHead>
+                          <TableHead>공급처</TableHead>
+                          <TableHead className="text-right">단가</TableHead>
+                          <TableHead className="text-right">재고</TableHead>
+                          <TableHead className="w-20"></TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredProducts.map((product) => (
+                          <TableRow key={product.productCode}>
+                            <TableCell className="font-mono text-sm">{product.productCode}</TableCell>
+                            <TableCell className="font-medium">{product.productName}</TableCell>
+                            <TableCell className="text-sm">{product.supplier}</TableCell>
+                            <TableCell className="text-right">₩{product.unitPrice.toLocaleString()}</TableCell>
+                            <TableCell className="text-right">{product.currentStock.toLocaleString()}</TableCell>
+                            <TableCell>
+                              <Button
+                                size="sm"
+                                onClick={() => addProductFromSearch(product)}
+                              >
+                                추가
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                        {filteredProducts.length === 0 && (
+                          <TableRow>
+                            <TableCell colSpan={6} className="text-center text-muted-foreground">
+                              검색 결과가 없습니다
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </div>
+            )}
 
             {orderItems.map((item, index) => (
               <div key={index} className="border rounded-lg p-4 space-y-3 relative">
