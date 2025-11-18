@@ -84,6 +84,8 @@ export default function Shipping() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [bulkTrackingNumber, setBulkTrackingNumber] = useState("");
   const [bulkStatusChange, setBulkStatusChange] = useState("");
+  const [trackingMode, setTrackingMode] = useState<'manual' | 'excel'>('manual');
+  const [excelTrackingData, setExcelTrackingData] = useState<Array<{ id: string; trackingNumber: string }>>([]);
 
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
@@ -132,22 +134,73 @@ export default function Shipping() {
   };
 
   const handleBulkTrackingSubmit = () => {
-    if (!bulkTrackingNumber) {
-      toast({
-        title: "송장번호 입력 필요",
-        description: "송장번호를 입력해주세요.",
-        variant: "destructive"
-      });
-      return;
-    }
+    if (trackingMode === 'manual') {
+      if (!bulkTrackingNumber.trim()) {
+        toast({
+          title: "송장번호 입력 필요",
+          description: "송장번호를 입력해주세요.",
+          variant: "destructive"
+        });
+        return;
+      }
 
-    toast({
-      title: "일괄 송장 등록 완료",
-      description: `${selectedShipments.length}개의 배송에 송장번호가 등록되었습니다.`
-    });
-    setIsBulkTrackingDialogOpen(false);
+      toast({
+        title: "일괄 송장 등록 완료",
+        description: `${selectedShipments.length}개의 배송에 송장번호가 등록되었습니다.`
+      });
+    } else {
+      if (excelTrackingData.length === 0) {
+        toast({
+          title: "Excel 파일 업로드 필요",
+          description: "송장번호가 포함된 Excel 파일을 업로드해주세요.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      toast({
+        title: "Excel 일괄 등록 완료",
+        description: `${excelTrackingData.length}개의 송장번호가 등록되었습니다.`
+      });
+    }
+    
     setBulkTrackingNumber("");
+    setExcelTrackingData([]);
+    setIsBulkTrackingDialogOpen(false);
     setSelectedShipments([]);
+  };
+
+  const handleTrackingExcelUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const data = new Uint8Array(event.target?.result as ArrayBuffer);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+        
+        const trackingData = jsonData.map((row: any) => ({
+          id: row['배송번호'] || row['배송ID'] || '',
+          trackingNumber: row['송장번호'] || ''
+        })).filter(item => item.id && item.trackingNumber);
+
+        setExcelTrackingData(trackingData);
+        toast({
+          title: "Excel 파일 업로드 완료",
+          description: `${trackingData.length}개의 송장번호가 로드되었습니다.`
+        });
+      } catch (error) {
+        toast({
+          title: "파일 읽기 오류",
+          description: "Excel 파일을 읽는 중 오류가 발생했습니다.",
+          variant: "destructive"
+        });
+      }
+    };
+    reader.readAsArrayBuffer(file);
   };
 
   const handleBulkStatusChange = () => {
@@ -556,22 +609,75 @@ export default function Shipping() {
 
       {/* 일괄 송장 등록 다이얼로그 */}
       <Dialog open={isBulkTrackingDialogOpen} onOpenChange={setIsBulkTrackingDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>일괄 송장번호 등록</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              {selectedShipments.length}건의 배송에 송장번호를 등록합니다.
-            </p>
-            <div className="space-y-2">
-              <Label>송장번호 (쉼표로 구분)</Label>
-              <Input placeholder="123456789, 987654321, ..." />
-            </div>
-            <div className="flex gap-2">
-              <Button onClick={handleBulkTrackingSubmit} className="flex-1">등록</Button>
-              <Button variant="outline" onClick={() => setIsBulkTrackingDialogOpen(false)} className="flex-1">취소</Button>
-            </div>
+          <Tabs value={trackingMode} onValueChange={(v) => setTrackingMode(v as 'manual' | 'excel')}>
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="manual">직접 입력</TabsTrigger>
+              <TabsTrigger value="excel">Excel 업로드</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="manual" className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                {selectedShipments.length}건의 배송에 송장번호를 등록합니다.
+              </p>
+              <div className="space-y-2">
+                <Label>송장번호</Label>
+                <Input 
+                  placeholder="송장번호 입력" 
+                  value={bulkTrackingNumber}
+                  onChange={(e) => setBulkTrackingNumber(e.target.value)}
+                />
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="excel" className="space-y-4">
+              <div className="space-y-2">
+                <Label>Excel 파일 업로드</Label>
+                <p className="text-sm text-muted-foreground mb-2">
+                  '배송번호'와 '송장번호' 열이 포함된 Excel 파일을 업로드하세요.
+                </p>
+                <Input 
+                  type="file" 
+                  accept=".xlsx,.xls"
+                  onChange={handleTrackingExcelUpload}
+                  className="cursor-pointer"
+                />
+              </div>
+              
+              {excelTrackingData.length > 0 && (
+                <div className="border rounded-lg p-4 max-h-60 overflow-y-auto">
+                  <h4 className="font-semibold mb-2">업로드된 송장번호 ({excelTrackingData.length}건)</h4>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>배송번호</TableHead>
+                        <TableHead>송장번호</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {excelTrackingData.map((item, idx) => (
+                        <TableRow key={idx}>
+                          <TableCell className="font-medium">{item.id}</TableCell>
+                          <TableCell>{item.trackingNumber}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
+          
+          <div className="flex gap-2 mt-4">
+            <Button onClick={handleBulkTrackingSubmit} className="flex-1">등록</Button>
+            <Button variant="outline" onClick={() => {
+              setIsBulkTrackingDialogOpen(false);
+              setBulkTrackingNumber("");
+              setExcelTrackingData([]);
+            }} className="flex-1">취소</Button>
           </div>
         </DialogContent>
       </Dialog>
