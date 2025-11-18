@@ -12,13 +12,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { X, FileDown, Trash2, Plus, Upload, ChevronDown, ChevronUp, Download } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import * as XLSX from 'xlsx';
-import jsPDF from 'jspdf';
 import { useToast } from "@/hooks/use-toast";
 import { DateRangeFilter } from "@/components/DateRangeFilter";
 import { SwipeableTableRow } from "@/components/SwipeableTableRow";
 import { CommonFilters } from "@/components/CommonFilters";
 import { PurchaseOrderRegistration } from "@/components/PurchaseOrderRegistration";
+import { Combobox, ComboboxOption } from "@/components/ui/combobox";
+import { exportToFormattedExcel, exportToCSV, exportToPDF } from "@/lib/excelUtils";
+import * as XLSX from 'xlsx';
 
 interface Purchase {
   id: string;
@@ -45,6 +46,18 @@ const PurchaseManagement = () => {
     { id: 'P-008', date: '2023-11-15 09:20', vendor: '디지털마켓', product: '헤드셋', quantity: 15, price: 2250000, type: '반품', status: '완료', salesPerson: '이영업' },
   ]);
 
+  // 제품 목록 (실시간 자동완성용)
+  const productOptions: ComboboxOption[] = [
+    { value: '노트북 A1', label: '노트북 A1' },
+    { value: '스마트폰 X2', label: '스마트폰 X2' },
+    { value: '태블릿 T3', label: '태블릿 T3' },
+    { value: '모니터 M4', label: '모니터 M4' },
+    { value: '키보드 K5', label: '키보드 K5' },
+    { value: '마우스 M6', label: '마우스 M6' },
+    { value: 'USB 드라이브', label: 'USB 드라이브' },
+    { value: '헤드셋', label: '헤드셋' },
+  ];
+
   const [searchTerm, setSearchTerm] = useState("");
   const [yearFilter, setYearFilter] = useState("all");
   const [monthFilter, setMonthFilter] = useState("all");
@@ -59,6 +72,7 @@ const PurchaseManagement = () => {
   const [showRegistrationDialog, setShowRegistrationDialog] = useState(false);
   const [registrationMode, setRegistrationMode] = useState<'individual' | 'excel'>('individual');
   const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({ from: undefined, to: undefined });
+  const [selectedProduct, setSelectedProduct] = useState<string>("");
 
   const toggleSelectAll = () => {
     if (selectedPurchases.length === displayedPurchases.length) {
@@ -92,10 +106,11 @@ const PurchaseManagement = () => {
 
   const handleBulkExport = () => {
     const selectedData = purchases.filter(p => selectedPurchases.includes(p.id));
-    const ws = XLSX.utils.json_to_sheet(selectedData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "선택된매입");
-    XLSX.writeFile(wb, "선택된_매입_데이터.xlsx");
+    exportToFormattedExcel({
+      data: selectedData,
+      filename: '선택된_매입_데이터',
+      sheetName: '선택된매입'
+    });
     
     toast({
       title: "엑셀 내보내기",
@@ -126,37 +141,23 @@ const PurchaseManagement = () => {
 
   const handleExcelDownload = (filtered: boolean = false) => {
     const dataToExport = filtered ? filteredAndSortedPurchases : purchases;
-    const ws = XLSX.utils.json_to_sheet(dataToExport);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "매입관리");
-    XLSX.writeFile(wb, `매입관리_${filtered ? '필터링' : '전체'}_데이터.xlsx`);
+    exportToFormattedExcel({
+      data: dataToExport,
+      filename: `매입관리_${filtered ? '필터링' : '전체'}_데이터`,
+      sheetName: '매입관리',
+      includeChart: true,
+      chartTitle: '매입 통계'
+    });
   };
 
   const handleCSVDownload = (filtered: boolean = false) => {
     const dataToExport = filtered ? filteredAndSortedPurchases : purchases;
-    const ws = XLSX.utils.json_to_sheet(dataToExport);
-    const csv = XLSX.utils.sheet_to_csv(ws);
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `매입관리_${filtered ? '필터링' : '전체'}_데이터.csv`;
-    link.click();
+    exportToCSV(dataToExport, `매입관리_${filtered ? '필터링' : '전체'}_데이터`);
   };
 
   const handlePDFDownload = (filtered: boolean = false) => {
     const dataToExport = filtered ? filteredAndSortedPurchases : purchases;
-    const doc = new jsPDF();
-    doc.text("매입 관리", 20, 20);
-    let y = 40;
-    dataToExport.forEach((purchase) => {
-      if (y > 270) {
-        doc.addPage();
-        y = 20;
-      }
-      doc.text(`${purchase.id} - ${purchase.product}: ${purchase.quantity} (₩${purchase.price.toLocaleString()})`, 20, y);
-      y += 10;
-    });
-    doc.save(`매입관리_${filtered ? '필터링' : '전체'}_데이터.pdf`);
+    exportToPDF(dataToExport, `매입관리_${filtered ? '필터링' : '전체'}_데이터`, '매입 관리');
   };
 
   const availableYears = Array.from(new Set(purchases.map(p => new Date(p.date).getFullYear()))).sort((a, b) => b - a);
@@ -631,7 +632,14 @@ const PurchaseManagement = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label>제품명</Label>
-                    <Input placeholder="제품명 입력" />
+                    <Combobox 
+                      options={productOptions}
+                      value={selectedProduct}
+                      onValueChange={setSelectedProduct}
+                      placeholder="제품 선택 또는 검색..."
+                      searchPlaceholder="제품명 검색..."
+                      emptyText="검색 결과가 없습니다."
+                    />
                   </div>
                   <div>
                     <Label>수량</Label>
