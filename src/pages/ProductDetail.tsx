@@ -2,11 +2,14 @@ import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { ImageGallery } from "@/components/ImageGallery";
 import { ProductTimeline, generateSampleTimeline } from "@/components/ProductTimeline";
+import { useToast } from "@/hooks/use-toast";
 import { 
   ArrowLeft, 
   Package, 
@@ -17,7 +20,9 @@ import {
   AlertTriangle,
   TrendingUp,
   ShoppingCart,
-  FolderOpen
+  FolderOpen,
+  Pencil,
+  Check
 } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
@@ -38,15 +43,17 @@ const generateStockHistory = () => {
 export default function ProductDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [stockHistory] = useState(generateStockHistory);
   const [productImages, setProductImages] = useState<string[]>([
     '/placeholder.svg',
     '/placeholder.svg',
     '/placeholder.svg',
   ]);
+  const [isEditing, setIsEditing] = useState(false);
 
   // 샘플 제품 데이터 (실제로는 API에서 가져와야 함)
-  const product = {
+  const [product, setProduct] = useState({
     userCode: 'USER001',
     barcode: '8801234567890',
     productCode: 'A-001',
@@ -54,10 +61,21 @@ export default function ProductDetail() {
     currentStock: 850,
     safetyStock: 1000,
     unitPrice: 150,
+    consumerPrice: 200,
+    purchasePrice: 120,
+    shippingPrice: 180,
     supplier: '㈜메디칼',
     registeredDate: '2024-01-15',
     category: '주사기/바늘',
     description: '일회용 주사기 5ml, 멸균 포장',
+  });
+
+  const handleSaveEdit = () => {
+    toast({
+      title: "수정 완료",
+      description: "제품 정보가 성공적으로 수정되었습니다."
+    });
+    setIsEditing(false);
   };
 
   const isLowStock = product.currentStock < product.safetyStock;
@@ -80,7 +98,20 @@ export default function ProductDetail() {
                 돌아가기
               </Button>
             </div>
-            <ThemeToggle />
+            <div className="flex items-center gap-2">
+              {isEditing ? (
+                <Button onClick={handleSaveEdit}>
+                  <Check className="w-4 h-4 mr-2" />
+                  수정완료
+                </Button>
+              ) : (
+                <Button onClick={() => setIsEditing(true)} variant="outline">
+                  <Pencil className="w-4 h-4 mr-2" />
+                  수정하기
+                </Button>
+              )}
+              <ThemeToggle />
+            </div>
           </div>
         </div>
       </header>
@@ -107,7 +138,15 @@ export default function ProductDetail() {
               <div className="space-y-3">
                 <div>
                   <div className="text-sm text-muted-foreground mb-1">품목명</div>
-                  <div className="text-2xl font-bold">{product.productName}</div>
+                  {isEditing ? (
+                    <Input
+                      value={product.productName}
+                      onChange={(e) => setProduct({ ...product, productName: e.target.value })}
+                      className="text-lg font-bold"
+                    />
+                  ) : (
+                    <div className="text-2xl font-bold">{product.productName}</div>
+                  )}
                 </div>
                 
                 <Separator />
@@ -119,12 +158,28 @@ export default function ProductDetail() {
                 
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">바코드</span>
-                  <span className="font-mono text-sm">{product.barcode}</span>
+                  {isEditing ? (
+                    <Input
+                      value={product.barcode}
+                      onChange={(e) => setProduct({ ...product, barcode: e.target.value })}
+                      className="w-48 text-right"
+                    />
+                  ) : (
+                    <span className="font-mono text-sm">{product.barcode}</span>
+                  )}
                 </div>
                 
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">카테고리</span>
-                  <Badge variant="secondary">{product.category}</Badge>
+                  {isEditing ? (
+                    <Input
+                      value={product.category}
+                      onChange={(e) => setProduct({ ...product, category: e.target.value })}
+                      className="w-32 text-right"
+                    />
+                  ) : (
+                    <Badge variant="secondary">{product.category}</Badge>
+                  )}
                 </div>
               </div>
             </CardContent>
@@ -144,17 +199,35 @@ export default function ProductDetail() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div className="space-y-2">
                     <div className="text-sm text-muted-foreground">현재 재고</div>
-                    <div className="text-4xl font-bold text-primary">
-                      {product.currentStock.toLocaleString()}
-                    </div>
+                    {isEditing ? (
+                      <Input
+                        type="number"
+                        value={product.currentStock}
+                        onChange={(e) => setProduct({ ...product, currentStock: Number(e.target.value) })}
+                        className="text-2xl font-bold"
+                      />
+                    ) : (
+                      <div className="text-4xl font-bold text-primary">
+                        {product.currentStock.toLocaleString()}
+                      </div>
+                    )}
                     <div className="text-sm">개</div>
                   </div>
                   
                   <div className="space-y-2">
                     <div className="text-sm text-muted-foreground">안전 재고</div>
-                    <div className="text-4xl font-bold text-muted-foreground">
-                      {product.safetyStock.toLocaleString()}
-                    </div>
+                    {isEditing ? (
+                      <Input
+                        type="number"
+                        value={product.safetyStock}
+                        onChange={(e) => setProduct({ ...product, safetyStock: Number(e.target.value) })}
+                        className="text-2xl font-bold"
+                      />
+                    ) : (
+                      <div className="text-4xl font-bold text-muted-foreground">
+                        {product.safetyStock.toLocaleString()}
+                      </div>
+                    )}
                     <div className="text-sm">개</div>
                   </div>
                   
@@ -186,10 +259,49 @@ export default function ProductDetail() {
                 <CardContent>
                   <div className="space-y-4">
                     <div>
-                      <div className="text-sm text-muted-foreground mb-1">단가</div>
-                      <div className="text-3xl font-bold">
-                        {product.unitPrice.toLocaleString()}원
-                      </div>
+                      <div className="text-sm text-muted-foreground mb-1">소비자가</div>
+                      {isEditing ? (
+                        <Input
+                          type="number"
+                          value={product.consumerPrice}
+                          onChange={(e) => setProduct({ ...product, consumerPrice: Number(e.target.value) })}
+                          className="text-lg font-bold"
+                        />
+                      ) : (
+                        <div className="text-2xl font-bold">
+                          ₩{product.consumerPrice?.toLocaleString()}
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <div className="text-sm text-muted-foreground mb-1">매입단가</div>
+                      {isEditing ? (
+                        <Input
+                          type="number"
+                          value={product.purchasePrice}
+                          onChange={(e) => setProduct({ ...product, purchasePrice: Number(e.target.value) })}
+                          className="text-lg font-bold"
+                        />
+                      ) : (
+                        <div className="text-2xl font-bold">
+                          ₩{product.purchasePrice?.toLocaleString()}
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <div className="text-sm text-muted-foreground mb-1">출고가</div>
+                      {isEditing ? (
+                        <Input
+                          type="number"
+                          value={product.shippingPrice}
+                          onChange={(e) => setProduct({ ...product, shippingPrice: Number(e.target.value) })}
+                          className="text-lg font-bold"
+                        />
+                      ) : (
+                        <div className="text-2xl font-bold">
+                          ₩{product.shippingPrice?.toLocaleString()}
+                        </div>
+                      )}
                     </div>
                     <Separator />
                     <div>
@@ -213,7 +325,14 @@ export default function ProductDetail() {
                   <div className="space-y-4">
                     <div>
                       <div className="text-sm text-muted-foreground mb-1">공급업체명</div>
-                      <div className="text-xl font-semibold">{product.supplier}</div>
+                      {isEditing ? (
+                        <Input
+                          value={product.supplier}
+                          onChange={(e) => setProduct({ ...product, supplier: e.target.value })}
+                        />
+                      ) : (
+                        <div className="text-xl font-semibold">{product.supplier}</div>
+                      )}
                     </div>
                     <Separator />
                     <div>

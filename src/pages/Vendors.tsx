@@ -130,6 +130,21 @@ const Vendors = () => {
     }
   };
 
+  const handleSaveEdit = () => {
+    if (!selectedVendor) return;
+    
+    setVendors(vendors.map(v =>
+      v.id === selectedVendor.id ? { ...selectedVendor, ...formData } : v
+    ));
+    
+    toast({
+      title: "수정 완료",
+      description: `${formData.businessName}의 정보가 수정되었습니다.`
+    });
+    
+    setIsEditing(false);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const newVendor: Vendor = {
@@ -550,7 +565,7 @@ const Vendors = () => {
                   </>
                 ) : (
                   <>
-                    <Button type="submit">저장</Button>
+                    <Button type="button" onClick={handleSaveEdit}>저장</Button>
                     <Button type="button" variant="outline" onClick={() => setIsEditing(false)}>취소</Button>
                   </>
                 )}
