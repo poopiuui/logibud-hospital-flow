@@ -238,7 +238,7 @@ export default function Login() {
               <p className="text-xs text-center text-muted-foreground mt-4">
                 ID/비밀번호 찾기 기능은 준비 중입니다
               </p>
-              <div className="mt-4 text-center">
+              <div className="mt-4 text-center space-y-2">
                 <Button
                   type="button"
                   variant="link"
@@ -248,6 +248,17 @@ export default function Login() {
                 >
                   관리자 계정 설정
                 </Button>
+                <div>
+                  <Button
+                    type="button"
+                    variant="link"
+                    size="sm"
+                    onClick={() => navigate('/b2b/login')}
+                    className="text-xs text-primary hover:text-primary/80"
+                  >
+                    거래처 B2B 포털 →
+                  </Button>
+                </div>
               </div>
             </div>
           </form>
