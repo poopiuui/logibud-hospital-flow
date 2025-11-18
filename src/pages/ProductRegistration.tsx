@@ -27,7 +27,8 @@ export default function ProductRegistration() {
     barcode: "",
     price: "",
     description: "",
-    keywords: ["", "", "", "", "", "", "", "", "", ""]
+    keywords: ["", "", "", "", "", "", "", "", "", ""],
+    b2bEnabled: true
   });
   const [bulkResults, setBulkResults] = useState<RegistrationResult[]>([]);
   const [showCategoryDialog, setShowCategoryDialog] = useState(false);
@@ -50,7 +51,8 @@ export default function ProductRegistration() {
         barcode: "",
         price: "",
         description: "",
-        keywords: ["", "", "", "", "", "", "", "", "", ""]
+        keywords: ["", "", "", "", "", "", "", "", "", ""],
+        b2bEnabled: true
       });
     } else {
       toast({
@@ -139,10 +141,24 @@ export default function ProductRegistration() {
         <TabsContent value="single">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <PackagePlus className="w-5 h-5" />
-                단품 등록
-              </CardTitle>
+              <div className="flex items-center justify-between w-full">
+                <CardTitle className="flex items-center gap-2">
+                  <PackagePlus className="w-5 h-5" />
+                  단품 등록
+                </CardTitle>
+                <div className="flex items-center gap-2 bg-muted px-3 py-1.5 rounded-md">
+                  <input
+                    type="checkbox"
+                    id="b2bEnabledSingle"
+                    checked={singleProduct.b2bEnabled}
+                    onChange={(e) => setSingleProduct({ ...singleProduct, b2bEnabled: e.target.checked })}
+                    className="w-4 h-4 rounded border-gray-300"
+                  />
+                  <Label htmlFor="b2bEnabledSingle" className="cursor-pointer text-sm font-medium">
+                    B2B 연동
+                  </Label>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSingleSubmit} className="space-y-4">

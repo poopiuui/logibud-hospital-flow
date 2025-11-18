@@ -219,6 +219,7 @@ export type Database = {
       }
       products: {
         Row: {
+          b2b_enabled: boolean
           category: string
           code: string
           created_at: string
@@ -231,6 +232,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          b2b_enabled?: boolean
           category: string
           code: string
           created_at?: string
@@ -243,6 +245,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          b2b_enabled?: boolean
           category?: string
           code?: string
           created_at?: string
