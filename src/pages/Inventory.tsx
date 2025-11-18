@@ -93,6 +93,51 @@ export default function Inventory() {
         </div>
       </div>
 
+      {/* 최근 입출고 이력 */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-2xl">최근 입출고 이력</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="text-base">유형</TableHead>
+                <TableHead className="text-base">제품명</TableHead>
+                <TableHead className="text-base">수량</TableHead>
+                <TableHead className="text-base">금액</TableHead>
+                <TableHead className="text-base">일자</TableHead>
+                <TableHead className="text-base">등록자</TableHead>
+                <TableHead className="text-base">비고</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {recentTransactions.map((transaction) => (
+                <TableRow key={transaction.id}>
+                  <TableCell>
+                    <Badge variant={
+                      transaction.type === '매입' ? 'default' : 
+                      transaction.type === '출고' ? 'secondary' : 
+                      'outline'
+                    }>
+                      {transaction.type}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="font-medium text-base">{transaction.product}</TableCell>
+                  <TableCell className="text-base">{transaction.quantity > 0 ? '+' : ''}{transaction.quantity}</TableCell>
+                  <TableCell className="text-base">₩{transaction.amount.toLocaleString()}</TableCell>
+                  <TableCell className="text-base">{transaction.date}</TableCell>
+                  <TableCell className="text-base font-medium">김담당</TableCell>
+                  <TableCell className="text-muted-foreground text-base">
+                    {(transaction as any).reason || '-'}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
       {/* 월별 통계 (Pie Chart) */}
       <Card>
         <CardHeader>
@@ -141,49 +186,6 @@ export default function Inventory() {
               <Bar dataKey="매출" fill={COLORS[3]} />
             </BarChart>
           </ResponsiveContainer>
-        </CardContent>
-      </Card>
-
-      {/* 최근 입출고 이력 */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-2xl">최근 입출고 이력</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>유형</TableHead>
-                <TableHead>제품명</TableHead>
-                <TableHead>수량</TableHead>
-                <TableHead>금액</TableHead>
-                <TableHead>일자</TableHead>
-                <TableHead>비고</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {recentTransactions.map((transaction) => (
-                <TableRow key={transaction.id}>
-                  <TableCell>
-                    <Badge variant={
-                      transaction.type === '매입' ? 'default' : 
-                      transaction.type === '출고' ? 'secondary' : 
-                      'outline'
-                    }>
-                      {transaction.type}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="font-medium">{transaction.product}</TableCell>
-                  <TableCell>{transaction.quantity > 0 ? '+' : ''}{transaction.quantity}</TableCell>
-                  <TableCell>₩{transaction.amount.toLocaleString()}</TableCell>
-                  <TableCell>{transaction.date}</TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {(transaction as any).reason || '-'}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
         </CardContent>
       </Card>
 

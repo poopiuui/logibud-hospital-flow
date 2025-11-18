@@ -46,6 +46,9 @@ interface Product {
   currentStock: number;
   safetyStock: number;
   unitPrice: number;
+  consumerPrice?: number;
+  purchasePrice?: number;
+  shippingPrice?: number;
   supplier: string;
   registeredDate: string;
   thumbnail?: string;
@@ -56,11 +59,11 @@ interface Product {
 const CATEGORIES = ['의료소모품', '주사기/바늘', '붕대/거즈', '보호구', '수액/주사액', '기타'];
 
 const generateSampleProducts = (): Product[] => [
-  { userCode: 'USER001', barcode: '8801234567890', productCode: 'A-001', productName: '주사기(5ml)', currentStock: 850, safetyStock: 1000, unitPrice: 150, supplier: '㈜메디칼', registeredDate: new Date().toISOString().split('T')[0], category: '주사기/바늘', images: ['/placeholder.svg'] },
-  { userCode: 'USER002', barcode: '8801234567891', productCode: 'B-012', productName: '거즈 패드', currentStock: 2100, safetyStock: 2000, unitPrice: 80, supplier: '㈜헬스케어', registeredDate: new Date().toISOString().split('T')[0], category: '붕대/거즈', images: ['/placeholder.svg'] },
-  { userCode: 'USER003', barcode: '8801234567892', productCode: 'C-045', productName: '일회용 장갑(M)', currentStock: 400, safetyStock: 5000, unitPrice: 50, supplier: '㈜메디칼', registeredDate: new Date().toISOString().split('T')[0], category: '보호구', images: ['/placeholder.svg'] },
-  { userCode: 'USER004', barcode: '8801234567893', productCode: 'D-078', productName: '알코올 솜', currentStock: 8900, safetyStock: 10000, unitPrice: 30, supplier: '㈜의료용품', registeredDate: new Date().toISOString().split('T')[0], category: '의료소모품', images: ['/placeholder.svg'] },
-  { userCode: 'USER005', barcode: '8801234567894', productCode: 'E-092', productName: '링거 세트', currentStock: 500, safetyStock: 1500, unitPrice: 2500, supplier: '㈜메디텍', registeredDate: new Date().toISOString().split('T')[0], category: '수액/주사액', images: ['/placeholder.svg'] },
+  { userCode: 'USER001', barcode: '8801234567890', productCode: 'A-001', productName: '주사기(5ml)', currentStock: 850, safetyStock: 1000, unitPrice: 150, consumerPrice: 200, purchasePrice: 120, shippingPrice: 180, supplier: '㈜메디칼', registeredDate: new Date().toISOString().split('T')[0], category: '주사기/바늘', images: ['/placeholder.svg'] },
+  { userCode: 'USER002', barcode: '8801234567891', productCode: 'B-012', productName: '거즈 패드', currentStock: 2100, safetyStock: 2000, unitPrice: 80, consumerPrice: 100, purchasePrice: 60, shippingPrice: 90, supplier: '㈜헬스케어', registeredDate: new Date().toISOString().split('T')[0], category: '붕대/거즈', images: ['/placeholder.svg'] },
+  { userCode: 'USER003', barcode: '8801234567892', productCode: 'C-045', productName: '일회용 장갑(M)', currentStock: 400, safetyStock: 5000, unitPrice: 50, consumerPrice: 70, purchasePrice: 40, shippingPrice: 60, supplier: '㈜메디칼', registeredDate: new Date().toISOString().split('T')[0], category: '보호구', images: ['/placeholder.svg'] },
+  { userCode: 'USER004', barcode: '8801234567893', productCode: 'D-078', productName: '알코올 솜', currentStock: 8900, safetyStock: 10000, unitPrice: 30, consumerPrice: 40, purchasePrice: 25, shippingPrice: 35, supplier: '㈜의료용품', registeredDate: new Date().toISOString().split('T')[0], category: '의료소모품', images: ['/placeholder.svg'] },
+  { userCode: 'USER005', barcode: '8801234567894', productCode: 'E-092', productName: '링거 세트', currentStock: 500, safetyStock: 1500, unitPrice: 2500, consumerPrice: 3000, purchasePrice: 2200, shippingPrice: 2800, supplier: '㈜메디텍', registeredDate: new Date().toISOString().split('T')[0], category: '수액/주사액', images: ['/placeholder.svg'] },
 ];
 
 const Index = () => {
@@ -395,15 +398,17 @@ const Index = () => {
                         onCheckedChange={toggleSelectAll}
                       />
                     </TableHead>
-                    <TableHead className="font-bold">제품코드</TableHead>
-                    <TableHead className="font-bold">제품명</TableHead>
-                    <TableHead className="font-bold">카테고리</TableHead>
-                    <TableHead className="font-bold">현재고</TableHead>
-                    <TableHead className="font-bold">안전재고</TableHead>
-                    <TableHead className="font-bold">단가</TableHead>
-                    <TableHead className="font-bold">공급사</TableHead>
-                    <TableHead className="font-bold">상태</TableHead>
-                    <TableHead className="font-bold text-center">작업</TableHead>
+                    <TableHead className="font-bold text-base">제품코드</TableHead>
+                    <TableHead className="font-bold text-base">제품명</TableHead>
+                    <TableHead className="font-bold text-base">카테고리</TableHead>
+                    <TableHead className="font-bold text-base">현재고</TableHead>
+                    <TableHead className="font-bold text-base">안전재고</TableHead>
+                    <TableHead className="font-bold text-base">소비자가</TableHead>
+                    <TableHead className="font-bold text-base">매입단가</TableHead>
+                    <TableHead className="font-bold text-base">출고가</TableHead>
+                    <TableHead className="font-bold text-base">공급사</TableHead>
+                    <TableHead className="font-bold text-base">상태</TableHead>
+                    <TableHead className="font-bold text-base text-center">작업</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -444,10 +449,12 @@ const Index = () => {
                           {product.category || '미분류'}
                         </Badge>
                       </TableCell>
-                      <TableCell className="font-semibold">{product.currentStock.toLocaleString()}</TableCell>
-                      <TableCell className="text-muted-foreground">{product.safetyStock.toLocaleString()}</TableCell>
-                      <TableCell className="font-medium">₩{product.unitPrice.toLocaleString()}</TableCell>
-                      <TableCell>{product.supplier}</TableCell>
+                      <TableCell className="font-semibold text-base">{product.currentStock.toLocaleString()}</TableCell>
+                      <TableCell className="text-muted-foreground text-base">{product.safetyStock.toLocaleString()}</TableCell>
+                      <TableCell className="font-medium text-base">₩{product.consumerPrice?.toLocaleString() || '-'}</TableCell>
+                      <TableCell className="font-medium text-base">₩{product.purchasePrice?.toLocaleString() || '-'}</TableCell>
+                      <TableCell className="font-medium text-base">₩{product.shippingPrice?.toLocaleString() || '-'}</TableCell>
+                      <TableCell className="text-base">{product.supplier}</TableCell>
                       <TableCell>
                         <Badge variant={product.currentStock < product.safetyStock ? "destructive" : "default"}>
                           {product.currentStock < product.safetyStock ? "부족" : "정상"}
@@ -542,11 +549,27 @@ const Index = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label>단가</Label>
+                <Label>소비자가</Label>
                 <Input
                   type="number"
-                  value={editingProduct.unitPrice}
-                  onChange={(e) => setEditingProduct({ ...editingProduct, unitPrice: parseInt(e.target.value) })}
+                  value={editingProduct.consumerPrice || ''}
+                  onChange={(e) => setEditingProduct({ ...editingProduct, consumerPrice: parseInt(e.target.value) || undefined })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>매입단가</Label>
+                <Input
+                  type="number"
+                  value={editingProduct.purchasePrice || ''}
+                  onChange={(e) => setEditingProduct({ ...editingProduct, purchasePrice: parseInt(e.target.value) || undefined })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>출고가</Label>
+                <Input
+                  type="number"
+                  value={editingProduct.shippingPrice || ''}
+                  onChange={(e) => setEditingProduct({ ...editingProduct, shippingPrice: parseInt(e.target.value) || undefined })}
                 />
               </div>
               <div className="space-y-2">
