@@ -201,6 +201,17 @@ export default function Login() {
               <p className="text-xs text-center text-muted-foreground mt-4">
                 ID/비밀번호 찾기 기능은 준비 중입니다
               </p>
+              <div className="mt-4 text-center">
+                <Button
+                  type="button"
+                  variant="link"
+                  size="sm"
+                  onClick={() => navigate('/admin-setup')}
+                  className="text-xs text-muted-foreground hover:text-primary"
+                >
+                  관리자 계정 설정
+                </Button>
+              </div>
             </div>
           </form>
         </CardContent>
