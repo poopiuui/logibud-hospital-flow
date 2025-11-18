@@ -29,7 +29,7 @@ export function StockAlertSystem({ products, onOrderClick }: StockAlertSystemPro
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [dismissedAlerts, setDismissedAlerts] = useState<Set<string>>(new Set());
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
     const lowStock = products.filter(
