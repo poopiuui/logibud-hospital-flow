@@ -65,17 +65,17 @@ export function StockHistory({ productName, productCode, isOpen, onClose }: Stoc
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="text-center">일자</TableHead>
-                <TableHead className="text-center">구분</TableHead>
-                <TableHead className="text-center">수량</TableHead>
-                <TableHead className="text-center">사유</TableHead>
-                <TableHead className="text-center">담당자</TableHead>
+                <TableHead className="text-center text-base">일자</TableHead>
+                <TableHead className="text-center text-base">구분</TableHead>
+                <TableHead className="text-center text-base">수량</TableHead>
+                <TableHead className="text-center text-base">사유</TableHead>
+                <TableHead className="text-center text-base">등록자</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {history.map((item, index) => (
                 <TableRow key={index}>
-                  <TableCell className="text-center">{item.date}</TableCell>
+                  <TableCell className="text-center text-base">{item.date}</TableCell>
                   <TableCell className="text-center">
                     <Badge 
                       variant={item.type === '입고' ? 'default' : 'secondary'}
@@ -89,11 +89,11 @@ export function StockHistory({ productName, productCode, isOpen, onClose }: Stoc
                       {item.type}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-center font-semibold">
+                  <TableCell className="text-center font-semibold text-base">
                     {item.type === '입고' ? '+' : '-'}{item.quantity}
                   </TableCell>
-                  <TableCell className="text-center">{item.reason}</TableCell>
-                  <TableCell className="text-center">{item.staff}</TableCell>
+                  <TableCell className="text-center text-base">{item.reason}</TableCell>
+                  <TableCell className="text-center font-medium text-base">{item.staff}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
