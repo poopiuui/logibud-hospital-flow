@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,15 +24,43 @@ interface Category {
 
 export default function CategoryManagement() {
   const { toast } = useToast();
-  const [categories, setCategories] = useState<Category[]>(
-    PRODUCT_CATEGORIES.map(cat => ({
-      code: cat.code,
-      name: cat.name,
-      description: cat.description || `${cat.name} 관련 제품`,
-      productCount: Math.floor(Math.random() * 50)
-    }))
-  );
-  const [filteredCategories, setFilteredCategories] = useState<Category[]>(categories);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [filteredCategories, setFilteredCategories] = useState<Category[]>([]);
+  
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  const fetchCategories = async () => {
+    const { data, error } = await supabase
+      .from('categories')
+      .select('*')
+      .order('code');
+    
+    if (error) {
+      console.error('카테고리 조회 오류:', error);
+      const defaultCategories = PRODUCT_CATEGORIES.map(cat => ({
+        code: cat.code,
+        name: cat.name,
+        description: cat.description || `${cat.name} 관련 제품`,
+        productCount: 0
+      }));
+      setCategories(defaultCategories);
+      setFilteredCategories(defaultCategories);
+      return;
+    }
+    
+    if (data && data.length > 0) {
+      const formattedCategories: Category[] = data.map(d => ({
+        code: d.code,
+        name: d.name,
+        description: d.description || '',
+        productCount: 0
+      }));
+      setCategories(formattedCategories);
+      setFilteredCategories(formattedCategories);
+    }
+  };
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
@@ -42,7 +71,7 @@ export default function CategoryManagement() {
   });
   const [searchTerm, setSearchTerm] = useState("");
 
-  const handleAddCategory = () => {
+  const handleAddCategory = async () => {
     if (!formData.code || !formData.name) {
       toast({
         title: "입력 오류",
@@ -52,45 +81,65 @@ export default function CategoryManagement() {
       return;
     }
 
-    const newCategory: Category = {
-      code: formData.code,
-      name: formData.name,
-      description: formData.description,
-      productCount: 0
-    };
+    const { error } = await supabase
+      .from('categories')
+      .insert([{
+        code: formData.code,
+        name: formData.name,
+        description: formData.description
+      }]);
 
-    const updated = [...categories, newCategory];
-    setCategories(updated);
-    setFilteredCategories(updated);
+    if (error) {
+      toast({
+        title: "등록 실패",
+        description: error.message,
+        variant: "destructive"
+      });
+      return;
+    }
+
     toast({
       title: "카테고리 추가",
       description: `${formData.name} 카테고리가 추가되었습니다.`
     });
 
+    fetchCategories();
     setIsAddDialogOpen(false);
     setFormData({ code: "", name: "", description: "" });
   };
 
-  const handleEditCategory = () => {
+  const handleEditCategory = async () => {
     if (!selectedCategory) return;
 
-    const updated = categories.map(cat =>
-      cat.code === selectedCategory.code ? { ...selectedCategory, ...formData } : cat
-    );
-    setCategories(updated);
-    setFilteredCategories(updated);
+    const { error } = await supabase
+      .from('categories')
+      .update({
+        name: formData.name,
+        description: formData.description
+      })
+      .eq('code', selectedCategory.code);
+
+    if (error) {
+      toast({
+        title: "수정 실패",
+        description: error.message,
+        variant: "destructive"
+      });
+      return;
+    }
 
     toast({
       title: "카테고리 수정",
       description: `${formData.name} 카테고리가 수정되었습니다.`
     });
 
+    fetchCategories();
     setIsEditDialogOpen(false);
     setSelectedCategory(null);
     setFormData({ code: "", name: "", description: "" });
   };
 
-  const handleDeleteCategory = (category: Category) => {
+  const handleDeleteCategory = async (category: Category) => {
     if (category.productCount > 0) {
       toast({
         title: "삭제 불가",
@@ -100,13 +149,26 @@ export default function CategoryManagement() {
       return;
     }
 
-    const updated = categories.filter(cat => cat.code !== category.code);
-    setCategories(updated);
-    setFilteredCategories(updated);
+    const { error } = await supabase
+      .from('categories')
+      .delete()
+      .eq('code', category.code);
+
+    if (error) {
+      toast({
+        title: "삭제 실패",
+        description: error.message,
+        variant: "destructive"
+      });
+      return;
+    }
+
     toast({
       title: "카테고리 삭제",
       description: `${category.name} 카테고리가 삭제되었습니다.`
     });
+
+    fetchCategories();
   };
 
   const openEditDialog = (category: Category) => {

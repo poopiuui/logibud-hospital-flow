@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,40 +34,7 @@ interface Vendor {
 
 const Vendors = () => {
   const { toast } = useToast();
-  const [vendors, setVendors] = useState<Vendor[]>([
-    {
-      id: '1',
-      code: 'V-001',
-      type: '매입처',
-      businessName: '(주)글로벌물류',
-      businessNumber: '123-45-67890',
-      contactName: '김철수',
-      contactPhone: '010-1234-5678',
-      faxNumber: '02-1234-5678',
-      paymentDate: '매월 말일',
-      paymentMethod: '계좌이체',
-      bankAccount: '국민 123-456-789012',
-      invoiceEmail: 'vendor1@example.com',
-      salesRep: '김영업',
-      logisticsManager: '김물류'
-    },
-    {
-      id: '2',
-      code: 'C-001',
-      type: '매출처',
-      businessName: '스마트마켓',
-      businessNumber: '098-76-54321',
-      contactName: '이영희',
-      contactPhone: '010-9876-5432',
-      faxNumber: '02-9876-5432',
-      paymentDate: '익월 15일',
-      paymentMethod: '현금',
-      bankAccount: '신한 987-654-321098',
-      invoiceEmail: 'customer1@example.com',
-      salesRep: '이영업',
-      logisticsManager: '이물류'
-    }
-  ]);
+  const [vendors, setVendors] = useState<Vendor[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
@@ -89,6 +57,7 @@ const Vendors = () => {
   });
 
   useEffect(() => {
+    fetchVendors();
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         window.history.back();
@@ -97,6 +66,38 @@ const Vendors = () => {
     window.addEventListener('keydown', handleEsc);
     return () => window.removeEventListener('keydown', handleEsc);
   }, []);
+
+  const fetchVendors = async () => {
+    const { data, error } = await supabase
+      .from('suppliers')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (error) {
+      console.error('거래처 조회 오류:', error);
+      return;
+    }
+    
+    if (data) {
+      const formattedVendors: Vendor[] = data.map(d => ({
+        id: d.id,
+        code: d.code,
+        type: '매입처',
+        businessName: d.business_name,
+        businessNumber: d.business_number || '',
+        contactName: d.contact_person || '',
+        contactPhone: d.contact_phone || '',
+        faxNumber: '',
+        paymentDate: d.payment_date || '',
+        paymentMethod: d.payment_method || '',
+        bankAccount: d.bank_account || '',
+        invoiceEmail: d.invoice_email || '',
+        salesRep: d.sales_rep || '',
+        logisticsManager: d.logistics_manager || ''
+      }));
+      setVendors(formattedVendors);
+    }
+  };
 
   const generateCode = (type: '매입처' | '매출처') => {
     const prefix = type === '매입처' ? 'V' : 'C';
@@ -165,34 +166,79 @@ const Vendors = () => {
     }
   };
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (!selectedVendor) return;
     
-    setVendors(vendors.map(v =>
-      v.id === selectedVendor.id ? { ...selectedVendor, ...formData, type: vendorType } : v
-    ));
+    const { error } = await supabase
+      .from('suppliers')
+      .update({
+        business_name: formData.businessName,
+        business_number: formData.businessNumber,
+        contact_person: formData.contactName,
+        contact_phone: formData.contactPhone,
+        payment_date: formData.paymentDate,
+        payment_method: formData.paymentMethod,
+        bank_account: formData.bankAccount,
+        invoice_email: formData.invoiceEmail,
+        sales_rep: formData.salesRep,
+        logistics_manager: formData.logisticsManager
+      })
+      .eq('id', selectedVendor.id);
+
+    if (error) {
+      toast({
+        title: "수정 실패",
+        description: error.message,
+        variant: "destructive"
+      });
+      return;
+    }
     
     toast({
       title: "수정 완료",
       description: `${formData.businessName}의 정보가 수정되었습니다.`
     });
     
-    setIsEditing(false);
+    fetchVendors();
     setIsDetailOpen(false);
-    setSelectedVendors([]);
+    setIsEditing(false);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const newVendor: Vendor = {
-      id: Date.now().toString(),
-      code: generateCode(vendorType),
-      type: vendorType,
-      ...formData,
-      salesRep: formData.salesRep,
-      logisticsManager: formData.logisticsManager
-    };
-    setVendors([...vendors, newVendor]);
+    const newCode = generateCode(vendorType);
+    
+    const { error } = await supabase
+      .from('suppliers')
+      .insert([{
+        code: newCode,
+        business_name: formData.businessName,
+        business_number: formData.businessNumber,
+        contact_person: formData.contactName,
+        contact_phone: formData.contactPhone,
+        payment_date: formData.paymentDate,
+        payment_method: formData.paymentMethod,
+        bank_account: formData.bankAccount,
+        invoice_email: formData.invoiceEmail,
+        sales_rep: formData.salesRep,
+        logistics_manager: formData.logisticsManager
+      }]);
+
+    if (error) {
+      toast({
+        title: "등록 실패",
+        description: error.message,
+        variant: "destructive"
+      });
+      return;
+    }
+
+    toast({
+      title: "거래처 등록",
+      description: `${formData.businessName}가 등록되었습니다.`
+    });
+
+    fetchVendors();
     setIsDialogOpen(false);
     setFormData({
       businessName: '',
