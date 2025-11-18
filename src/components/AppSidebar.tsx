@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { LayoutDashboard, Package, FileText, Truck, Users, Settings, Building2, PackagePlus, ClipboardList, ShoppingCart, FolderTree, ListChecks } from "lucide-react";
+import { useLocation } from "react-router-dom";
+import { LayoutDashboard, Package, FileText, Truck, Users, Settings, Building2, PackagePlus, ClipboardList, ShoppingCart, FolderTree, ListChecks, ChevronDown, ChevronRight } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
   Sidebar,
@@ -12,6 +13,7 @@ import {
   SidebarHeader,
   SidebarFooter,
 } from "@/components/ui/sidebar";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 const menuItems = [
   { title: "대시보드", url: "/", icon: LayoutDashboard },
@@ -38,8 +40,18 @@ const menuItems = [
 ];
 
 export function AppSidebar() {
+  const location = useLocation();
   const [companyName, setCompanyName] = useState("로지봇");
   const [companyLogo, setCompanyLogo] = useState("");
+  
+  // 등록관리 섹션의 하위 메뉴 URL 목록
+  const registrationUrls = ["/category-management", "/purchase-order-management", "/quotation-management"];
+  
+  // 현재 라우트가 등록관리 하위 메뉴에 있는지 확인
+  const isRegistrationActive = registrationUrls.includes(location.pathname);
+  
+  // 등록관리 섹션이 열려있는지 여부 (현재 활성 라우트가 있으면 자동으로 열림)
+  const [isRegistrationOpen, setIsRegistrationOpen] = useState(isRegistrationActive);
 
   useEffect(() => {
     const savedName = localStorage.getItem('companyName');
@@ -48,6 +60,13 @@ export function AppSidebar() {
     if (savedName) setCompanyName(savedName);
     if (savedLogo) setCompanyLogo(savedLogo);
   }, []);
+  
+  // 활성 라우트가 변경되면 등록관리 섹션을 자동으로 열기
+  useEffect(() => {
+    if (isRegistrationActive) {
+      setIsRegistrationOpen(true);
+    }
+  }, [isRegistrationActive]);
 
   return (
     <Sidebar className="border-r">
@@ -78,26 +97,37 @@ export function AppSidebar() {
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   {'subItems' in item ? (
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-3 px-3 py-2 text-sidebar-foreground font-medium">
+                    <Collapsible
+                      open={isRegistrationOpen}
+                      onOpenChange={setIsRegistrationOpen}
+                      className="space-y-1"
+                    >
+                      <CollapsibleTrigger className="flex items-center gap-3 px-3 py-2 text-sidebar-foreground font-medium hover:bg-sidebar-accent rounded-lg transition-colors w-full">
                         <item.icon className="w-5 h-5" />
-                        <span>{item.title}</span>
-                      </div>
-                      <div className="ml-8 space-y-1">
-                        {item.subItems.map((subItem) => (
-                          <SidebarMenuButton asChild key={subItem.title}>
-                            <NavLink 
-                              to={subItem.url}
-                              className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-sidebar-accent transition-colors text-sidebar-foreground text-sm"
-                              activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
-                            >
-                              <subItem.icon className="w-4 h-4" />
-                              <span>{subItem.title}</span>
-                            </NavLink>
-                          </SidebarMenuButton>
-                        ))}
-                      </div>
-                    </div>
+                        <span className="flex-1 text-left">{item.title}</span>
+                        {isRegistrationOpen ? (
+                          <ChevronDown className="w-4 h-4" />
+                        ) : (
+                          <ChevronRight className="w-4 h-4" />
+                        )}
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <div className="ml-8 space-y-1">
+                          {item.subItems.map((subItem) => (
+                            <SidebarMenuButton asChild key={subItem.title}>
+                              <NavLink 
+                                to={subItem.url}
+                                className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-sidebar-accent transition-colors text-sidebar-foreground text-sm"
+                                activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
+                              >
+                                <subItem.icon className="w-4 h-4" />
+                                <span>{subItem.title}</span>
+                              </NavLink>
+                            </SidebarMenuButton>
+                          ))}
+                        </div>
+                      </CollapsibleContent>
+                    </Collapsible>
                   ) : (
                     <SidebarMenuButton asChild>
                       <NavLink 
