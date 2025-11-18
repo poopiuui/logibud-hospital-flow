@@ -301,7 +301,35 @@ const OutboundManagement = () => {
                   ))}</TableBody>
                 </Table>
               </div>
-              <div className="flex justify-end pt-4 border-t">
+              
+              {selectedOutbound.status === '출고완료' && (
+                <div className="border-t pt-4 mt-4">
+                  <Label className="text-lg font-semibold mb-2 block">송장번호 등록</Label>
+                  <div className="flex gap-2">
+                    <Input 
+                      placeholder="송장번호를 입력하세요" 
+                      id={`tracking-${selectedOutbound.id}`}
+                    />
+                    <Button onClick={() => {
+                      const input = document.getElementById(`tracking-${selectedOutbound.id}`) as HTMLInputElement;
+                      if (input?.value) {
+                        handleTrackingNumberSubmit(selectedOutbound.id, input.value);
+                        setShowDetailDialog(false);
+                      } else {
+                        toast({
+                          title: "송장번호 입력 필요",
+                          description: "송장번호를 입력해주세요.",
+                          variant: "destructive",
+                        });
+                      }
+                    }}>
+                      등록
+                    </Button>
+                  </div>
+                </div>
+              )}
+              
+              <div className="flex justify-end pt-4 border-t mt-4">
                 <div className="text-right">
                   <p className="text-sm text-muted-foreground mb-1">총 출고 금액</p>
                   <p className="text-2xl font-bold text-primary">
