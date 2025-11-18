@@ -25,7 +25,7 @@ interface Vendor {
   paymentMethod: string;
   bankAccount: string;
   invoiceEmail: string;
-  salesPerson?: string;
+  logisticsManager?: string;
 }
 
 const Vendors = () => {
@@ -44,7 +44,7 @@ const Vendors = () => {
       paymentMethod: '계좌이체',
       bankAccount: '국민 123-456-789012',
       invoiceEmail: 'vendor1@example.com',
-      salesPerson: '김영업'
+      logisticsManager: '김물류'
     },
     {
       id: '2',
@@ -59,7 +59,7 @@ const Vendors = () => {
       paymentMethod: '현금',
       bankAccount: '신한 987-654-321098',
       invoiceEmail: 'customer1@example.com',
-      salesPerson: '이영업'
+      logisticsManager: '이물류'
     }
   ]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -75,7 +75,7 @@ const Vendors = () => {
     paymentMethod: '',
     bankAccount: '',
     invoiceEmail: '',
-    salesPerson: ''
+    logisticsManager: ''
   });
 
   useEffect(() => {
@@ -118,7 +118,7 @@ const Vendors = () => {
       paymentMethod: '',
       bankAccount: '',
       invoiceEmail: '',
-      salesPerson: ''
+      logisticsManager: ''
     });
     toast({
       title: "등록 완료",
@@ -263,11 +263,11 @@ const Vendors = () => {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label>담당영업사원</Label>
+                      <Label>물류 출고담당</Label>
                       <Input
-                        value={formData.salesPerson}
-                        onChange={(e) => setFormData({ ...formData, salesPerson: e.target.value })}
-                        placeholder="영업사원명"
+                        value={formData.logisticsManager}
+                        onChange={(e) => setFormData({ ...formData, logisticsManager: e.target.value })}
+                        placeholder="담당자명"
                       />
                     </div>
                   </div>
@@ -314,7 +314,7 @@ const Vendors = () => {
                     <TableHead className="text-base">팩스</TableHead>
                     <TableHead className="text-base">결제일</TableHead>
                     <TableHead className="text-base">결제방법</TableHead>
-                    <TableHead className="text-base">담당영업사원</TableHead>
+                    <TableHead className="text-base">물류 출고담당</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -330,7 +330,7 @@ const Vendors = () => {
                       <TableCell className="text-base">{vendor.paymentDate}</TableCell>
                       <TableCell className="text-base">{vendor.paymentMethod}</TableCell>
                       <TableCell className="text-base">
-                        <Badge variant="secondary">{vendor.salesPerson || '-'}</Badge>
+                        <Badge variant="secondary">{vendor.logisticsManager || '-'}</Badge>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -349,7 +349,7 @@ const Vendors = () => {
                     <TableHead className="text-base">팩스</TableHead>
                     <TableHead className="text-base">결제일</TableHead>
                     <TableHead className="text-base">결제방법</TableHead>
-                    <TableHead className="text-base">담당영업사원</TableHead>
+                    <TableHead className="text-base">물류 출고담당</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -364,7 +364,7 @@ const Vendors = () => {
                       <TableCell className="text-base">{vendor.paymentDate}</TableCell>
                       <TableCell className="text-base">{vendor.paymentMethod}</TableCell>
                       <TableCell className="text-base">
-                        <Badge variant="secondary">{vendor.salesPerson || '-'}</Badge>
+                        <Badge variant="secondary">{vendor.logisticsManager || '-'}</Badge>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -383,7 +383,7 @@ const Vendors = () => {
                     <TableHead className="text-base">팩스</TableHead>
                     <TableHead className="text-base">결제일</TableHead>
                     <TableHead className="text-base">결제방법</TableHead>
-                    <TableHead className="text-base">담당영업사원</TableHead>
+                    <TableHead className="text-base">물류 출고담당</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -398,7 +398,7 @@ const Vendors = () => {
                       <TableCell className="text-base">{vendor.paymentDate}</TableCell>
                       <TableCell className="text-base">{vendor.paymentMethod}</TableCell>
                       <TableCell className="text-base">
-                        <Badge variant="secondary">{vendor.salesPerson || '-'}</Badge>
+                        <Badge variant="secondary">{vendor.logisticsManager || '-'}</Badge>
                       </TableCell>
                     </TableRow>
                   ))}

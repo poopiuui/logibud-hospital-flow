@@ -3,8 +3,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Download, Eye, CheckCircle2, Clock, X } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { FileText, Download, Eye, CheckCircle2, Clock, X, FileDown, FilePlus } from "lucide-react";
 import * as XLSX from "xlsx";
+import jsPDF from "jspdf";
 import { useToast } from "@/hooks/use-toast";
 
 interface Invoice {
@@ -14,16 +19,23 @@ interface Invoice {
   status: string;
   date: string;
   invoiceIssued: boolean;
+  issueDate?: string;
+  items?: { name: string; quantity: number; price: number }[];
 }
 
 export default function Billing() {
   const { toast } = useToast();
-  const [invoices] = useState<Invoice[]>([
-    { id: 'INV-001', customer: '고객 A', amount: 12500000, status: '완료', date: '2024-01-15', invoiceIssued: true },
-    { id: 'INV-002', customer: '고객 B', amount: 8300000, status: '진행중', date: '2024-01-14', invoiceIssued: false },
-    { id: 'INV-003', customer: '고객 C', amount: 15200000, status: '대기', date: '2024-01-13', invoiceIssued: false },
-    { id: 'INV-004', customer: '고객 D', amount: 5600000, status: '완료', date: '2024-01-12', invoiceIssued: true },
+  const [invoices, setInvoices] = useState<Invoice[]>([
+    { id: 'INV-001', customer: '고객 A', amount: 12500000, status: '완료', date: '2024-01-15', invoiceIssued: true, issueDate: '2024-01-16', items: [{ name: '주사기(5ml)', quantity: 100, price: 150 }] },
+    { id: 'INV-002', customer: '고객 B', amount: 8300000, status: '진행중', date: '2024-01-14', invoiceIssued: false, items: [{ name: '거즈 패드', quantity: 200, price: 80 }] },
+    { id: 'INV-003', customer: '고객 C', amount: 15200000, status: '대기', date: '2024-01-13', invoiceIssued: false, items: [{ name: '일회용 장갑', quantity: 500, price: 50 }] },
+    { id: 'INV-004', customer: '고객 D', amount: 5600000, status: '완료', date: '2024-01-12', invoiceIssued: true, issueDate: '2024-01-13', items: [{ name: '알코올 솜', quantity: 300, price: 30 }] },
   ]);
+  const [selectedInvoices, setSelectedInvoices] = useState<string[]>([]);
+  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const [showInvoiceDetail, setShowInvoiceDetail] = useState(false);
+  const [showNewInvoice, setShowNewInvoice] = useState(false);
+  const [newInvoice, setNewInvoice] = useState({ customer: '', amount: '', date: '' });
 
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
@@ -35,13 +47,32 @@ export default function Billing() {
     return () => window.removeEventListener('keydown', handleEsc);
   }, []);
 
-  const downloadExcel = () => {
-    const ws = XLSX.utils.json_to_sheet(invoices.map(inv => ({
+  const toggleSelectAll = () => {
+    if (selectedInvoices.length === invoices.length) {
+      setSelectedInvoices([]);
+    } else {
+      setSelectedInvoices(invoices.map(inv => inv.id));
+    }
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedInvoices(prev => 
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
+
+  const downloadExcel = (filtered = false) => {
+    const dataToExport = filtered && selectedInvoices.length > 0 
+      ? invoices.filter(inv => selectedInvoices.includes(inv.id))
+      : invoices;
+    
+    const ws = XLSX.utils.json_to_sheet(dataToExport.map(inv => ({
       '청구서번호': inv.id,
       '고객명': inv.customer,
       '금액': inv.amount,
       '상태': inv.status,
       '계산서발행': inv.invoiceIssued ? '발행완료' : '미발행',
+      '발행일': inv.issueDate || '-',
       '날짜': inv.date
     })));
     const wb = XLSX.utils.book_new();
@@ -50,7 +81,73 @@ export default function Billing() {
     
     toast({
       title: "다운로드 완료",
-      description: "엑셀 파일이 다운로드되었습니다."
+      description: `${dataToExport.length}개 청구서가 다운로드되었습니다.`
+    });
+  };
+
+  const downloadCSV = (filtered = false) => {
+    const dataToExport = filtered && selectedInvoices.length > 0 
+      ? invoices.filter(inv => selectedInvoices.includes(inv.id))
+      : invoices;
+    
+    const csv = [
+      ['청구서번호', '고객명', '금액', '상태', '계산서발행', '발행일', '날짜'],
+      ...dataToExport.map(inv => [
+        inv.id, inv.customer, inv.amount, inv.status, 
+        inv.invoiceIssued ? '발행완료' : '미발행',
+        inv.issueDate || '-', inv.date
+      ])
+    ].map(row => row.join(',')).join('\n');
+    
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = '청구관리_목록.csv';
+    link.click();
+    
+    toast({
+      title: "CSV 다운로드 완료",
+      description: `${dataToExport.length}개 청구서가 다운로드되었습니다.`
+    });
+  };
+
+  const issueInvoice = (id: string) => {
+    setInvoices(prev => prev.map(inv => 
+      inv.id === id ? { ...inv, invoiceIssued: true, issueDate: new Date().toISOString().split('T')[0] } : inv
+    ));
+    toast({
+      title: "계산서 발행 완료",
+      description: "계산서가 발행되었습니다."
+    });
+  };
+
+  const saveNewInvoice = () => {
+    if (!newInvoice.customer || !newInvoice.amount || !newInvoice.date) {
+      toast({
+        title: "입력 오류",
+        description: "모든 필드를 입력해주세요.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    const invoice: Invoice = {
+      id: `INV-${String(invoices.length + 1).padStart(3, '0')}`,
+      customer: newInvoice.customer,
+      amount: parseFloat(newInvoice.amount),
+      status: '대기',
+      date: newInvoice.date,
+      invoiceIssued: false,
+      items: []
+    };
+    
+    setInvoices(prev => [...prev, invoice]);
+    setShowNewInvoice(false);
+    setNewInvoice({ customer: '', amount: '', date: '' });
+    
+    toast({
+      title: "청구서 등록 완료",
+      description: "새 청구서가 등록되었습니다."
     });
   };
 
@@ -62,13 +159,21 @@ export default function Billing() {
           <p className="text-muted-foreground text-lg mt-2">청구서 및 결제 관리</p>
         </div>
         <div className="flex gap-2">
-          <Button onClick={downloadExcel} variant="outline" size="lg">
+          <Button onClick={() => downloadExcel(false)} variant="outline" size="lg">
             <Download className="w-5 h-5 mr-2" />
-            엑셀 다운로드
+            전체 엑셀
           </Button>
-          <Button size="lg" className="gap-2">
-            <FileText className="w-5 h-5" />
-            새 청구서
+          <Button onClick={() => downloadExcel(true)} variant="outline" size="lg" disabled={selectedInvoices.length === 0}>
+            <Download className="w-5 h-5 mr-2" />
+            선택 엑셀
+          </Button>
+          <Button onClick={() => downloadCSV(false)} variant="outline" size="lg">
+            <FileDown className="w-5 h-5 mr-2" />
+            CSV
+          </Button>
+          <Button size="lg" className="gap-2" onClick={() => setShowNewInvoice(true)}>
+            <FilePlus className="w-5 h-5" />
+            청구서 등록
           </Button>
           <Button 
             variant="ghost" 
