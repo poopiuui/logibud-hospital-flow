@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,11 +12,25 @@ export default function Login() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [showAdminSetup, setShowAdminSetup] = useState(false);
   
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   });
+
+  // 계정 존재 여부 확인
+  useEffect(() => {
+    const checkForAccounts = async () => {
+      try {
+        // 공개적으로 접근 가능한 테이블이 없으므로, 
+        // 로그인 시도 후 실패 시 AdminSetup 안내
+      } catch (error) {
+        console.error('Account check error:', error);
+      }
+    };
+    checkForAccounts();
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({
@@ -105,11 +119,18 @@ export default function Login() {
       console.error('Login error:', error);
       
       let errorMessage = "로그인 중 오류가 발생했습니다.";
+      let shouldShowAdminSetup = false;
       
       if (error.message.includes("Invalid login credentials")) {
         errorMessage = "이메일 또는 비밀번호가 올바르지 않습니다.";
+        shouldShowAdminSetup = true;
       } else if (error.message.includes("Email not confirmed")) {
         errorMessage = "이메일 인증이 완료되지 않았습니다. 이메일을 확인해주세요.";
+      }
+      
+      if (shouldShowAdminSetup) {
+        setShowAdminSetup(true);
+        errorMessage += " 계정이 없다면 관리자 계정을 먼저 설정해주세요.";
       }
       
       toast({
@@ -169,6 +190,22 @@ export default function Login() {
             >
               {isLoading ? "로그인 중..." : "로그인"}
             </Button>
+
+            {showAdminSetup && (
+              <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+                <p className="text-sm text-yellow-800 dark:text-yellow-200 mb-3 text-center">
+                  계정이 없으신가요? 먼저 관리자 계정을 설정해주세요.
+                </p>
+                <Button
+                  type="button"
+                  variant="default"
+                  className="w-full"
+                  onClick={() => navigate('/admin-setup')}
+                >
+                  관리자 계정 설정하기
+                </Button>
+              </div>
+            )}
 
             <div className="border-t pt-6">
               <div className="grid grid-cols-3 gap-2">
