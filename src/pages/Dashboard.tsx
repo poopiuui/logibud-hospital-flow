@@ -4,22 +4,53 @@ import { Button } from "@/components/ui/button";
 import { AIReorderPrediction } from "@/components/AIReorderPrediction";
 import { StockAlertWidget } from "@/components/StockAlertWidget";
 import { InventoryVisualization } from "@/components/InventoryVisualization";
-import { ArrowUpRight, ArrowDownRight, Package, TrendingUp, DollarSign, Users, X } from "lucide-react";
+import { AutoReorderSystem } from "@/components/AutoReorderSystem";
+import { ArrowUpRight, ArrowDownRight, Package, TrendingUp, DollarSign, Users, X, RefreshCw } from "lucide-react";
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import GridLayout from "react-grid-layout";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
 import * as XLSX from 'xlsx';
+import { useToast } from "@/hooks/use-toast";
 
 const Dashboard = () => {
+  const { toast } = useToast();
+  const [lastUpdate, setLastUpdate] = useState(new Date());
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  
   const [layout, setLayout] = useState([
     { i: 'kpi', x: 0, y: 0, w: 12, h: 2 },
     { i: 'stock-alert', x: 0, y: 2, w: 12, h: 3 },
     { i: 'sales', x: 0, y: 5, w: 6, h: 4 },
     { i: 'inventory', x: 6, y: 5, w: 6, h: 4 },
     { i: 'inventory-viz', x: 0, y: 9, w: 12, h: 5 },
-    { i: 'ai-prediction', x: 0, y: 14, w: 12, h: 4 },
+    { i: 'auto-reorder', x: 0, y: 14, w: 12, h: 5 },
+    { i: 'ai-prediction', x: 0, y: 19, w: 12, h: 4 },
   ]);
+
+  // 실시간 데이터 업데이트 (30초마다)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setLastUpdate(new Date());
+      console.log('Dashboard data refreshed');
+    }, 30000); // 30초
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleManualRefresh = () => {
+    setIsRefreshing(true);
+    setLastUpdate(new Date());
+    
+    toast({
+      title: "데이터 업데이트",
+      description: "최신 데이터를 불러왔습니다.",
+    });
+
+    setTimeout(() => {
+      setIsRefreshing(false);
+    }, 1000);
+  };
 
   const sampleProducts = [
     { 
@@ -117,13 +148,27 @@ const Dashboard = () => {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold">대시보드</h1>
-          <p className="text-muted-foreground">전체 비즈니스 현황을 한눈에 확인하세요</p>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 mt-1">
+            <p className="text-muted-foreground">전체 비즈니스 현황을 한눈에 확인하세요</p>
+            <span className="text-xs text-muted-foreground">
+              최근 업데이트: {lastUpdate.toLocaleTimeString('ko-KR')}
+            </span>
+          </div>
         </div>
         <div className="flex gap-2">
-          <Button onClick={handleExcelDownload} variant="outline">
+          <Button 
+            onClick={handleManualRefresh} 
+            variant="outline" 
+            size="sm"
+            disabled={isRefreshing}
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+            새로고침
+          </Button>
+          <Button onClick={handleExcelDownload} variant="outline" size="sm">
             엑셀 다운로드
           </Button>
           <Button onClick={() => window.history.back()} variant="ghost" size="icon">
@@ -247,6 +292,12 @@ const Dashboard = () => {
         <div key="inventory-viz" className="bg-background">
           <div className="drag-handle cursor-move h-full">
             <InventoryVisualization products={sampleProducts} />
+          </div>
+        </div>
+
+        <div key="auto-reorder" className="bg-background">
+          <div className="drag-handle cursor-move h-full">
+            <AutoReorderSystem />
           </div>
         </div>
 

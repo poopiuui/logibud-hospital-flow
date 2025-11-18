@@ -130,6 +130,45 @@ All colors MUST be HSL.
     @apply text-foreground font-semibold;
   }
 
+  /* Mobile optimizations */
+  @media (max-width: 768px) {
+    body {
+      font-size: 14px;
+    }
+
+    h1, .text-3xl, .text-4xl {
+      font-size: 1.5rem;
+    }
+
+    h2, .text-2xl {
+      font-size: 1.25rem;
+    }
+
+    .p-8 {
+      padding: 1rem;
+    }
+
+    .p-6 {
+      padding: 0.75rem;
+    }
+
+    .space-y-8 > * + * {
+      margin-top: 1.5rem;
+    }
+
+    .space-y-6 > * + * {
+      margin-top: 1rem;
+    }
+  }
+
+  /* Touch-friendly buttons on mobile */
+  @media (max-width: 768px) {
+    button, .button {
+      min-height: 44px;
+      min-width: 44px;
+    }
+  }
+
   /* Large, bold text for KPIs and important numbers */
   .kpi-value {
     @apply text-4xl font-bold tracking-tight;
