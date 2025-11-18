@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { ImageGallery } from "@/components/ImageGallery";
+import { ProductTimeline, generateSampleTimeline } from "@/components/ProductTimeline";
 import { 
   ArrowLeft, 
   Package, 
@@ -302,6 +303,12 @@ export default function ProductDetail() {
             재고 조정
           </Button>
         </div>
+
+        {/* 제품별 입출고 타임라인 */}
+        <ProductTimeline 
+          productName={product.productName}
+          timeline={generateSampleTimeline(product.productName)}
+        />
       </div>
     </div>
   );
