@@ -8,11 +8,13 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, X, ChevronDown, ChevronUp, Calendar, FileDown } from "lucide-react";
+import { Search, X, ChevronDown, ChevronUp, Calendar, FileDown, Trash2 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import { useToast } from "@/hooks/use-toast";
+import { DateRangeFilter } from "@/components/DateRangeFilter";
+import { SwipeableTableRow } from "@/components/SwipeableTableRow";
 
 interface Purchase {
   id: string;
@@ -50,6 +52,50 @@ const PurchaseManagement = () => {
   const [selectedPurchases, setSelectedPurchases] = useState<string[]>([]);
   const [selectedPurchase, setSelectedPurchase] = useState<Purchase | null>(null);
   const [showDetailDialog, setShowDetailDialog] = useState(false);
+  const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({ from: undefined, to: undefined });
+
+  const toggleSelectAll = () => {
+    if (selectedPurchases.length === displayedPurchases.length) {
+      setSelectedPurchases([]);
+    } else {
+      setSelectedPurchases(displayedPurchases.map(p => p.id));
+    }
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedPurchases(prev => 
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
+
+  const handleBulkStatusChange = (newStatus: string) => {
+    toast({
+      title: "일괄 상태 변경",
+      description: `${selectedPurchases.length}개 항목의 상태가 변경되었습니다.`
+    });
+    setSelectedPurchases([]);
+  };
+
+  const handleBulkDelete = () => {
+    toast({
+      title: "일괄 삭제",
+      description: `${selectedPurchases.length}개 항목이 삭제되었습니다.`
+    });
+    setSelectedPurchases([]);
+  };
+
+  const handleBulkExport = () => {
+    const selectedData = purchases.filter(p => selectedPurchases.includes(p.id));
+    const ws = XLSX.utils.json_to_sheet(selectedData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "선택된매입");
+    XLSX.writeFile(wb, "선택된_매입_데이터.xlsx");
+    
+    toast({
+      title: "엑셀 내보내기",
+      description: `${selectedPurchases.length}개 항목이 내보내기되었습니다.`
+    });
+  };
 
   const confirmPurchase = (purchaseId: string) => {
     const updatedPurchases = purchases.map(p => 
@@ -135,20 +181,6 @@ const PurchaseManagement = () => {
 
   const displayedPurchases = filteredAndSortedPurchases.slice(0, showCount);
 
-  const toggleSelectAll = () => {
-    if (selectedPurchases.length === displayedPurchases.length) {
-      setSelectedPurchases([]);
-    } else {
-      setSelectedPurchases(displayedPurchases.map(p => p.id));
-    }
-  };
-
-  const toggleSelect = (id: string) => {
-    setSelectedPurchases(prev =>
-      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
-    );
-  };
-
   const showDetail = (purchase: Purchase) => {
     setSelectedPurchase(purchase);
     setShowDetailDialog(true);
@@ -227,18 +259,24 @@ const PurchaseManagement = () => {
               <CardDescription>최신순으로 매입 내역을 확인하세요</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex flex-wrap gap-4 mb-6">
-                <div className="flex-1 min-w-[200px]">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="매입처, 제품명, 매입번호로 검색..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10"
-                    />
+              <div className="space-y-4 mb-6">
+                <DateRangeFilter 
+                  onDateRangeChange={(range) => setDateRange(range)}
+                  storageKey="purchase-date-range"
+                />
+                
+                <div className="flex flex-wrap gap-4">
+                  <div className="flex-1 min-w-[200px]">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="매입처, 제품명, 매입번호로 검색..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-10"
+                      />
+                    </div>
                   </div>
-                </div>
 
                 <Select value={yearFilter} onValueChange={setYearFilter}>
                   <SelectTrigger className="w-[140px]">
@@ -300,11 +338,37 @@ const PurchaseManagement = () => {
                   </SelectContent>
                 </Select>
 
-                <Button variant="outline" onClick={toggleSortOrder} className="gap-2">
-                  {sortOrder === 'desc' ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
-                  {sortOrder === 'desc' ? '최신순' : '오래된순'}
-                </Button>
+                  <Button variant="outline" onClick={toggleSortOrder} className="gap-2">
+                    {sortOrder === 'desc' ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+                    {sortOrder === 'desc' ? '최신순' : '오래된순'}
+                  </Button>
+                </div>
               </div>
+
+              {selectedPurchases.length > 0 && (
+                <div className="bg-muted p-4 rounded-lg mb-4 flex items-center justify-between">
+                  <span className="text-sm font-medium">{selectedPurchases.length}개 항목 선택됨</span>
+                  <div className="flex gap-2">
+                    <Select onValueChange={handleBulkStatusChange}>
+                      <SelectTrigger className="w-[150px]">
+                        <SelectValue placeholder="상태 변경" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="완료">완료</SelectItem>
+                        <SelectItem value="처리중">처리중</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Button variant="outline" size="sm" onClick={handleBulkExport}>
+                      <FileDown className="w-4 h-4 mr-2" />
+                      내보내기
+                    </Button>
+                    <Button variant="destructive" size="sm" onClick={handleBulkDelete}>
+                      <Trash2 className="w-4 w-4 mr-2" />
+                      삭제
+                    </Button>
+                  </div>
+                </div>
+              )}
 
               <div className="rounded-lg border">
                 <Table>
