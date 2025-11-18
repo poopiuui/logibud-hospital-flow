@@ -88,7 +88,7 @@ export default function Shipping() {
     const productMatch = productFilter === "" || ship.items.some(item => 
       item.name.toLowerCase().includes(productFilter.toLowerCase())
     );
-    const locationMatch = locationFilter === "" || ship.shippingLocation === locationFilter;
+    const locationMatch = locationFilter === "" || locationFilter === "all" || ship.shippingLocation === locationFilter;
     return productMatch && locationMatch;
   });
 
@@ -315,7 +315,7 @@ export default function Shipping() {
                   <SelectValue placeholder="전체" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">전체</SelectItem>
+                  <SelectItem value="all">전체</SelectItem>
                   {locations.map(loc => (
                     <SelectItem key={loc} value={loc}>{loc}</SelectItem>
                   ))}
