@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AIReorderPrediction } from "@/components/AIReorderPrediction";
+import { StockAlertWidget } from "@/components/StockAlertWidget";
+import { InventoryVisualization } from "@/components/InventoryVisualization";
 import { ArrowUpRight, ArrowDownRight, Package, TrendingUp, DollarSign, Users, X } from "lucide-react";
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import GridLayout from "react-grid-layout";
@@ -12,35 +14,68 @@ import * as XLSX from 'xlsx';
 const Dashboard = () => {
   const [layout, setLayout] = useState([
     { i: 'kpi', x: 0, y: 0, w: 12, h: 2 },
-    { i: 'sales', x: 0, y: 2, w: 6, h: 4 },
-    { i: 'inventory', x: 6, y: 2, w: 6, h: 4 },
-    { i: 'ai-prediction', x: 0, y: 6, w: 12, h: 4 },
+    { i: 'stock-alert', x: 0, y: 2, w: 12, h: 3 },
+    { i: 'sales', x: 0, y: 5, w: 6, h: 4 },
+    { i: 'inventory', x: 6, y: 5, w: 6, h: 4 },
+    { i: 'inventory-viz', x: 0, y: 9, w: 12, h: 5 },
+    { i: 'ai-prediction', x: 0, y: 14, w: 12, h: 4 },
   ]);
 
   const sampleProducts = [
     { 
       productCode: 'P-001', 
-      productName: '노트북 A1', 
+      productName: '주사기(5ml)', 
       currentStock: 50, 
-      safetyStock: 20,
+      safetyStock: 200,
       averageDailyUsage: 3,
-      lastOrderDate: new Date('2024-01-01')
+      lastOrderDate: new Date('2024-01-01'),
+      category: '주사기/바늘',
+      supplier: '㈜메디칼',
+      unitPrice: 150
     },
     { 
       productCode: 'P-002', 
-      productName: '스마트폰 X2', 
-      currentStock: 30, 
-      safetyStock: 15,
+      productName: '거즈 패드', 
+      currentStock: 800, 
+      safetyStock: 2000,
       averageDailyUsage: 5,
-      lastOrderDate: new Date('2024-01-05')
+      lastOrderDate: new Date('2024-01-05'),
+      category: '붕대/거즈',
+      supplier: '㈜헬스케어',
+      unitPrice: 80
     },
     { 
       productCode: 'P-003', 
-      productName: '태블릿 T3', 
-      currentStock: 20, 
-      safetyStock: 10,
+      productName: '일회용 장갑(M)', 
+      currentStock: 3000, 
+      safetyStock: 5000,
       averageDailyUsage: 2,
-      lastOrderDate: new Date('2024-01-10')
+      lastOrderDate: new Date('2024-01-10'),
+      category: '보호구',
+      supplier: '㈜메디칼',
+      unitPrice: 50
+    },
+    { 
+      productCode: 'P-004', 
+      productName: '알코올 솜', 
+      currentStock: 8900, 
+      safetyStock: 10000,
+      averageDailyUsage: 8,
+      lastOrderDate: new Date('2024-01-12'),
+      category: '의료소모품',
+      supplier: '㈜의료용품',
+      unitPrice: 30
+    },
+    { 
+      productCode: 'P-005', 
+      productName: '링거 세트', 
+      currentStock: 300, 
+      safetyStock: 1500,
+      averageDailyUsage: 4,
+      lastOrderDate: new Date('2024-01-15'),
+      category: '수액/주사액',
+      supplier: '㈜메디텍',
+      unitPrice: 2500
     },
   ];
 
@@ -162,6 +197,12 @@ const Dashboard = () => {
           </Card>
         </div>
 
+        <div key="stock-alert" className="bg-background">
+          <div className="drag-handle cursor-move h-full">
+            <StockAlertWidget products={sampleProducts} />
+          </div>
+        </div>
+
         <div key="sales" className="bg-background">
           <Card className="h-full">
             <CardHeader className="drag-handle cursor-move">
@@ -201,6 +242,12 @@ const Dashboard = () => {
               </ResponsiveContainer>
             </CardContent>
           </Card>
+        </div>
+
+        <div key="inventory-viz" className="bg-background">
+          <div className="drag-handle cursor-move h-full">
+            <InventoryVisualization products={sampleProducts} />
+          </div>
         </div>
 
         <div key="ai-prediction" className="bg-background">
