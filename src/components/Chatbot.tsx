@@ -3,8 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MessageCircle, X, Send } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } from 'recharts';
+import { ChatbotSuggestions } from "@/components/ChatbotSuggestions";
 
 interface Message {
   id: string;
@@ -20,6 +22,7 @@ const COLORS = ['hsl(var(--primary))', 'hsl(var(--success))', 'hsl(var(--warning
 export const Chatbot = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [companyName, setCompanyName] = useState("로지봇");
+  const [selectedTeam, setSelectedTeam] = useState<'sales' | 'logistics' | 'inventory' | 'all'>('all');
   
   useState(() => {
     const savedName = localStorage.getItem('companyName');
@@ -36,18 +39,24 @@ export const Chatbot = () => {
   ]);
   const [input, setInput] = useState('');
 
-  const handleSend = () => {
-    if (!input.trim()) return;
+  const handleSuggestionClick = (question: string) => {
+    setInput(question);
+    setTimeout(() => handleSend(question), 100);
+  };
+
+  const handleSend = (question?: string) => {
+    const messageText = question || input;
+    if (!messageText.trim()) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
-      text: input,
+      text: messageText,
       sender: 'user',
       timestamp: new Date()
     };
 
     setMessages(prev => [...prev, userMessage]);
-    const query = input.toLowerCase();
+    const query = messageText.toLowerCase();
     setInput('');
 
     // 키워드 기반 응답
@@ -135,9 +144,24 @@ export const Chatbot = () => {
             </Button>
           </div>
 
+          {/* 팀 선택 탭 */}
+          <div className="px-4 pt-4 border-b">
+            <Tabs value={selectedTeam} onValueChange={(v) => setSelectedTeam(v as any)} className="w-full">
+              <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="all">전체</TabsTrigger>
+                <TabsTrigger value="sales">영업</TabsTrigger>
+                <TabsTrigger value="logistics">물류</TabsTrigger>
+                <TabsTrigger value="inventory">재고</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
+
           {/* 메시지 영역 */}
           <ScrollArea className="flex-1 p-4">
             <div className="space-y-4">
+              {messages.length === 1 && (
+                <ChatbotSuggestions team={selectedTeam} onSuggestionClick={handleSuggestionClick} />
+              )}
               {messages.map((message) => (
                 <div
                   key={message.id}
@@ -208,7 +232,7 @@ export const Chatbot = () => {
                 placeholder="메시지를 입력하세요..."
                 className="flex-1"
               />
-              <Button onClick={handleSend} size="icon">
+              <Button onClick={() => handleSend()} size="icon">
                 <Send className="w-4 h-4" />
               </Button>
             </div>
