@@ -2,17 +2,17 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { ArrowUpCircle, Search, FileDown, Filter } from "lucide-react";
+import { ArrowUpCircle, FileDown, Filter } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import { DateRangeFilter } from "@/components/DateRangeFilter";
 import { SwipeableTableRow } from "@/components/SwipeableTableRow";
+import { CommonFilters } from "@/components/CommonFilters";
 
 const COLORS = ['#4CAF50', '#F44336', '#2196F3', '#FF9800'];
 
@@ -44,6 +44,7 @@ export default function Inventory() {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("recent");
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({ from: undefined, to: undefined });
   const [showHistory, setShowHistory] = useState(true);
@@ -99,15 +100,15 @@ export default function Inventory() {
       }
     });
 
-  const handleExportCSV = () => {
+  const exportToExcel = () => {
     const ws = XLSX.utils.json_to_sheet(filteredInventory);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "재고현황");
-    XLSX.writeFile(wb, "재고관리_데이터.csv");
-    toast({ title: "CSV 내보내기 완료", description: "재고 데이터가 CSV로 내보내졌습니다." });
+    XLSX.writeFile(wb, "재고관리_데이터.xlsx");
+    toast({ title: "Excel 내보내기 완료", description: "재고 데이터가 Excel로 내보내졌습니다." });
   };
 
-  const handleExportPDF = () => {
+  const exportToPDF = () => {
     const doc = new jsPDF();
     doc.text("재고 현황", 20, 20);
     let y = 40;
@@ -135,11 +136,11 @@ export default function Inventory() {
             <ArrowUpCircle className="w-5 h-5" />
             매입 관리로 이동
           </Button>
-          <Button onClick={handleExportCSV} size="lg" variant="secondary" className="gap-2">
+          <Button onClick={exportToExcel} size="lg" variant="secondary" className="gap-2">
             <FileDown className="w-5 h-5" />
-            CSV
+            Excel
           </Button>
-          <Button onClick={handleExportPDF} size="lg" variant="outline" className="gap-2">
+          <Button onClick={exportToPDF} size="lg" variant="outline" className="gap-2">
             <FileDown className="w-5 h-5" />
             PDF
           </Button>
@@ -196,39 +197,50 @@ export default function Inventory() {
           <CardTitle className="text-xl md:text-2xl">재고 현황</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex flex-col md:flex-row gap-3">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="제품명 또는 코드 검색..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger className="w-full md:w-48">
-                <SelectValue placeholder="카테고리" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">전체 카테고리</SelectItem>
-                <SelectItem value="주사기/바늘">주사기/바늘</SelectItem>
-                <SelectItem value="붕대/거즈">붕대/거즈</SelectItem>
-                <SelectItem value="보호구">보호구</SelectItem>
-                <SelectItem value="의료소모품">의료소모품</SelectItem>
-                <SelectItem value="수액/주사액">수액/주사액</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-full md:w-48">
-                <SelectValue placeholder="정렬" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="recent">최근 입고순</SelectItem>
-                <SelectItem value="high">재고 많은순</SelectItem>
-                <SelectItem value="low">재고 부족순</SelectItem>
-              </SelectContent>
-            </Select>
+          <CommonFilters
+            searchTerm={searchTerm}
+            onSearchChange={setSearchTerm}
+            searchPlaceholder="제품명 또는 코드 검색..."
+            sortOrder={sortOrder}
+            onSortToggle={() => setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')}
+            customFilters={
+              <>
+                <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="카테고리" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">전체 카테고리</SelectItem>
+                    <SelectItem value="주사기/바늘">주사기/바늘</SelectItem>
+                    <SelectItem value="붕대/거즈">붕대/거즈</SelectItem>
+                    <SelectItem value="보호구">보호구</SelectItem>
+                    <SelectItem value="의료소모품">의료소모품</SelectItem>
+                    <SelectItem value="수액/주사액">수액/주사액</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={sortBy} onValueChange={setSortBy}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="정렬" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="recent">최근 입고순</SelectItem>
+                    <SelectItem value="high">재고 많은순</SelectItem>
+                    <SelectItem value="low">재고 부족순</SelectItem>
+                  </SelectContent>
+                </Select>
+              </>
+            }
+          />
+
+          <div className="flex gap-2 justify-end">
+            <Button variant="outline" onClick={exportToExcel}>
+              <FileDown className="mr-2 h-4 w-4" />
+              엑셀 다운로드
+            </Button>
+            <Button variant="outline" onClick={exportToPDF}>
+              <FileDown className="mr-2 h-4 w-4" />
+              PDF 다운로드
+            </Button>
           </div>
 
           <div className="overflow-x-auto -mx-2 md:mx-0">
