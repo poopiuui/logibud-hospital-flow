@@ -29,6 +29,71 @@ export default function AdminSetup() {
       });
 
       if (signUpError) {
+        if (signUpError.message.includes('already registered')) {
+          // 이미 존재하면 마스터 계정 생성 시도
+          const { data: masterAuthData, error: masterSignUpError } = await supabase.auth.signUp({
+            email: 'master@logiprofit.com',
+            password: 'master1234!',
+            options: {
+              emailRedirectTo: `${window.location.origin}/`,
+              data: {
+                username: 'master'
+              }
+            }
+          });
+
+          if (masterSignUpError) {
+            if (masterSignUpError.message.includes('already registered')) {
+              toast({
+                title: "계정 존재",
+                description: "관리자 계정과 마스터 계정이 모두 존재합니다. 로그인 페이지로 이동합니다.",
+              });
+              setTimeout(() => navigate('/login'), 2000);
+              return;
+            }
+            throw masterSignUpError;
+          }
+
+          if (!masterAuthData.user) throw new Error("사용자 생성 실패");
+
+          // 마스터 회사 프로필 생성
+          const { error: masterProfileError } = await supabase
+            .from('company_profiles')
+            .insert({
+              user_id: masterAuthData.user.id,
+              username: 'master',
+              company_name: '로지프로핏 마스터',
+              business_number: '999-99-99999',
+              ceo_name: '마스터 관리자',
+              phone: '010-9999-9999',
+              email: 'master@logiprofit.com',
+              status: 'approved'
+            });
+
+          if (masterProfileError) throw masterProfileError;
+
+          // 마스터 역할 부여
+          const { error: masterRoleError } = await supabase
+            .from('user_roles')
+            .insert({
+              user_id: masterAuthData.user.id,
+              role: 'admin'
+            });
+
+          if (masterRoleError) throw masterRoleError;
+
+          setIsCreated(true);
+          toast({
+            title: "마스터 계정 생성 완료",
+            description: "이메일: master@logiprofit.com / 비밀번호: master1234!",
+          });
+          setTimeout(() => navigate('/login'), 3000);
+          return;
+        }
+        throw signUpError;
+      }
+
+      if (signUpError) {
         // 이미 존재하는 계정인 경우 처리
         if (signUpError.message.includes('already registered')) {
           toast({
@@ -69,11 +134,47 @@ export default function AdminSetup() {
 
       if (roleError) throw roleError;
 
+      // 마스터 계정도 함께 생성
+      const { data: masterAuthData, error: masterSignUpError } = await supabase.auth.signUp({
+        email: 'master@logiprofit.com',
+        password: 'master1234!',
+        options: {
+          emailRedirectTo: `${window.location.origin}/`,
+          data: {
+            username: 'master'
+          }
+        }
+      });
+
+      if (!masterSignUpError && masterAuthData.user) {
+        // 마스터 회사 프로필 생성
+        await supabase
+          .from('company_profiles')
+          .insert({
+            user_id: masterAuthData.user.id,
+            username: 'master',
+            company_name: '로지프로핏 마스터',
+            business_number: '999-99-99999',
+            ceo_name: '마스터 관리자',
+            phone: '010-9999-9999',
+            email: 'master@logiprofit.com',
+            status: 'approved'
+          });
+
+        // 마스터 역할 부여
+        await supabase
+          .from('user_roles')
+          .insert({
+            user_id: masterAuthData.user.id,
+            role: 'admin'
+          });
+      }
+
       setIsCreated(true);
       
       toast({
-        title: "관리자 계정 생성 완료",
-        description: "이메일: admin@logiprofit.com / 비밀번호: admin1234!",
+        title: "계정 생성 완료",
+        description: "관리자 및 마스터 계정이 생성되었습니다.",
       });
 
       // 3초 후 로그인 페이지로 이동
@@ -108,15 +209,29 @@ export default function AdminSetup() {
         <CardContent className="space-y-6">
           {!isCreated ? (
             <>
-              <div className="bg-muted p-4 rounded-lg space-y-2">
+              <div className="bg-muted p-4 rounded-lg space-y-3">
                 <div className="flex items-start gap-2">
                   <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5" />
-                  <div className="space-y-1 text-sm">
+                  <div className="space-y-2 text-sm">
                     <p className="font-semibold">생성될 계정 정보:</p>
-                    <p>• 이메일: admin@logiprofit.com</p>
-                    <p>• 비밀번호: admin1234!</p>
-                    <p>• 권한: 관리자 (모든 권한)</p>
-                    <p>• 상태: 자동 승인</p>
+                    
+                    <div className="border-l-2 border-primary pl-3 space-y-1">
+                      <p className="font-semibold text-primary">관리자 계정</p>
+                      <p>• 이메일: admin@logiprofit.com</p>
+                      <p>• 비밀번호: admin1234!</p>
+                      <p>• 권한: 관리자 (모든 권한)</p>
+                    </div>
+                    
+                    <div className="border-l-2 border-purple-600 pl-3 space-y-1">
+                      <p className="font-semibold text-purple-600">마스터 계정 (개발자용)</p>
+                      <p>• 이메일: master@logiprofit.com</p>
+                      <p>• 비밀번호: master1234!</p>
+                      <p>• 권한: 마스터 관리자 (모든 메뉴 접근)</p>
+                    </div>
+                    
+                    <p className="text-xs text-muted-foreground mt-2">
+                      * 두 계정 모두 자동 승인됩니다
+                    </p>
                   </div>
                 </div>
               </div>
@@ -127,7 +242,7 @@ export default function AdminSetup() {
                 className="w-full"
                 size="lg"
               >
-                {isCreating ? "생성 중..." : "관리자 계정 생성"}
+                {isCreating ? "생성 중..." : "관리자 & 마스터 계정 생성"}
               </Button>
 
               <div className="text-center">
@@ -147,9 +262,15 @@ export default function AdminSetup() {
                 <p className="text-lg font-semibold">계정 생성 완료!</p>
               </div>
               
-              <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
-                <p className="text-sm text-center">
-                  관리자 계정이 생성되었습니다.<br />
+              <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg space-y-2">
+                <p className="text-sm text-center font-semibold">
+                  계정 생성 완료!
+                </p>
+                <div className="text-xs space-y-1">
+                  <p>✓ 관리자: admin@logiprofit.com</p>
+                  <p>✓ 마스터: master@logiprofit.com</p>
+                </div>
+                <p className="text-xs text-center text-muted-foreground mt-2">
                   로그인 페이지로 자동 이동합니다...
                 </p>
               </div>
