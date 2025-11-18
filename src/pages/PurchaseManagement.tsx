@@ -9,7 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { X, FileDown, Trash2, Plus, Upload, ChevronDown, ChevronUp } from "lucide-react";
+import { X, FileDown, Trash2, Plus, Upload, ChevronDown, ChevronUp, Download } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
@@ -228,30 +229,54 @@ const PurchaseManagement = () => {
               <Plus className="w-4 h-4" />
               매입 등록
             </Button>
-            <Button onClick={() => handleExcelDownload(false)} size="lg" variant="outline" className="gap-2">
-              <FileDown className="w-4 h-4" />
-              Excel (전체)
-            </Button>
-            <Button onClick={() => handleExcelDownload(true)} size="lg" variant="outline" className="gap-2">
-              <FileDown className="w-4 h-4" />
-              Excel (필터링)
-            </Button>
-            <Button onClick={() => handleCSVDownload(false)} size="lg" variant="secondary" className="gap-2">
-              <FileDown className="w-4 h-4" />
-              CSV (전체)
-            </Button>
-            <Button onClick={() => handleCSVDownload(true)} size="lg" variant="secondary" className="gap-2">
-              <FileDown className="w-4 h-4" />
-              CSV (필터링)
-            </Button>
-            <Button onClick={() => handlePDFDownload(false)} size="lg" className="gap-2">
-              <FileDown className="w-4 h-4" />
-              PDF (전체)
-            </Button>
-            <Button onClick={() => handlePDFDownload(true)} size="lg" className="gap-2">
-              <FileDown className="w-4 h-4" />
-              PDF (필터링)
-            </Button>
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="lg" variant="outline" className="gap-2">
+                  <Download className="w-4 h-4" />
+                  전체 다운로드
+                  <ChevronDown className="w-4 h-4 ml-1" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => handleCSVDownload(false)}>
+                  <FileDown className="mr-2 h-4 w-4" />
+                  CSV로 다운로드
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExcelDownload(false)}>
+                  <FileDown className="mr-2 h-4 w-4" />
+                  Excel로 다운로드
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handlePDFDownload(false)}>
+                  <FileDown className="mr-2 h-4 w-4" />
+                  PDF로 다운로드
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="lg" variant="outline" className="gap-2">
+                  <Download className="w-4 h-4" />
+                  필터링 다운로드
+                  <ChevronDown className="w-4 h-4 ml-1" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => handleCSVDownload(true)}>
+                  <FileDown className="mr-2 h-4 w-4" />
+                  CSV로 다운로드
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExcelDownload(true)}>
+                  <FileDown className="mr-2 h-4 w-4" />
+                  Excel로 다운로드
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handlePDFDownload(true)}>
+                  <FileDown className="mr-2 h-4 w-4" />
+                  PDF로 다운로드
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
 
