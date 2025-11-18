@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
-import { LayoutDashboard, Package, FileText, Truck, Users, Settings, Building2, PackagePlus, ClipboardList, ShoppingCart, FolderTree, ListChecks, ChevronDown, ChevronRight } from "lucide-react";
+import { LayoutDashboard, Package, FileText, Truck, Users, Settings, Building2, PackagePlus, ClipboardList, ShoppingCart, FolderTree, ListChecks, ChevronDown, ChevronRight, Phone, FileDigit } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
   Sidebar,
@@ -14,7 +14,14 @@ import {
   SidebarFooter,
 } from "@/components/ui/sidebar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { CompanyInfoDialog } from "@/components/CompanyInfoDialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const menuItems = [
   { title: "대시보드", url: "/", icon: LayoutDashboard },
@@ -45,7 +52,9 @@ export function AppSidebar() {
   const location = useLocation();
   const [companyName, setCompanyName] = useState("로지봇");
   const [companyLogo, setCompanyLogo] = useState("");
-  const [showCompanyInfo, setShowCompanyInfo] = useState(false);
+  const [companyBusinessNumber, setCompanyBusinessNumber] = useState("");
+  const [companyPhone, setCompanyPhone] = useState("");
+  const [companyFax, setCompanyFax] = useState("");
   
   // 등록관리 섹션의 하위 메뉴 URL 목록
   const registrationUrls = ["/registration-templates", "/category-management", "/purchase-order-management", "/quotation-management"];
@@ -59,9 +68,15 @@ export function AppSidebar() {
   useEffect(() => {
     const savedName = localStorage.getItem('companyName');
     const savedLogo = localStorage.getItem('companyLogo');
+    const savedBusinessNumber = localStorage.getItem('companyBusinessNumber');
+    const savedPhone = localStorage.getItem('companyPhone');
+    const savedFax = localStorage.getItem('companyFax');
     
     if (savedName) setCompanyName(savedName);
     if (savedLogo) setCompanyLogo(savedLogo);
+    if (savedBusinessNumber) setCompanyBusinessNumber(savedBusinessNumber);
+    if (savedPhone) setCompanyPhone(savedPhone);
+    if (savedFax) setCompanyFax(savedFax);
   }, []);
   
   // 활성 라우트가 변경되면 등록관리 섹션을 자동으로 열기
@@ -74,25 +89,57 @@ export function AppSidebar() {
   return (
     <>
       <Sidebar className="border-r">
-        <SidebarHeader 
-          className="border-b p-4 cursor-pointer hover:bg-accent transition-colors"
-          onClick={() => setShowCompanyInfo(true)}
-        >
-          <div className="flex items-center gap-3">
-            {companyLogo ? (
-              <img 
-                src={companyLogo} 
-                alt={companyName} 
-                className="w-10 h-10 rounded-lg object-cover"
-              />
-            ) : (
-              <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center">
-                <Package className="w-6 h-6 text-primary-foreground" />
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <SidebarHeader className="border-b p-4 cursor-pointer hover:bg-accent transition-colors">
+              <div className="flex items-center gap-3">
+                {companyLogo ? (
+                  <img 
+                    src={companyLogo} 
+                    alt={companyName} 
+                    className="w-10 h-10 rounded-lg object-cover"
+                  />
+                ) : (
+                  <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center">
+                    <Package className="w-6 h-6 text-primary-foreground" />
+                  </div>
+                )}
+                <span className="text-xl font-bold text-sidebar-foreground">{companyName}</span>
               </div>
+            </SidebarHeader>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-72 ml-4 bg-background border shadow-lg z-[100]">
+            <DropdownMenuLabel className="text-base font-semibold">{companyName}</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {companyBusinessNumber && (
+              <DropdownMenuItem className="flex items-center gap-2 py-2">
+                <FileDigit className="w-4 h-4 text-muted-foreground" />
+                <div>
+                  <p className="text-xs text-muted-foreground">사업자번호</p>
+                  <p className="text-sm font-medium">{companyBusinessNumber}</p>
+                </div>
+              </DropdownMenuItem>
             )}
-            <span className="text-xl font-bold text-sidebar-foreground">{companyName}</span>
-          </div>
-        </SidebarHeader>
+            {companyPhone && (
+              <DropdownMenuItem className="flex items-center gap-2 py-2">
+                <Phone className="w-4 h-4 text-muted-foreground" />
+                <div>
+                  <p className="text-xs text-muted-foreground">대표전화</p>
+                  <p className="text-sm font-medium">{companyPhone}</p>
+                </div>
+              </DropdownMenuItem>
+            )}
+            {companyFax && (
+              <DropdownMenuItem className="flex items-center gap-2 py-2">
+                <FileText className="w-4 h-4 text-muted-foreground" />
+                <div>
+                  <p className="text-xs text-muted-foreground">팩스번호</p>
+                  <p className="text-sm font-medium">{companyFax}</p>
+                </div>
+              </DropdownMenuItem>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
 
       <SidebarContent>
         <SidebarGroup>
@@ -168,8 +215,6 @@ export function AppSidebar() {
         </NavLink>
       </SidebarFooter>
     </Sidebar>
-    
-    <CompanyInfoDialog open={showCompanyInfo} onOpenChange={setShowCompanyInfo} />
     </>
   );
 }
