@@ -13,6 +13,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
+import AdminSetup from "./pages/AdminSetup";
 import Vendors from "./pages/Vendors";
 import VendorAnalytics from "./pages/VendorAnalytics";
 import RegistrationTemplates from "./pages/RegistrationTemplates";
@@ -47,6 +48,7 @@ const App = () => (
             {/* Public Routes */}
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
+            <Route path="/admin-setup" element={<AdminSetup />} />
 
             {/* Protected Routes */}
             <Route path="/*" element={
