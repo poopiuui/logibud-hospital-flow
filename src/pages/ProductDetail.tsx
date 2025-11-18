@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { ImageGallery } from "@/components/ImageGallery";
 import { 
   ArrowLeft, 
   Package, 
@@ -14,7 +15,8 @@ import {
   Calendar,
   AlertTriangle,
   TrendingUp,
-  ShoppingCart
+  ShoppingCart,
+  FolderOpen
 } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
@@ -36,6 +38,11 @@ export default function ProductDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [stockHistory] = useState(generateStockHistory);
+  const [productImages, setProductImages] = useState<string[]>([
+    '/placeholder.svg',
+    '/placeholder.svg',
+    '/placeholder.svg',
+  ]);
 
   // 샘플 제품 데이터 (실제로는 API에서 가져와야 함)
   const product = {
@@ -48,9 +55,8 @@ export default function ProductDetail() {
     unitPrice: 150,
     supplier: '㈜메디칼',
     registeredDate: '2024-01-15',
-    category: '의료소모품',
+    category: '주사기/바늘',
     description: '일회용 주사기 5ml, 멸균 포장',
-    thumbnail: '/placeholder.svg',
   };
 
   const isLowStock = product.currentStock < product.safetyStock;
@@ -84,16 +90,18 @@ export default function ProductDetail() {
           {/* 제품 이미지 & 기본 정보 */}
           <Card className="lg:col-span-1">
             <CardHeader>
-              <CardTitle className="text-2xl">제품 이미지</CardTitle>
+              <CardTitle className="text-2xl flex items-center gap-2">
+                <FolderOpen className="w-5 h-5" />
+                제품 이미지 갤러리
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="aspect-square rounded-lg overflow-hidden bg-muted flex items-center justify-center">
-                <img 
-                  src={product.thumbnail} 
-                  alt={product.productName}
-                  className="w-full h-full object-cover"
-                />
-              </div>
+              <ImageGallery 
+                images={productImages}
+                onImagesChange={setProductImages}
+                productName={product.productName}
+                editable={true}
+              />
               
               <div className="space-y-3">
                 <div>
