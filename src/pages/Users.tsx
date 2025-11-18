@@ -225,7 +225,7 @@ export default function Users() {
       </div>
 
       {/* 통계 카드 */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-4 gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-lg font-medium">전체 사용자</CardTitle>
@@ -434,65 +434,61 @@ export default function Users() {
 
       {/* 권한 설정 Dialog */}
       <Dialog open={isPermissionDialogOpen} onOpenChange={setIsPermissionDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[70vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-2xl">권한 설정 - {selectedUser?.name}</DialogTitle>
-            <DialogDescription>
+            <DialogTitle>권한 설정 - {selectedUser?.name}</DialogTitle>
+            <DialogDescription className="text-sm">
               사용자별 세부 권한을 설정합니다.
             </DialogDescription>
           </DialogHeader>
           {selectedUser && (
-            <div className="space-y-6 py-4">
+            <div className="space-y-3 py-2">
               {permissionCategories.map((category) => (
-                <Card key={category.key}>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-lg">{category.label}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-4 gap-4">
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`${category.key}-view`}
-                          checked={selectedUser.permissions[category.key].view}
-                          onCheckedChange={(checked) => 
-                            handlePermissionChange(category.key, 'view', checked as boolean)
-                          }
-                        />
-                        <Label htmlFor={`${category.key}-view`} className="text-sm">조회</Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`${category.key}-create`}
-                          checked={selectedUser.permissions[category.key].create}
-                          onCheckedChange={(checked) => 
-                            handlePermissionChange(category.key, 'create', checked as boolean)
-                          }
-                        />
-                        <Label htmlFor={`${category.key}-create`} className="text-sm">생성</Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`${category.key}-edit`}
-                          checked={selectedUser.permissions[category.key].edit}
-                          onCheckedChange={(checked) => 
-                            handlePermissionChange(category.key, 'edit', checked as boolean)
-                          }
-                        />
-                        <Label htmlFor={`${category.key}-edit`} className="text-sm">수정</Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`${category.key}-delete`}
-                          checked={selectedUser.permissions[category.key].delete}
-                          onCheckedChange={(checked) => 
-                            handlePermissionChange(category.key, 'delete', checked as boolean)
-                          }
-                        />
-                        <Label htmlFor={`${category.key}-delete`} className="text-sm">삭제</Label>
-                      </div>
+                <div key={category.key} className="border rounded-lg p-3">
+                  <h4 className="font-medium text-sm mb-2">{category.label}</h4>
+                  <div className="grid grid-cols-4 gap-3">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`${category.key}-view`}
+                        checked={selectedUser.permissions[category.key].view}
+                        onCheckedChange={(checked) => 
+                          handlePermissionChange(category.key, 'view', checked as boolean)
+                        }
+                      />
+                      <Label htmlFor={`${category.key}-view`} className="text-sm">조회</Label>
                     </div>
-                  </CardContent>
-                </Card>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`${category.key}-create`}
+                        checked={selectedUser.permissions[category.key].create}
+                        onCheckedChange={(checked) => 
+                          handlePermissionChange(category.key, 'create', checked as boolean)
+                        }
+                      />
+                      <Label htmlFor={`${category.key}-create`} className="text-sm">생성</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`${category.key}-edit`}
+                        checked={selectedUser.permissions[category.key].edit}
+                        onCheckedChange={(checked) => 
+                          handlePermissionChange(category.key, 'edit', checked as boolean)
+                        }
+                      />
+                      <Label htmlFor={`${category.key}-edit`} className="text-sm">수정</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`${category.key}-delete`}
+                        checked={selectedUser.permissions[category.key].delete}
+                        onCheckedChange={(checked) => 
+                          handlePermissionChange(category.key, 'delete', checked as boolean)
+                        }
+                      />
+                      <Label htmlFor={`${category.key}-delete`} className="text-sm">삭제</Label>
+                    </div>
+                  </div>
+                </div>
               ))}
             </div>
           )}
