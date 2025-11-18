@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -103,64 +103,6 @@ export default function Billing() {
     setSelectedInvoice(invoice);
     setShowInvoiceDetail(true);
   };
-    const dataToExport = filtered && selectedInvoices.length > 0 
-      ? invoices.filter(inv => selectedInvoices.includes(inv.id))
-      : invoices;
-    
-    const ws = XLSX.utils.json_to_sheet(dataToExport.map(inv => ({
-      '청구서번호': inv.id,
-      '고객명': inv.customer,
-      '금액': inv.amount,
-      '상태': inv.status,
-      '계산서발행': inv.invoiceIssued ? '발행완료' : '미발행',
-      '발행일': inv.issueDate || '-',
-      '날짜': inv.date
-    })));
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "청구관리");
-    XLSX.writeFile(wb, "청구관리_목록.xlsx");
-    
-    toast({
-      title: "다운로드 완료",
-      description: `${dataToExport.length}개 청구서가 다운로드되었습니다.`
-    });
-  };
-
-  const downloadCSV = (filtered = false) => {
-    const dataToExport = filtered && selectedInvoices.length > 0 
-      ? invoices.filter(inv => selectedInvoices.includes(inv.id))
-      : invoices;
-    
-    const csv = [
-      ['청구서번호', '고객명', '금액', '상태', '계산서발행', '발행일', '날짜'],
-      ...dataToExport.map(inv => [
-        inv.id, inv.customer, inv.amount, inv.status, 
-        inv.invoiceIssued ? '발행완료' : '미발행',
-        inv.issueDate || '-', inv.date
-      ])
-    ].map(row => row.join(',')).join('\n');
-    
-    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = '청구관리_목록.csv';
-    link.click();
-    
-    toast({
-      title: "CSV 다운로드 완료",
-      description: `${dataToExport.length}개 청구서가 다운로드되었습니다.`
-    });
-  };
-
-  const issueInvoice = (id: string) => {
-    setInvoices(prev => prev.map(inv => 
-      inv.id === id ? { ...inv, invoiceIssued: true, issueDate: new Date().toISOString().split('T')[0] } : inv
-    ));
-    toast({
-      title: "계산서 발행 완료",
-      description: "계산서가 발행되었습니다."
-    });
-  };
 
   const saveNewInvoice = () => {
     if (!newInvoice.customer || !newInvoice.amount || !newInvoice.date) {
@@ -200,17 +142,13 @@ export default function Billing() {
           <p className="text-muted-foreground text-lg mt-2">청구서 및 결제 관리</p>
         </div>
         <div className="flex gap-2">
-          <Button onClick={() => downloadExcel(false)} variant="outline" size="lg">
+          <Button onClick={() => downloadInvoiceExcel()} variant="outline" size="lg">
             <Download className="w-5 h-5 mr-2" />
             전체 엑셀
           </Button>
-          <Button onClick={() => downloadExcel(true)} variant="outline" size="lg" disabled={selectedInvoices.length === 0}>
+          <Button onClick={() => downloadInvoiceExcel()} variant="outline" size="lg" disabled={selectedInvoices.length === 0}>
             <Download className="w-5 h-5 mr-2" />
             선택 엑셀
-          </Button>
-          <Button onClick={() => downloadCSV(false)} variant="outline" size="lg">
-            <FileDown className="w-5 h-5 mr-2" />
-            CSV
           </Button>
           <Button size="lg" className="gap-2" onClick={() => setShowNewInvoice(true)}>
             <FilePlus className="w-5 h-5" />
@@ -265,6 +203,12 @@ export default function Billing() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-12">
+                  <Checkbox
+                    checked={selectedInvoices.length === invoices.length && invoices.length > 0}
+                    onCheckedChange={toggleSelectAll}
+                  />
+                </TableHead>
                 <TableHead>청구서 번호</TableHead>
                 <TableHead>고객명</TableHead>
                 <TableHead>금액</TableHead>
@@ -277,7 +221,18 @@ export default function Billing() {
             <TableBody>
               {invoices.map((invoice) => (
                 <TableRow key={invoice.id}>
-                  <TableCell className="font-medium">{invoice.id}</TableCell>
+                  <TableCell>
+                    <Checkbox
+                      checked={selectedInvoices.includes(invoice.id)}
+                      onCheckedChange={() => toggleSelect(invoice.id)}
+                    />
+                  </TableCell>
+                  <TableCell 
+                    className="font-medium cursor-pointer text-primary hover:underline"
+                    onClick={() => viewInvoiceDetail(invoice)}
+                  >
+                    {invoice.id}
+                  </TableCell>
                   <TableCell>{invoice.customer}</TableCell>
                   <TableCell className="font-semibold">₩{(invoice.amount / 1000000).toFixed(1)}M</TableCell>
                   <TableCell>
@@ -295,6 +250,7 @@ export default function Billing() {
                         <>
                           <CheckCircle2 className="w-4 h-4 text-green-600" />
                           <span className="text-sm text-green-600">발행완료</span>
+                          <span className="text-xs text-muted-foreground ml-2">{invoice.issueDate}</span>
                         </>
                       ) : (
                         <>
@@ -307,12 +263,15 @@ export default function Billing() {
                   <TableCell>{invoice.date}</TableCell>
                   <TableCell>
                     <div className="flex gap-2">
-                      <Button size="sm" variant="ghost">
-                        <Eye className="w-4 h-4" />
-                      </Button>
-                      <Button size="sm" variant="ghost">
-                        <Download className="w-4 h-4" />
-                      </Button>
+                      {!invoice.invoiceIssued && (
+                        <Button 
+                          variant="default" 
+                          size="sm"
+                          onClick={() => issueInvoice(invoice)}
+                        >
+                          계산서 발행
+                        </Button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>
@@ -321,6 +280,159 @@ export default function Billing() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Invoice Detail Dialog */}
+      {selectedInvoice && (
+        <Dialog open={showInvoiceDetail} onOpenChange={setShowInvoiceDetail}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>청구서 상세</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">청구서 번호</label>
+                  <div className="text-lg font-semibold">{selectedInvoice.id}</div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">청구일자</label>
+                  <div className="text-lg">{selectedInvoice.date}</div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">고객명</label>
+                  <div className="text-lg">{selectedInvoice.customer}</div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">금액</label>
+                  <div className="text-lg font-semibold">₩{selectedInvoice.amount.toLocaleString()}</div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">상태</label>
+                  <div className="mt-1">
+                    <Badge variant={
+                      selectedInvoice.status === '완료' ? 'default' : 
+                      selectedInvoice.status === '진행중' ? 'secondary' : 'outline'
+                    }>
+                      {selectedInvoice.status}
+                    </Badge>
+                  </div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">계산서 발행 상태</label>
+                  <div className="mt-1 flex items-center gap-2">
+                    {selectedInvoice.invoiceIssued ? (
+                      <>
+                        <CheckCircle2 className="w-4 h-4 text-green-600" />
+                        <span className="text-sm text-green-600">발행완료</span>
+                        {selectedInvoice.issueDate && (
+                          <span className="text-xs text-muted-foreground">({selectedInvoice.issueDate})</span>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <Clock className="w-4 h-4 text-yellow-600" />
+                        <span className="text-sm text-yellow-600">미발행</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+              {selectedInvoice.items && selectedInvoice.items.length > 0 && (
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">품목 내역</label>
+                  <div className="mt-2 border rounded-lg">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>품목명</TableHead>
+                          <TableHead>수량</TableHead>
+                          <TableHead>단가</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {selectedInvoice.items.map((item, idx) => (
+                          <TableRow key={idx}>
+                            <TableCell>{item.name}</TableCell>
+                            <TableCell>{item.quantity}</TableCell>
+                            <TableCell>₩{item.price.toLocaleString()}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              )}
+            </div>
+            <DialogFooter>
+              {!selectedInvoice.invoiceIssued && (
+                <Button onClick={() => {
+                  issueInvoice(selectedInvoice);
+                  setShowInvoiceDetail(false);
+                }}>
+                  계산서 발행
+                </Button>
+              )}
+              <Button variant="outline" onClick={() => setShowInvoiceDetail(false)}>닫기</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* New Invoice Dialog */}
+      <Dialog open={showNewInvoice} onOpenChange={setShowNewInvoice}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>청구서 등록</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>고객명</Label>
+              <Input
+                value={newInvoice.customer}
+                onChange={(e) => setNewInvoice({ ...newInvoice, customer: e.target.value })}
+                placeholder="고객명 입력"
+              />
+            </div>
+            <div>
+              <Label>금액</Label>
+              <Input
+                type="number"
+                value={newInvoice.amount}
+                onChange={(e) => setNewInvoice({ ...newInvoice, amount: e.target.value })}
+                placeholder="금액 입력"
+              />
+            </div>
+            <div>
+              <Label>청구일자</Label>
+              <Input
+                type="date"
+                value={newInvoice.date}
+                onChange={(e) => setNewInvoice({ ...newInvoice, date: e.target.value })}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowNewInvoice(false)}>취소</Button>
+            <Button onClick={() => {
+              const id = `INV-${String(invoices.length + 1).padStart(3, '0')}`;
+              setInvoices([...invoices, {
+                id,
+                customer: newInvoice.customer,
+                amount: Number(newInvoice.amount),
+                status: '대기',
+                date: newInvoice.date,
+                invoiceIssued: false
+              }]);
+              toast({
+                title: "청구서 등록 완료",
+                description: `${id}가 등록되었습니다.`
+              });
+              setShowNewInvoice(false);
+              setNewInvoice({ customer: '', amount: '', date: '' });
+            }}>등록</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

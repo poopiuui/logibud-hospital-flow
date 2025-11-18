@@ -454,8 +454,8 @@ const OutboundManagement = () => {
                   <label className="text-sm font-medium text-muted-foreground">상태</label>
                   <div className="mt-1">
                     <Badge variant={
-                      outbound.status === '출고완료' ? 'default' : 
-                      outbound.status === '배송중' ? 'secondary' : 'outline'
+                      selectedOutbound.status === '출고완료' ? 'default' : 
+                      selectedOutbound.status === '배송중' ? 'secondary' : 'outline'
                     }>
                       {selectedOutbound.status}
                     </Badge>
