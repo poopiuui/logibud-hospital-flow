@@ -7,7 +7,24 @@ import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useToast } from "@/hooks/use-toast";
-import { Bell, Lock, Database, Mail, Type, Building, Upload, X } from "lucide-react";
+import { Bell, Lock, Database, Mail, Type, Building, Upload, X, Menu, ArrowUp, ArrowDown, Eye, EyeOff } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+
+const defaultMenuItems = [
+  { title: "대시보드", visible: true },
+  { title: "매입/매출처 관리", visible: true },
+  { title: "등록관리", visible: true },
+  { title: "상품 등록", visible: true },
+  { title: "상품 관리", visible: true },
+  { title: "재고 관리", visible: true },
+  { title: "매입 관리", visible: true },
+  { title: "출고 관리", visible: true },
+  { title: "매출 관리", visible: true },
+  { title: "청구 관리", visible: true },
+  { title: "배송 관리", visible: true },
+  { title: "사용자 관리", visible: true },
+  { title: "설정", visible: true },
+];
 
 export default function Settings() {
   const { toast } = useToast();
@@ -20,6 +37,25 @@ export default function Settings() {
   const [companyPhone, setCompanyPhone] = useState(localStorage.getItem('companyPhone') || '');
   const [companyFax, setCompanyFax] = useState(localStorage.getItem('companyFax') || '');
   const [logoPreview, setLogoPreview] = useState(localStorage.getItem('companyLogo') || '');
+  
+  // 메뉴 관리 상태
+  const [menuItems, setMenuItems] = useState(defaultMenuItems);
+
+  useEffect(() => {
+    const savedMenuSettings = localStorage.getItem('menuSettings');
+    if (savedMenuSettings) {
+      try {
+        const settings = JSON.parse(savedMenuSettings);
+        const loadedMenu = settings.order.map((title: string) => ({
+          title,
+          visible: !settings.hidden.includes(title)
+        }));
+        setMenuItems(loadedMenu);
+      } catch (e) {
+        console.error('Failed to load menu settings:', e);
+      }
+    }
+  }, []);
 
   const handleFontSizeChange = (value: number[]) => {
     setFontSize(value);
@@ -84,6 +120,40 @@ export default function Settings() {
     toast({
       title: "회사 정보 저장",
       description: "회사 정보가 업데이트되었습니다. 페이지를 새로고침하면 반영됩니다.",
+    });
+
+    setTimeout(() => {
+      window.location.reload();
+    }, 1000);
+  };
+
+  const handleMenuOrderChange = (index: number, direction: 'up' | 'down') => {
+    const newMenuItems = [...menuItems];
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    
+    if (targetIndex < 0 || targetIndex >= newMenuItems.length) return;
+    
+    [newMenuItems[index], newMenuItems[targetIndex]] = [newMenuItems[targetIndex], newMenuItems[index]];
+    setMenuItems(newMenuItems);
+  };
+
+  const handleMenuVisibilityToggle = (index: number) => {
+    const newMenuItems = [...menuItems];
+    newMenuItems[index].visible = !newMenuItems[index].visible;
+    setMenuItems(newMenuItems);
+  };
+
+  const handleMenuSettingsSave = () => {
+    const settings = {
+      order: menuItems.map(item => item.title),
+      hidden: menuItems.filter(item => !item.visible).map(item => item.title)
+    };
+    
+    localStorage.setItem('menuSettings', JSON.stringify(settings));
+    
+    toast({
+      title: "메뉴 설정 저장",
+      description: "메뉴 설정이 저장되었습니다. 페이지를 새로고침하면 반영됩니다.",
     });
 
     setTimeout(() => {
@@ -336,6 +406,53 @@ export default function Settings() {
             </div>
 
             <Button onClick={handleCompanyInfoSave}>회사 정보 저장</Button>
+          </CardContent>
+        </Card>
+
+        {/* 메뉴 관리 */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Menu className="w-5 h-5" />
+              메뉴 관리
+            </CardTitle>
+            <CardDescription>사이드바 메뉴 순서 변경 및 표시/숨김 설정</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              {menuItems.map((item, index) => (
+                <div key={item.title} className="flex items-center gap-2 p-3 border rounded-lg bg-card">
+                  <Checkbox 
+                    checked={item.visible}
+                    onCheckedChange={() => handleMenuVisibilityToggle(index)}
+                  />
+                  <span className={`flex-1 ${!item.visible ? 'text-muted-foreground line-through' : ''}`}>
+                    {item.title}
+                  </span>
+                  <div className="flex gap-1">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => handleMenuOrderChange(index, 'up')}
+                      disabled={index === 0}
+                    >
+                      <ArrowUp className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => handleMenuOrderChange(index, 'down')}
+                      disabled={index === menuItems.length - 1}
+                    >
+                      <ArrowDown className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <Button onClick={handleMenuSettingsSave} className="w-full">
+              메뉴 설정 저장
+            </Button>
           </CardContent>
         </Card>
 

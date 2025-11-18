@@ -112,6 +112,33 @@ const OutboundManagement = () => {
     reader.readAsBinaryString(file);
   };
 
+  const handleTrackingNumberSubmit = (outboundId: string, trackingNumber: string) => {
+    const existingShipments = JSON.parse(localStorage.getItem('shipments') || '[]');
+    const outbound = outbounds.find(o => o.id === outboundId);
+    
+    if (outbound) {
+      const newShipment = {
+        id: `S-${Date.now()}`,
+        outboundId: outbound.id,
+        trackingNumber,
+        customer: outbound.customer,
+        destination: outbound.destination,
+        items: outbound.items || [],
+        status: '배송중',
+        shipmentDate: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+      };
+      
+      existingShipments.push(newShipment);
+      localStorage.setItem('shipments', JSON.stringify(existingShipments));
+      
+      toast({
+        title: "배송 등록 완료",
+        description: "송장번호가 등록되어 배송관리로 이동되었습니다.",
+      });
+    }
+  };
+
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') window.history.back(); };
     window.addEventListener('keydown', handleEsc);

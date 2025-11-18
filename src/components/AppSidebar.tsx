@@ -30,10 +30,10 @@ const menuItems = [
     title: "등록관리", 
     icon: FolderTree,
     subItems: [
-      { title: "등록양식", url: "/registration-templates", icon: FileText },
       { title: "카테고리 등록", url: "/category-management", icon: FolderTree },
       { title: "발주서 관리", url: "/purchase-order-management", icon: ListChecks },
       { title: "견적서 관리", url: "/quotation-management", icon: FileText },
+      { title: "등록양식", url: "/registration-templates", icon: FileText },
     ]
   },
   { title: "상품 등록", url: "/product-registration", icon: PackagePlus },
@@ -56,6 +56,9 @@ export function AppSidebar() {
   const [companyPhone, setCompanyPhone] = useState("");
   const [companyFax, setCompanyFax] = useState("");
   
+  // 메뉴 커스터마이징 설정 로드
+  const [customizedMenu, setCustomizedMenu] = useState(menuItems);
+  
   // 등록관리 섹션의 하위 메뉴 URL 목록
   const registrationUrls = ["/registration-templates", "/category-management", "/purchase-order-management", "/quotation-management"];
   
@@ -77,6 +80,20 @@ export function AppSidebar() {
     if (savedBusinessNumber) setCompanyBusinessNumber(savedBusinessNumber);
     if (savedPhone) setCompanyPhone(savedPhone);
     if (savedFax) setCompanyFax(savedFax);
+    
+    // 메뉴 설정 로드
+    const savedMenuSettings = localStorage.getItem('menuSettings');
+    if (savedMenuSettings) {
+      try {
+        const settings = JSON.parse(savedMenuSettings);
+        const reorderedMenu = settings.order
+          .map((title: string) => menuItems.find(item => item.title === title))
+          .filter((item: any) => item && !settings.hidden.includes(item.title));
+        setCustomizedMenu(reorderedMenu);
+      } catch (e) {
+        console.error('Failed to load menu settings:', e);
+      }
+    }
   }, []);
   
   // 활성 라우트가 변경되면 등록관리 섹션을 자동으로 열기
@@ -145,7 +162,7 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {menuItems.map((item) => (
+              {customizedMenu.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   {'subItems' in item ? (
                     <Collapsible
