@@ -61,7 +61,48 @@ export default function Billing() {
     );
   };
 
-  const downloadExcel = (filtered = false) => {
+  const downloadInvoiceExcel = () => {
+    const invoiceData = selectedInvoices.length > 0
+      ? invoices.filter(inv => selectedInvoices.includes(inv.id))
+      : invoices;
+
+    const ws = XLSX.utils.json_to_sheet(invoiceData.map(inv => ({
+      '청구번호': inv.id,
+      '고객명': inv.customer,
+      '금액': inv.amount,
+      '상태': inv.status,
+      '계산서발행': inv.invoiceIssued ? '발행' : '미발행',
+      '발행일자': inv.issueDate || '',
+      '청구일자': inv.date
+    })));
+    
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "청구서");
+    XLSX.writeFile(wb, `청구서_${new Date().toISOString().split('T')[0]}.xlsx`);
+    
+    toast({
+      title: "청구서 다운로드 완료",
+      description: "청구서가 Excel 형식으로 다운로드되었습니다."
+    });
+  };
+
+  const issueInvoice = (invoice: Invoice) => {
+    const issueDate = new Date().toISOString().split('T')[0];
+    setInvoices(invoices.map(inv => 
+      inv.id === invoice.id 
+        ? { ...inv, invoiceIssued: true, issueDate }
+        : inv
+    ));
+    toast({
+      title: "계산서 발행 완료",
+      description: `${invoice.id} 계산서가 발행되었습니다.`
+    });
+  };
+
+  const viewInvoiceDetail = (invoice: Invoice) => {
+    setSelectedInvoice(invoice);
+    setShowInvoiceDetail(true);
+  };
     const dataToExport = filtered && selectedInvoices.length > 0 
       ? invoices.filter(inv => selectedInvoices.includes(inv.id))
       : invoices;

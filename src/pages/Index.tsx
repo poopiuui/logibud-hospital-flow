@@ -18,6 +18,7 @@ import { QRCodeGenerator } from "@/components/QRCodeGenerator";
 import { QuotationGenerator } from "@/components/QuotationGenerator";
 import { StockHistory } from "@/components/StockHistory";
 import { PriceCardGenerator } from "@/components/PriceCardGenerator";
+import { PurchaseOrderRegistration } from "@/components/PurchaseOrderRegistration";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Package, 
@@ -34,9 +35,12 @@ import {
   FileText,
   History,
   CreditCard,
-  ArrowUpDown
+  ArrowUpDown,
+  Download,
+  FileDown
 } from "lucide-react";
 import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
 
 interface Product {
   userCode: string;
@@ -56,15 +60,16 @@ interface Product {
   category?: string;
   keywords?: string;
   createdBy?: string;
+  lastOrderQuantity?: number;
 }
 
 const CATEGORIES = ['의료소모품', '주사기/바늘', '붕대/거즈', '보호구', '수액/주사액', '기타'];
 
-const generateSampleProducts = (): Product[] => [
-  { userCode: 'USER001', barcode: '8801234567890', productCode: 'A-001', productName: '주사기(5ml)', currentStock: 850, safetyStock: 1000, unitPrice: 150, consumerPrice: 200, purchasePrice: 120, shippingPrice: 180, supplier: '㈜메디칼', registeredDate: new Date().toISOString().split('T')[0], category: '주사기/바늘', images: ['/placeholder.svg'], keywords: '주사기, 5ml, 의료용', createdBy: '김관리' },
-  { userCode: 'USER002', barcode: '8801234567891', productCode: 'B-012', productName: '거즈 패드', currentStock: 2100, safetyStock: 2000, unitPrice: 80, consumerPrice: 100, purchasePrice: 60, shippingPrice: 90, supplier: '㈜헬스케어', registeredDate: new Date().toISOString().split('T')[0], category: '붕대/거즈', images: ['/placeholder.svg'], keywords: '거즈, 패드, 상처', createdBy: '이관리' },
-  { userCode: 'USER003', barcode: '8801234567892', productCode: 'C-045', productName: '일회용 장갑(M)', currentStock: 400, safetyStock: 5000, unitPrice: 50, consumerPrice: 70, purchasePrice: 40, shippingPrice: 60, supplier: '㈜메디칼', registeredDate: new Date().toISOString().split('T')[0], category: '보호구', images: ['/placeholder.svg'], keywords: '장갑, 일회용, M사이즈', createdBy: '김관리' },
-  { userCode: 'USER004', barcode: '8801234567893', productCode: 'D-078', productName: '알코올 솜', currentStock: 8900, safetyStock: 10000, unitPrice: 30, consumerPrice: 40, purchasePrice: 25, shippingPrice: 35, supplier: '㈜의료용품', registeredDate: new Date().toISOString().split('T')[0], category: '의료소모품', images: ['/placeholder.svg'], keywords: '알코올, 솜, 소독', createdBy: '박관리' },
+  const generateSampleProducts = (): Product[] => [
+  { userCode: 'USER001', barcode: '8801234567890', productCode: 'A-001', productName: '주사기(5ml)', currentStock: 850, safetyStock: 1000, unitPrice: 150, consumerPrice: 200, purchasePrice: 120, shippingPrice: 180, supplier: '㈜메디칼', registeredDate: new Date().toISOString().split('T')[0], category: '주사기/바늘', images: ['/placeholder.svg'], keywords: '주사기, 5ml, 의료용', createdBy: '김관리', lastOrderQuantity: 1000 },
+  { userCode: 'USER002', barcode: '8801234567891', productCode: 'B-012', productName: '거즈 패드', currentStock: 2100, safetyStock: 2000, unitPrice: 80, consumerPrice: 100, purchasePrice: 60, shippingPrice: 90, supplier: '㈜헬스케어', registeredDate: new Date().toISOString().split('T')[0], category: '붕대/거즈', images: ['/placeholder.svg'], keywords: '거즈, 패드, 상처', createdBy: '이관리', lastOrderQuantity: 2000 },
+  { userCode: 'USER003', barcode: '8801234567892', productCode: 'C-045', productName: '일회용 장갑(M)', currentStock: 400, safetyStock: 5000, unitPrice: 50, consumerPrice: 70, purchasePrice: 40, shippingPrice: 60, supplier: '㈜메디칼', registeredDate: new Date().toISOString().split('T')[0], category: '보호구', images: ['/placeholder.svg'], keywords: '장갑, 일회용, M사이즈', createdBy: '김관리', lastOrderQuantity: 5000 },
+  { userCode: 'USER004', barcode: '8801234567893', productCode: 'D-078', productName: '알코올 솜', currentStock: 8900, safetyStock: 10000, unitPrice: 30, consumerPrice: 40, purchasePrice: 25, shippingPrice: 35, supplier: '㈜의료용품', registeredDate: new Date().toISOString().split('T')[0], category: '의료소모품', images: ['/placeholder.svg'], keywords: '알코올, 솜, 소독', createdBy: '박관리', lastOrderQuantity: 10000 },
   { userCode: 'USER005', barcode: '8801234567894', productCode: 'E-092', productName: '링거 세트', currentStock: 500, safetyStock: 1500, unitPrice: 2500, consumerPrice: 3000, purchasePrice: 2200, shippingPrice: 2800, supplier: '㈜메디텍', registeredDate: new Date().toISOString().split('T')[0], category: '수액/주사액', images: ['/placeholder.svg'], keywords: '링거, 수액, 주사', createdBy: '이관리' },
 ];
 
@@ -91,6 +96,7 @@ const Index = () => {
   const [isQuotationDialogOpen, setIsQuotationDialogOpen] = useState(false);
   const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
   const [isPriceCardDialogOpen, setIsPriceCardDialogOpen] = useState(false);
+  const [isPurchaseOrderDialogOpen, setIsPurchaseOrderDialogOpen] = useState(false);
   const [historyProduct, setHistoryProduct] = useState<Product | null>(null);
   const [priceCardProduct, setPriceCardProduct] = useState<Product | null>(null);
 
@@ -197,6 +203,63 @@ const Index = () => {
   const openPriceCardDialog = (product: Product) => {
     setPriceCardProduct(product);
     setIsPriceCardDialogOpen(true);
+  };
+
+  const downloadCSV = (filtered = false) => {
+    const dataToExport = filtered && selectedProducts.length > 0
+      ? products.filter(p => selectedProducts.includes(p.productCode))
+      : filteredProducts;
+    
+    const csv = [
+      ['제품코드', '제품명', '현재고', '안전재고', '단가', '소비자가', '매입단가', '출고가', '공급처', '카테고리', '등록일', '등록자'],
+      ...dataToExport.map(p => [
+        p.productCode, p.productName, p.currentStock, p.safetyStock, p.unitPrice,
+        p.consumerPrice || '', p.purchasePrice || '', p.shippingPrice || '',
+        p.supplier, p.category || '', p.registeredDate, p.createdBy || ''
+      ])
+    ].map(row => row.join(',')).join('\n');
+    
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `상품관리_${filtered ? '선택' : '전체'}_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    
+    toast({
+      title: "CSV 다운로드 완료",
+      description: `${dataToExport.length}개 상품이 다운로드되었습니다.`
+    });
+  };
+
+  const downloadPDF = (filtered = false) => {
+    const dataToExport = filtered && selectedProducts.length > 0
+      ? products.filter(p => selectedProducts.includes(p.productCode))
+      : filteredProducts;
+    
+    const doc = new jsPDF();
+    doc.setFont('helvetica');
+    
+    doc.setFontSize(16);
+    doc.text('Product List', 20, 20);
+    
+    doc.setFontSize(10);
+    let y = 40;
+    dataToExport.forEach((product, index) => {
+      if (y > 280) {
+        doc.addPage();
+        y = 20;
+      }
+      doc.text(`${index + 1}. ${product.productCode} - ${product.productName}`, 20, y);
+      doc.text(`Stock: ${product.currentStock} | Price: ${product.unitPrice}`, 30, y + 6);
+      y += 15;
+    });
+    
+    doc.save(`products_${filtered ? 'selected' : 'all'}_${new Date().toISOString().split('T')[0]}.pdf`);
+    
+    toast({
+      title: "PDF 다운로드 완료",
+      description: `${dataToExport.length}개 상품이 다운로드되었습니다.`
+    });
   };
 
   return (
@@ -323,8 +386,54 @@ const Index = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-2xl">제품 목록</CardTitle>
-            <CardDescription>등록된 제품을 관리하고 조회합니다</CardDescription>
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-4">
+              <div>
+                <CardTitle className="text-2xl">제품 목록</CardTitle>
+                <CardDescription>등록된 제품을 관리하고 조회합니다</CardDescription>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  onClick={() => setIsPurchaseOrderDialogOpen(true)}
+                  variant="default"
+                  size="sm"
+                >
+                  <FileText className="h-4 w-4 mr-2" />
+                  발주서 등록
+                </Button>
+                {selectedProducts.length > 0 && (
+                  <>
+                    <Button onClick={openQuotationDialog} variant="outline" size="sm">
+                      <FileText className="h-4 w-4 mr-2" />
+                      견적서 ({selectedProducts.length})
+                    </Button>
+                    <Button
+                      onClick={() => downloadCSV(true)}
+                      variant="outline"
+                      size="sm"
+                    >
+                      <FileDown className="h-4 w-4 mr-2" />
+                      선택 CSV
+                    </Button>
+                    <Button
+                      onClick={() => downloadPDF(true)}
+                      variant="outline"
+                      size="sm"
+                    >
+                      <FileDown className="h-4 w-4 mr-2" />
+                      선택 PDF
+                    </Button>
+                  </>
+                )}
+                <Button onClick={() => downloadCSV(false)} variant="outline" size="sm">
+                  <Download className="h-4 w-4 mr-2" />
+                  전체 CSV
+                </Button>
+                <Button onClick={() => downloadPDF(false)} variant="outline" size="sm">
+                  <Download className="h-4 w-4 mr-2" />
+                  전체 PDF
+                </Button>
+              </div>
+            </div>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex flex-wrap gap-4">
@@ -644,6 +753,13 @@ const Index = () => {
           onClose={() => setIsPriceCardDialogOpen(false)}
         />
       )}
+
+      {/* Purchase Order Dialog */}
+      <PurchaseOrderRegistration
+        isOpen={isPurchaseOrderDialogOpen}
+        onClose={() => setIsPurchaseOrderDialogOpen(false)}
+        selectedProducts={getSelectedProductsData()}
+      />
     </>
   );
 };

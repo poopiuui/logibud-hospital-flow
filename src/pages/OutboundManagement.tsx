@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -21,6 +22,7 @@ interface Outbound {
   status: '출고대기' | '출고완료' | '배송중';
   customer: string;
   unitPrice: number;
+  items?: { name: string; quantity: number }[];
 }
 
 const OutboundManagement = () => {
@@ -42,6 +44,8 @@ const OutboundManagement = () => {
   const [showCount, setShowCount] = useState(5);
   const [selectedOutbound, setSelectedOutbound] = useState<Outbound | null>(null);
   const [isInvoiceDialogOpen, setIsInvoiceDialogOpen] = useState(false);
+  const [selectedOutbounds, setSelectedOutbounds] = useState<string[]>([]);
+  const [showDetailDialog, setShowDetailDialog] = useState(false);
 
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
@@ -84,6 +88,25 @@ const OutboundManagement = () => {
     });
 
   const displayedOutbounds = filteredAndSortedOutbounds.slice(0, showCount);
+
+  const toggleSelectAll = () => {
+    if (selectedOutbounds.length === displayedOutbounds.length) {
+      setSelectedOutbounds([]);
+    } else {
+      setSelectedOutbounds(displayedOutbounds.map(o => o.id));
+    }
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedOutbounds(prev =>
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
+
+  const showDetail = (outbound: Outbound) => {
+    setSelectedOutbound(outbound);
+    setShowDetailDialog(true);
+  };
 
   // 월별 출고 통계
   const monthlyData = outbounds.reduce((acc, outbound) => {
@@ -393,6 +416,56 @@ const OutboundManagement = () => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Detail Dialog */}
+      <Dialog open={showDetailDialog} onOpenChange={setShowDetailDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>출고 세부내역</DialogTitle>
+          </DialogHeader>
+          {selectedOutbound && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">출고번호</label>
+                  <div className="text-lg font-semibold">{selectedOutbound.id}</div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">출고일시</label>
+                  <div className="text-lg">{selectedOutbound.date}</div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">고객명</label>
+                  <div className="text-lg">{selectedOutbound.customer}</div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">목적지</label>
+                  <div className="text-lg">{selectedOutbound.destination}</div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">제품명</label>
+                  <div className="text-lg font-semibold">{selectedOutbound.product}</div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">수량</label>
+                  <div className="text-lg">{selectedOutbound.quantity.toLocaleString()}개</div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">상태</label>
+                  <div className="mt-1">
+                    <Badge variant={
+                      outbound.status === '출고완료' ? 'default' : 
+                      outbound.status === '배송중' ? 'secondary' : 'outline'
+                    }>
+                      {selectedOutbound.status}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* 청구서 발행 다이얼로그 */}
       <Dialog open={isInvoiceDialogOpen} onOpenChange={setIsInvoiceDialogOpen}>
