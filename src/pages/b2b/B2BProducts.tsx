@@ -2,9 +2,9 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import { ArrowLeft, ShoppingCart, Plus, Minus } from "lucide-react";
 
 interface Product {
@@ -14,34 +14,60 @@ interface Product {
   price: number;
   stock: number;
   category: string;
-  image?: string;
+  description?: string;
+  image_url?: string;
 }
 
 interface CartItem extends Product {
   quantity: number;
 }
 
+interface CustomerInfo {
+  id: string;
+  company_name: string;
+  business_number: string;
+  ceo_name: string;
+}
+
 export default function B2BProducts() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [cart, setCart] = useState<CartItem[]>([]);
-  
-  // 더미 상품 데이터 (실제로는 Supabase에서 가져옴)
-  const products: Product[] = [
-    { id: "1", name: "의료용 마스크 KF94", code: "PROD-001", price: 25000, stock: 500, category: "보호장비" },
-    { id: "2", name: "일회용 장갑 (100매)", code: "PROD-002", price: 15000, stock: 300, category: "보호장비" },
-    { id: "3", name: "소독용 알코올 1L", code: "PROD-003", price: 12000, stock: 150, category: "소독제" },
-    { id: "4", name: "체온계 디지털", code: "PROD-004", price: 35000, stock: 80, category: "측정기기" },
-    { id: "5", name: "의료용 테이프", code: "PROD-005", price: 8000, stock: 200, category: "의료소모품" },
-    { id: "6", name: "붕대 (10개입)", code: "PROD-006", price: 18000, stock: 120, category: "의료소모품" },
-  ];
+  const [products, setProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [customerInfo, setCustomerInfo] = useState<CustomerInfo | null>(null);
 
   useEffect(() => {
     const customerData = sessionStorage.getItem('b2b_customer');
     if (!customerData) {
       navigate('/b2b/login');
+      return;
     }
+    setCustomerInfo(JSON.parse(customerData));
+    fetchProducts();
   }, [navigate]);
+
+  const fetchProducts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .gt('stock', 0)
+        .order('category', { ascending: true });
+
+      if (error) throw error;
+      setProducts(data || []);
+    } catch (error: any) {
+      console.error('Error fetching products:', error);
+      toast({
+        title: "상품 조회 실패",
+        description: "상품 목록을 불러올 수 없습니다.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const addToCart = (product: Product) => {
     const existingItem = cart.find(item => item.id === product.id);
@@ -78,7 +104,7 @@ export default function B2BProducts() {
       if (item.id === productId) {
         const newQuantity = item.quantity + delta;
         if (newQuantity <= 0) {
-          return item; // 별도로 제거 처리
+          return item;
         }
         if (newQuantity > product.stock) {
           toast({
@@ -94,15 +120,11 @@ export default function B2BProducts() {
     }).filter(item => item.quantity > 0));
   };
 
-  const removeFromCart = (productId: string) => {
-    setCart(cart.filter(item => item.id !== productId));
-  };
-
   const getTotalAmount = () => {
     return cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   };
 
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
     if (cart.length === 0) {
       toast({
         title: "장바구니가 비어있습니다",
@@ -112,14 +134,76 @@ export default function B2BProducts() {
       return;
     }
 
-    toast({
-      title: "주문 완료",
-      description: "주문이 성공적으로 접수되었습니다.",
-    });
+    if (!customerInfo) {
+      toast({
+        title: "로그인 필요",
+        description: "주문하려면 로그인이 필요합니다.",
+        variant: "destructive",
+      });
+      navigate('/b2b/login');
+      return;
+    }
 
-    // 실제로는 Supabase에 주문 저장
-    setCart([]);
+    try {
+      const orderNumber = `B2B-${Date.now()}`;
+      const totalAmount = getTotalAmount();
+
+      // 주문 생성
+      const { data: orderData, error: orderError } = await supabase
+        .from('b2b_orders')
+        .insert({
+          order_number: orderNumber,
+          customer_id: customerInfo.id,
+          total_amount: totalAmount,
+          status: 'pending'
+        })
+        .select()
+        .single();
+
+      if (orderError) throw orderError;
+
+      // 주문 항목 생성
+      const orderItems = cart.map(item => ({
+        order_id: orderData.id,
+        product_id: item.id,
+        product_name: item.name,
+        product_code: item.code,
+        quantity: item.quantity,
+        unit_price: item.price,
+        subtotal: item.price * item.quantity
+      }));
+
+      const { error: itemsError } = await supabase
+        .from('b2b_order_items')
+        .insert(orderItems);
+
+      if (itemsError) throw itemsError;
+
+      toast({
+        title: "주문 완료",
+        description: `주문번호 ${orderNumber}로 주문이 접수되었습니다.`,
+      });
+
+      setCart([]);
+      navigate('/b2b/portal');
+
+    } catch (error: any) {
+      console.error('Checkout error:', error);
+      toast({
+        title: "주문 실패",
+        description: "주문 처리 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p>상품 로딩중...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted">
@@ -153,35 +237,44 @@ export default function B2BProducts() {
                 <CardTitle>상품 목록</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {products.map((product) => (
-                    <Card key={product.id} className="overflow-hidden">
-                      <CardContent className="p-4">
-                        <div className="space-y-3">
-                          <div>
-                            <h3 className="font-semibold text-lg">{product.name}</h3>
-                            <p className="text-sm text-muted-foreground">{product.code}</p>
+                {products.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-8">
+                    등록된 상품이 없습니다
+                  </p>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {products.map((product) => (
+                      <Card key={product.id} className="overflow-hidden">
+                        <CardContent className="p-4">
+                          <div className="space-y-3">
+                            <div>
+                              <h3 className="font-semibold text-lg">{product.name}</h3>
+                              <p className="text-sm text-muted-foreground">{product.code}</p>
+                              {product.description && (
+                                <p className="text-xs text-muted-foreground mt-1">{product.description}</p>
+                              )}
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <Badge variant="secondary">{product.category}</Badge>
+                              <span className="text-sm text-muted-foreground">
+                                재고: {product.stock}개
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-xl font-bold text-primary">
+                                ₩{product.price.toLocaleString()}
+                              </span>
+                              <Button onClick={() => addToCart(product)} size="sm">
+                                <Plus className="w-4 h-4 mr-1" />
+                                담기
+                              </Button>
+                            </div>
                           </div>
-                          <div className="flex items-center justify-between">
-                            <Badge variant="secondary">{product.category}</Badge>
-                            <span className="text-sm text-muted-foreground">
-                              재고: {product.stock}개
-                            </span>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-xl font-bold text-primary">
-                              ₩{product.price.toLocaleString()}
-                            </span>
-                            <Button onClick={() => addToCart(product)} size="sm">
-                              <Plus className="w-4 h-4 mr-1" />
-                              담기
-                            </Button>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>

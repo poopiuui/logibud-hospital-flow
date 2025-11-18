@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
-import { LayoutDashboard, Package, FileText, Truck, Users, Settings, Building2, PackagePlus, ClipboardList, ShoppingCart, FolderTree, ListChecks, ChevronDown, ChevronRight, Phone, FileDigit } from "lucide-react";
+import { LayoutDashboard, Package, FileText, Truck, Users, Settings, Building2, PackagePlus, ClipboardList, ShoppingCart, FolderTree, ListChecks, ChevronDown, ChevronRight, Phone, FileDigit, Store } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
   Sidebar,
@@ -44,6 +44,7 @@ const menuItems = [
   { title: "배송 관리", url: "/shipping", icon: Truck },
   { title: "매출 관리", url: "/sales", icon: FileText },
   { title: "청구 관리", url: "/billing", icon: FileText },
+  { title: "B2B 관리", url: "/b2b-management", icon: Store },
   { title: "사용자 관리", url: "/users", icon: Users },
   { title: "설정", url: "/settings", icon: Settings },
 ];
