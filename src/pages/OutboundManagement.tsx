@@ -9,7 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Search, X, ChevronDown, ChevronUp, Calendar, BarChart3, Plus, Upload, FileSpreadsheet } from "lucide-react";
+import { Search, X, ChevronDown, ChevronUp, Calendar, BarChart3, Plus, Upload, FileSpreadsheet, Download, FileDown } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useToast } from "@/hooks/use-toast";
 import * as XLSX from 'xlsx';
@@ -123,7 +124,27 @@ const OutboundManagement = () => {
         <h1 className="text-3xl font-bold">출고관리</h1>
         <div className="flex gap-2">
           <Button onClick={() => setShowRegistrationDialog(true)}><Plus className="mr-2 h-4 w-4" />출고 등록</Button>
-          <Button variant="outline" onClick={() => { const ws = XLSX.utils.json_to_sheet(outbounds); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "출고관리"); XLSX.writeFile(wb, "출고관리_데이터.xlsx"); }}><FileSpreadsheet className="mr-2 h-4 w-4" />Excel</Button>
+          
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline">
+                <Download className="mr-2 h-4 w-4" />
+                다운로드
+                <ChevronDown className="w-4 h-4 ml-1" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => { const ws = XLSX.utils.json_to_sheet(outbounds); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "출고관리"); XLSX.writeFile(wb, "출고관리_데이터.csv"); }}>
+                <FileDown className="mr-2 h-4 w-4" />
+                CSV로 다운로드
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => { const ws = XLSX.utils.json_to_sheet(outbounds); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "출고관리"); XLSX.writeFile(wb, "출고관리_데이터.xlsx"); }}>
+                <FileDown className="mr-2 h-4 w-4" />
+                Excel로 다운로드
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          
           <Button variant="outline" onClick={() => window.history.back()}><X className="mr-2 h-4 w-4" />뒤로</Button>
         </div>
       </div>
