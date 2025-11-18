@@ -23,6 +23,7 @@ const menuItems = [
     title: "등록관리", 
     icon: FolderTree,
     subItems: [
+      { title: "등록양식", url: "/registration-templates", icon: FileText },
       { title: "카테고리 등록", url: "/category-management", icon: FolderTree },
       { title: "발주서 관리", url: "/purchase-order-management", icon: ListChecks },
       { title: "견적서 관리", url: "/quotation-management", icon: FileText },
@@ -47,7 +48,7 @@ export function AppSidebar() {
   const [showCompanyInfo, setShowCompanyInfo] = useState(false);
   
   // 등록관리 섹션의 하위 메뉴 URL 목록
-  const registrationUrls = ["/category-management", "/purchase-order-management", "/quotation-management"];
+  const registrationUrls = ["/registration-templates", "/category-management", "/purchase-order-management", "/quotation-management"];
   
   // 현재 라우트가 등록관리 하위 메뉴에 있는지 확인
   const isRegistrationActive = registrationUrls.includes(location.pathname);

@@ -11,6 +11,7 @@ import { RealtimeNotificationSystem } from "@/components/RealtimeNotificationSys
 import { MobileNavigation } from "@/components/MobileNavigation";
 import Dashboard from "./pages/Dashboard";
 import Vendors from "./pages/Vendors";
+import RegistrationTemplates from "./pages/RegistrationTemplates";
 import CategoryManagement from "./pages/CategoryManagement";
 import PurchaseOrderManagement from "./pages/PurchaseOrderManagement";
 import QuotationManagement from "./pages/QuotationManagement";
@@ -48,6 +49,7 @@ const App = () => (
                 <Routes>
                   <Route path="/" element={<Dashboard />} />
                   <Route path="/vendors" element={<Vendors />} />
+                  <Route path="/registration-templates" element={<RegistrationTemplates />} />
                   <Route path="/category-management" element={<CategoryManagement />} />
                   <Route path="/purchase-order-management" element={<PurchaseOrderManagement />} />
                   <Route path="/quotation-management" element={<QuotationManagement />} />
