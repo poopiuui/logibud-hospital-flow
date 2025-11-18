@@ -7,9 +7,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Pencil, Trash2, FolderTree } from "lucide-react";
+import { Plus, Pencil, Trash2, FolderTree, Download } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { PRODUCT_CATEGORIES } from "@/data/categories";
+import { DateRangeFilter } from "@/components/DateRangeFilter";
+import { SwipeableTableRow } from "@/components/SwipeableTableRow";
+import * as XLSX from "xlsx";
 
 interface Category {
   code: string;
@@ -28,6 +31,7 @@ export default function CategoryManagement() {
       productCount: Math.floor(Math.random() * 50)
     }))
   );
+  const [filteredCategories, setFilteredCategories] = useState<Category[]>(categories);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
@@ -36,6 +40,7 @@ export default function CategoryManagement() {
     name: "",
     description: ""
   });
+  const [searchTerm, setSearchTerm] = useState("");
 
   const handleAddCategory = () => {
     if (!formData.code || !formData.name) {
@@ -54,7 +59,9 @@ export default function CategoryManagement() {
       productCount: 0
     };
 
-    setCategories([...categories, newCategory]);
+    const updated = [...categories, newCategory];
+    setCategories(updated);
+    setFilteredCategories(updated);
     toast({
       title: "카테고리 추가",
       description: `${formData.name} 카테고리가 추가되었습니다.`
@@ -67,9 +74,11 @@ export default function CategoryManagement() {
   const handleEditCategory = () => {
     if (!selectedCategory) return;
 
-    setCategories(categories.map(cat =>
+    const updated = categories.map(cat =>
       cat.code === selectedCategory.code ? { ...selectedCategory, ...formData } : cat
-    ));
+    );
+    setCategories(updated);
+    setFilteredCategories(updated);
 
     toast({
       title: "카테고리 수정",
@@ -91,7 +100,9 @@ export default function CategoryManagement() {
       return;
     }
 
-    setCategories(categories.filter(cat => cat.code !== category.code));
+    const updated = categories.filter(cat => cat.code !== category.code);
+    setCategories(updated);
+    setFilteredCategories(updated);
     toast({
       title: "카테고리 삭제",
       description: `${category.name} 카테고리가 삭제되었습니다.`
@@ -106,6 +117,35 @@ export default function CategoryManagement() {
       description: category.description || ""
     });
     setIsEditDialogOpen(true);
+  };
+
+  const handleSearch = (term: string) => {
+    setSearchTerm(term);
+    const filtered = categories.filter(cat =>
+      cat.code.toLowerCase().includes(term.toLowerCase()) ||
+      cat.name.toLowerCase().includes(term.toLowerCase()) ||
+      (cat.description && cat.description.toLowerCase().includes(term.toLowerCase()))
+    );
+    setFilteredCategories(filtered);
+  };
+
+  const handleExportExcel = () => {
+    const exportData = filteredCategories.map(cat => ({
+      '카테고리 코드': cat.code,
+      '카테고리명': cat.name,
+      '설명': cat.description || '-',
+      '등록 제품 수': cat.productCount
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "카테고리");
+    XLSX.writeFile(wb, `카테고리관리_${new Date().toISOString().split('T')[0]}.xlsx`);
+    
+    toast({
+      title: "내보내기 완료",
+      description: `${filteredCategories.length}개 카테고리를 엑셀로 내보냈습니다.`
+    });
   };
 
   return (
@@ -125,20 +165,37 @@ export default function CategoryManagement() {
       <div className="container mx-auto px-6 py-8">
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-2xl flex items-center gap-2">
-                  <FolderTree className="w-6 h-6" />
-                  카테고리 목록
-                </CardTitle>
-                <CardDescription className="mt-2">
-                  총 {categories.length}개의 카테고리
-                </CardDescription>
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-2xl flex items-center gap-2">
+                    <FolderTree className="w-6 h-6" />
+                    카테고리 목록
+                  </CardTitle>
+                  <CardDescription className="mt-2">
+                    총 {filteredCategories.length}개의 카테고리
+                  </CardDescription>
+                </div>
+                <div className="flex gap-2">
+                  <Button onClick={handleExportExcel} variant="outline">
+                    <Download className="mr-2 h-4 w-4" />
+                    엑셀 내보내기
+                  </Button>
+                  <Button onClick={() => setIsAddDialogOpen(true)}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    카테고리 추가
+                  </Button>
+                </div>
               </div>
-              <Button onClick={() => setIsAddDialogOpen(true)}>
-                <Plus className="mr-2 h-4 w-4" />
-                카테고리 추가
-              </Button>
+              
+              <div className="flex gap-2">
+                <Input
+                  placeholder="카테고리 검색..."
+                  value={searchTerm}
+                  onChange={(e) => handleSearch(e.target.value)}
+                  className="max-w-sm"
+                />
+              </div>
             </div>
           </CardHeader>
           <CardContent>
@@ -154,8 +211,12 @@ export default function CategoryManagement() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {categories.map((category) => (
-                    <TableRow key={category.code}>
+                  {filteredCategories.map((category) => (
+                    <SwipeableTableRow
+                      key={category.code}
+                      onEdit={() => openEditDialog(category)}
+                      onDelete={() => handleDeleteCategory(category)}
+                    >
                       <TableCell className="font-mono font-semibold">
                         <Badge variant="outline">{category.code}</Badge>
                       </TableCell>
@@ -185,7 +246,7 @@ export default function CategoryManagement() {
                           </Button>
                         </div>
                       </TableCell>
-                    </TableRow>
+                    </SwipeableTableRow>
                   ))}
                 </TableBody>
               </Table>

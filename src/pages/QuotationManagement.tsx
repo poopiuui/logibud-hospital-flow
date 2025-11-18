@@ -1,12 +1,17 @@
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { FileText, Eye, Printer, Download } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { DateRangeFilter } from "@/components/DateRangeFilter";
+import { SwipeableTableRow } from "@/components/SwipeableTableRow";
+import * as XLSX from "xlsx";
 
 interface Quotation {
   quotationNumber: string;
@@ -23,9 +28,14 @@ interface Quotation {
   }>;
 }
 
+interface DateRange {
+  from: Date | undefined;
+  to: Date | undefined;
+}
+
 export default function QuotationManagement() {
   const { toast } = useToast();
-  const [quotations] = useState<Quotation[]>([
+  const [quotations, setQuotations] = useState<Quotation[]>([
     {
       quotationNumber: 'QT-2024-001',
       quotationDate: '2024-11-10',
@@ -62,12 +72,46 @@ export default function QuotationManagement() {
     }
   ]);
 
+  const [filteredQuotations, setFilteredQuotations] = useState<Quotation[]>(quotations);
   const [selectedQuotation, setSelectedQuotation] = useState<Quotation | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editedQuotation, setEditedQuotation] = useState<Quotation | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
 
   const openDetail = (quotation: Quotation) => {
     setSelectedQuotation(quotation);
+    setEditedQuotation({ ...quotation });
     setIsDetailOpen(true);
+    setIsEditMode(false);
+  };
+
+  const handleEdit = () => {
+    setIsEditMode(true);
+  };
+
+  const handleSaveEdit = () => {
+    if (!editedQuotation) return;
+
+    const updated = quotations.map(quot =>
+      quot.quotationNumber === editedQuotation.quotationNumber ? editedQuotation : quot
+    );
+    setQuotations(updated);
+    applyFilters(updated, searchTerm, statusFilter);
+    
+    toast({
+      title: "견적서 수정",
+      description: `${editedQuotation.quotationNumber} 견적서가 수정되었습니다.`
+    });
+    
+    setIsEditMode(false);
+    setSelectedQuotation(editedQuotation);
+  };
+
+  const handleStatusChange = (newStatus: '발행' | '승인' | '만료') => {
+    if (!editedQuotation) return;
+    setEditedQuotation({ ...editedQuotation, status: newStatus });
   };
 
   const handlePrint = (quotation: Quotation) => {
@@ -97,6 +141,76 @@ export default function QuotationManagement() {
     return Math.round(amount * 0.1);
   };
 
+  const handleDateRangeChange = (range: DateRange) => {
+    let filtered = [...quotations];
+    
+    if (range.from && range.to) {
+      filtered = filtered.filter(quot => {
+        const quotDate = new Date(quot.quotationDate);
+        return quotDate >= range.from! && quotDate <= range.to!;
+      });
+    }
+    
+    applyFilters(filtered, searchTerm, statusFilter);
+  };
+
+  const handleSearch = (term: string) => {
+    setSearchTerm(term);
+    applyFilters(quotations, term, statusFilter);
+  };
+
+  const handleStatusFilter = (status: string) => {
+    setStatusFilter(status);
+    applyFilters(quotations, searchTerm, status);
+  };
+
+  const applyFilters = (data: Quotation[], search: string, status: string) => {
+    let filtered = [...data];
+    
+    if (search) {
+      filtered = filtered.filter(quot =>
+        quot.quotationNumber.toLowerCase().includes(search.toLowerCase()) ||
+        quot.customer.toLowerCase().includes(search.toLowerCase())
+      );
+    }
+    
+    if (status !== "all") {
+      filtered = filtered.filter(quot => quot.status === status);
+    }
+    
+    setFilteredQuotations(filtered);
+  };
+
+  const handleExportExcel = () => {
+    const exportData = filteredQuotations.flatMap(quot =>
+      quot.items.map(item => ({
+        '견적번호': quot.quotationNumber,
+        '견적일자': quot.quotationDate,
+        '고객명': quot.customer,
+        '유효기한': quot.validUntil,
+        '상태': quot.status,
+        '품목코드': item.productCode,
+        '품목명': item.productName,
+        '수량': item.quantity,
+        '단가': item.unitPrice,
+        '금액': item.quantity * item.unitPrice,
+        '총 견적금액': quot.totalAmount,
+        'VAT': calculateVAT(quot.totalAmount),
+        '총액(VAT포함)': quot.totalAmount + calculateVAT(quot.totalAmount)
+      }))
+    );
+
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "견적서");
+    XLSX.writeFile(wb, `견적서관리_${new Date().toISOString().split('T')[0]}.xlsx`);
+    
+    toast({
+      title: "내보내기 완료",
+      description: `${filteredQuotations.length}개 견적서를 엑셀로 내보냈습니다.`
+    });
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -114,13 +228,47 @@ export default function QuotationManagement() {
       <div className="container mx-auto px-6 py-8">
         <Card>
           <CardHeader>
-            <CardTitle className="text-2xl flex items-center gap-2">
-              <FileText className="w-6 h-6" />
-              견적서 목록
-            </CardTitle>
-            <CardDescription className="mt-2">
-              총 {quotations.length}건의 견적서
-            </CardDescription>
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-2xl flex items-center gap-2">
+                    <FileText className="w-6 h-6" />
+                    견적서 목록
+                  </CardTitle>
+                  <CardDescription className="mt-2">
+                    총 {filteredQuotations.length}건의 견적서
+                  </CardDescription>
+                </div>
+                <Button onClick={handleExportExcel} variant="outline">
+                  <Download className="mr-2 h-4 w-4" />
+                  엑셀 내보내기
+                </Button>
+              </div>
+              
+              <div className="flex flex-wrap gap-2">
+                <DateRangeFilter
+                  onDateRangeChange={handleDateRangeChange}
+                  storageKey="quotationDateFilter"
+                />
+                <Input
+                  placeholder="견적번호/고객명 검색..."
+                  value={searchTerm}
+                  onChange={(e) => handleSearch(e.target.value)}
+                  className="max-w-sm"
+                />
+                <Select value={statusFilter} onValueChange={handleStatusFilter}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="상태 필터" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">전체</SelectItem>
+                    <SelectItem value="발행">발행</SelectItem>
+                    <SelectItem value="승인">승인</SelectItem>
+                    <SelectItem value="만료">만료</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="border rounded-lg overflow-hidden">
@@ -138,8 +286,11 @@ export default function QuotationManagement() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {quotations.map((quotation) => (
-                    <TableRow key={quotation.quotationNumber}>
+                  {filteredQuotations.map((quotation) => (
+                    <SwipeableTableRow
+                      key={quotation.quotationNumber}
+                      onEdit={() => openDetail(quotation)}
+                    >
                       <TableCell 
                         className="font-mono font-semibold text-primary cursor-pointer hover:underline"
                         onClick={() => openDetail(quotation)}
@@ -154,7 +305,7 @@ export default function QuotationManagement() {
                       <TableCell className="font-semibold">
                         ₩{quotation.totalAmount.toLocaleString()}
                       </TableCell>
-                      <TableCell>{quotation.validUntil}</TableCell>
+                      <TableCell className="text-sm">{quotation.validUntil}</TableCell>
                       <TableCell>
                         <Badge variant={getStatusColor(quotation.status)}>
                           {quotation.status}
@@ -185,7 +336,7 @@ export default function QuotationManagement() {
                           </Button>
                         </div>
                       </TableCell>
-                    </TableRow>
+                    </SwipeableTableRow>
                   ))}
                 </TableBody>
               </Table>
@@ -200,26 +351,62 @@ export default function QuotationManagement() {
           <DialogHeader>
             <DialogTitle>견적서 상세 - {selectedQuotation?.quotationNumber}</DialogTitle>
           </DialogHeader>
-          {selectedQuotation && (
+          {editedQuotation && (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm text-muted-foreground">견적일자</p>
-                  <p className="font-medium">{selectedQuotation.quotationDate}</p>
+                  {isEditMode ? (
+                    <Input
+                      type="date"
+                      value={editedQuotation.quotationDate}
+                      onChange={(e) => setEditedQuotation({ ...editedQuotation, quotationDate: e.target.value })}
+                    />
+                  ) : (
+                    <p className="font-medium">{editedQuotation.quotationDate}</p>
+                  )}
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">고객명</p>
-                  <p className="font-medium">{selectedQuotation.customer}</p>
+                  {isEditMode ? (
+                    <Input
+                      value={editedQuotation.customer}
+                      onChange={(e) => setEditedQuotation({ ...editedQuotation, customer: e.target.value })}
+                    />
+                  ) : (
+                    <p className="font-medium">{editedQuotation.customer}</p>
+                  )}
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">유효기한</p>
-                  <p className="font-medium">{selectedQuotation.validUntil}</p>
+                  {isEditMode ? (
+                    <Input
+                      type="date"
+                      value={editedQuotation.validUntil}
+                      onChange={(e) => setEditedQuotation({ ...editedQuotation, validUntil: e.target.value })}
+                    />
+                  ) : (
+                    <p className="font-medium">{editedQuotation.validUntil}</p>
+                  )}
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">상태</p>
-                  <Badge variant={getStatusColor(selectedQuotation.status)}>
-                    {selectedQuotation.status}
-                  </Badge>
+                  {isEditMode ? (
+                    <Select value={editedQuotation.status} onValueChange={handleStatusChange}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="발행">발행</SelectItem>
+                        <SelectItem value="승인">승인</SelectItem>
+                        <SelectItem value="만료">만료</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <Badge variant={getStatusColor(editedQuotation.status)}>
+                      {editedQuotation.status}
+                    </Badge>
+                  )}
                 </div>
               </div>
 
@@ -237,7 +424,7 @@ export default function QuotationManagement() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {selectedQuotation.items.map((item, index) => (
+                      {editedQuotation.items.map((item, index) => (
                         <TableRow key={index}>
                           <TableCell className="font-mono">{item.productCode}</TableCell>
                           <TableCell>{item.productName}</TableCell>
@@ -253,22 +440,36 @@ export default function QuotationManagement() {
                 </div>
               </div>
 
-              <div className="bg-muted p-4 rounded-lg space-y-2">
-                <div className="flex justify-between">
-                  <span>공급가액:</span>
-                  <span className="font-semibold">₩{selectedQuotation.totalAmount.toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>부가세 (10%):</span>
-                  <span className="font-semibold">₩{calculateVAT(selectedQuotation.totalAmount).toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between text-lg font-bold border-t pt-2">
-                  <span>합계:</span>
-                  <span>₩{(selectedQuotation.totalAmount + calculateVAT(selectedQuotation.totalAmount)).toLocaleString()}</span>
+              <div className="border-t pt-4">
+                <div className="flex justify-end gap-4">
+                  <div className="text-right">
+                    <p className="text-sm text-muted-foreground">소계</p>
+                    <p className="font-semibold">₩{editedQuotation.totalAmount.toLocaleString()}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm text-muted-foreground">VAT (10%)</p>
+                    <p className="font-semibold">₩{calculateVAT(editedQuotation.totalAmount).toLocaleString()}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm text-muted-foreground">총액</p>
+                    <p className="font-bold text-lg">
+                      ₩{(editedQuotation.totalAmount + calculateVAT(editedQuotation.totalAmount)).toLocaleString()}
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
           )}
+          <DialogFooter>
+            {isEditMode ? (
+              <>
+                <Button variant="outline" onClick={() => setIsEditMode(false)}>취소</Button>
+                <Button onClick={handleSaveEdit}>저장</Button>
+              </>
+            ) : (
+              <Button onClick={handleEdit}>수정</Button>
+            )}
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
