@@ -19,24 +19,27 @@ interface Purchase {
   price: number;
   type: '제조사' | '반품';
   status: string;
+  salesPerson?: string;
 }
 
 const PurchaseManagement = () => {
   const [purchases] = useState<Purchase[]>([
-    { id: 'P-001', date: '2024-12-15 14:30', vendor: '(주)글로벌물류', product: '노트북 A1', quantity: 50, price: 25000000, type: '제조사', status: '완료' },
-    { id: 'P-002', date: '2024-12-16 09:15', vendor: '스마트전자', product: '스마트폰 X2', quantity: 10, price: 8000000, type: '반품', status: '처리중' },
-    { id: 'P-003', date: '2024-11-20 11:45', vendor: '(주)테크솔루션', product: '태블릿 T3', quantity: 30, price: 15000000, type: '제조사', status: '완료' },
-    { id: 'P-004', date: '2024-11-18 16:20', vendor: '디지털마켓', product: '모니터 M4', quantity: 5, price: 3500000, type: '반품', status: '완료' },
-    { id: 'P-005', date: '2024-10-25 10:00', vendor: '(주)글로벌물류', product: '키보드 K5', quantity: 100, price: 5000000, type: '제조사', status: '완료' },
-    { id: 'P-006', date: '2024-10-12 13:30', vendor: '스마트전자', product: '마우스 M6', quantity: 80, price: 3200000, type: '제조사', status: '완료' },
-    { id: 'P-007', date: '2023-12-28 15:45', vendor: '(주)테크솔루션', product: 'USB 드라이브', quantity: 200, price: 4000000, type: '제조사', status: '완료' },
-    { id: 'P-008', date: '2023-11-15 09:20', vendor: '디지털마켓', product: '헤드셋', quantity: 15, price: 2250000, type: '반품', status: '완료' },
+    { id: 'P-001', date: '2024-12-15 14:30', vendor: '(주)글로벌물류', product: '노트북 A1', quantity: 50, price: 25000000, type: '제조사', status: '완료', salesPerson: '김영업' },
+    { id: 'P-002', date: '2024-12-16 09:15', vendor: '스마트전자', product: '스마트폰 X2', quantity: 10, price: 8000000, type: '반품', status: '처리중', salesPerson: '이영업' },
+    { id: 'P-003', date: '2024-11-20 11:45', vendor: '(주)테크솔루션', product: '태블릿 T3', quantity: 30, price: 15000000, type: '제조사', status: '완료', salesPerson: '김영업' },
+    { id: 'P-004', date: '2024-11-18 16:20', vendor: '디지털마켓', product: '모니터 M4', quantity: 5, price: 3500000, type: '반품', status: '완료', salesPerson: '박영업' },
+    { id: 'P-005', date: '2024-10-25 10:00', vendor: '(주)글로벌물류', product: '키보드 K5', quantity: 100, price: 5000000, type: '제조사', status: '완료', salesPerson: '이영업' },
+    { id: 'P-006', date: '2024-10-12 13:30', vendor: '스마트전자', product: '마우스 M6', quantity: 80, price: 3200000, type: '제조사', status: '완료', salesPerson: '김영업' },
+    { id: 'P-007', date: '2023-12-28 15:45', vendor: '(주)테크솔루션', product: 'USB 드라이브', quantity: 200, price: 4000000, type: '제조사', status: '완료', salesPerson: '박영업' },
+    { id: 'P-008', date: '2023-11-15 09:20', vendor: '디지털마켓', product: '헤드셋', quantity: 15, price: 2250000, type: '반품', status: '완료', salesPerson: '이영업' },
   ]);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [yearFilter, setYearFilter] = useState("all");
   const [monthFilter, setMonthFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
+  const [salesPersonFilter, setSalesPersonFilter] = useState("all");
+  const [vendorFilter, setVendorFilter] = useState("all");
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [showCount, setShowCount] = useState(5);
 
@@ -59,6 +62,8 @@ const PurchaseManagement = () => {
 
   const availableYears = Array.from(new Set(purchases.map(p => new Date(p.date).getFullYear()))).sort((a, b) => b - a);
   const availableMonths = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
+  const salesPersons = Array.from(new Set(purchases.map(p => p.salesPerson).filter(Boolean))) as string[];
+  const vendors = Array.from(new Set(purchases.map(p => p.vendor)));
 
   const filteredAndSortedPurchases = purchases
     .filter(purchase => {
@@ -70,8 +75,10 @@ const PurchaseManagement = () => {
       const matchesYear = yearFilter === "all" || purchaseDate.getFullYear().toString() === yearFilter;
       const matchesMonth = monthFilter === "all" || (purchaseDate.getMonth() + 1).toString() === monthFilter;
       const matchesType = typeFilter === "all" || purchase.type === typeFilter;
+      const matchesSalesPerson = salesPersonFilter === "all" || purchase.salesPerson === salesPersonFilter;
+      const matchesVendor = vendorFilter === "all" || purchase.vendor === vendorFilter;
       
-      return matchesSearch && matchesYear && matchesMonth && matchesType;
+      return matchesSearch && matchesYear && matchesMonth && matchesType && matchesSalesPerson && matchesVendor;
     })
     .sort((a, b) => {
       const dateA = new Date(a.date).getTime();
@@ -188,6 +195,30 @@ const PurchaseManagement = () => {
                   </SelectContent>
                 </Select>
 
+                <Select value={salesPersonFilter} onValueChange={setSalesPersonFilter}>
+                  <SelectTrigger className="w-[140px]">
+                    <SelectValue placeholder="영업사원" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">전체 영업사원</SelectItem>
+                    {salesPersons.map(person => (
+                      <SelectItem key={person} value={person}>{person}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Select value={vendorFilter} onValueChange={setVendorFilter}>
+                  <SelectTrigger className="w-[160px]">
+                    <SelectValue placeholder="매입처" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">전체 매입처</SelectItem>
+                    {vendors.map(vendor => (
+                      <SelectItem key={vendor} value={vendor}>{vendor}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
                 <Button variant="outline" onClick={toggleSortOrder} className="gap-2">
                   {sortOrder === 'desc' ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
                   {sortOrder === 'desc' ? '최신순' : '오래된순'}
@@ -198,30 +229,34 @@ const PurchaseManagement = () => {
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-muted/50">
-                      <TableHead>매입번호</TableHead>
-                      <TableHead>매입일시</TableHead>
-                      <TableHead>매입처</TableHead>
-                      <TableHead>제품명</TableHead>
-                      <TableHead>수량</TableHead>
-                      <TableHead>금액</TableHead>
-                      <TableHead>유형</TableHead>
-                      <TableHead>상태</TableHead>
+                      <TableHead className="text-base">매입번호</TableHead>
+                      <TableHead className="text-base">매입일시</TableHead>
+                      <TableHead className="text-base">매입처</TableHead>
+                      <TableHead className="text-base">제품명</TableHead>
+                      <TableHead className="text-base">수량</TableHead>
+                      <TableHead className="text-base">금액</TableHead>
+                      <TableHead className="text-base">유형</TableHead>
+                      <TableHead className="text-base">영업사원</TableHead>
+                      <TableHead className="text-base">상태</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {displayedPurchases.length > 0 ? (
                       displayedPurchases.map((purchase) => (
                         <TableRow key={purchase.id} className="hover:bg-muted/50">
-                          <TableCell className="font-mono font-semibold">{purchase.id}</TableCell>
-                          <TableCell>{purchase.date}</TableCell>
-                          <TableCell>{purchase.vendor}</TableCell>
-                          <TableCell className="font-semibold">{purchase.product}</TableCell>
-                          <TableCell>{purchase.quantity.toLocaleString()}</TableCell>
-                          <TableCell className="font-semibold">₩{purchase.price.toLocaleString()}</TableCell>
+                          <TableCell className="font-mono font-semibold text-base">{purchase.id}</TableCell>
+                          <TableCell className="text-base">{purchase.date}</TableCell>
+                          <TableCell className="text-base">{purchase.vendor}</TableCell>
+                          <TableCell className="font-semibold text-base">{purchase.product}</TableCell>
+                          <TableCell className="text-base">{purchase.quantity.toLocaleString()}</TableCell>
+                          <TableCell className="font-semibold text-base">₩{purchase.price.toLocaleString()}</TableCell>
                           <TableCell>
                             <Badge variant={purchase.type === '제조사' ? 'default' : 'secondary'}>
                               {purchase.type}
                             </Badge>
+                          </TableCell>
+                          <TableCell className="text-base">
+                            <Badge variant="outline">{purchase.salesPerson || '-'}</Badge>
                           </TableCell>
                           <TableCell>
                             <Badge variant={purchase.status === '완료' ? 'default' : 'outline'}>
@@ -232,7 +267,7 @@ const PurchaseManagement = () => {
                       ))
                     ) : (
                       <TableRow>
-                        <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                        <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
                           검색 결과가 없습니다
                         </TableCell>
                       </TableRow>

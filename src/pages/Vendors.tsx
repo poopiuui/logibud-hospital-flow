@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Search, X } from "lucide-react";
@@ -24,6 +25,7 @@ interface Vendor {
   paymentMethod: string;
   bankAccount: string;
   invoiceEmail: string;
+  salesPerson?: string;
 }
 
 const Vendors = () => {
@@ -41,7 +43,8 @@ const Vendors = () => {
       paymentDate: '매월 말일',
       paymentMethod: '계좌이체',
       bankAccount: '국민 123-456-789012',
-      invoiceEmail: 'vendor1@example.com'
+      invoiceEmail: 'vendor1@example.com',
+      salesPerson: '김영업'
     },
     {
       id: '2',
@@ -55,7 +58,8 @@ const Vendors = () => {
       paymentDate: '익월 15일',
       paymentMethod: '현금',
       bankAccount: '신한 987-654-321098',
-      invoiceEmail: 'customer1@example.com'
+      invoiceEmail: 'customer1@example.com',
+      salesPerson: '이영업'
     }
   ]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -70,7 +74,8 @@ const Vendors = () => {
     paymentDate: '',
     paymentMethod: '',
     bankAccount: '',
-    invoiceEmail: ''
+    invoiceEmail: '',
+    salesPerson: ''
   });
 
   useEffect(() => {
@@ -112,7 +117,8 @@ const Vendors = () => {
       paymentDate: '',
       paymentMethod: '',
       bankAccount: '',
-      invoiceEmail: ''
+      invoiceEmail: '',
+      salesPerson: ''
     });
     toast({
       title: "등록 완료",
@@ -256,6 +262,14 @@ const Vendors = () => {
                         onChange={(e) => setFormData({ ...formData, invoiceEmail: e.target.value })}
                       />
                     </div>
+                    <div className="space-y-2">
+                      <Label>담당영업사원</Label>
+                      <Input
+                        value={formData.salesPerson}
+                        onChange={(e) => setFormData({ ...formData, salesPerson: e.target.value })}
+                        placeholder="영업사원명"
+                      />
+                    </div>
                   </div>
                   <div className="flex justify-end gap-2">
                     <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
@@ -291,29 +305,33 @@ const Vendors = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>코드</TableHead>
-                    <TableHead>유형</TableHead>
-                    <TableHead>사업자명</TableHead>
-                    <TableHead>사업자번호</TableHead>
-                    <TableHead>담당자</TableHead>
-                    <TableHead>연락처</TableHead>
-                    <TableHead>팩스</TableHead>
-                    <TableHead>결제일</TableHead>
-                    <TableHead>결제방법</TableHead>
+                    <TableHead className="text-base">코드</TableHead>
+                    <TableHead className="text-base">유형</TableHead>
+                    <TableHead className="text-base">사업자명</TableHead>
+                    <TableHead className="text-base">사업자번호</TableHead>
+                    <TableHead className="text-base">담당자</TableHead>
+                    <TableHead className="text-base">연락처</TableHead>
+                    <TableHead className="text-base">팩스</TableHead>
+                    <TableHead className="text-base">결제일</TableHead>
+                    <TableHead className="text-base">결제방법</TableHead>
+                    <TableHead className="text-base">담당영업사원</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredVendors.map((vendor) => (
                     <TableRow key={vendor.id}>
-                      <TableCell className="font-medium">{vendor.code}</TableCell>
-                      <TableCell>{vendor.type}</TableCell>
-                      <TableCell>{vendor.businessName}</TableCell>
-                      <TableCell>{vendor.businessNumber}</TableCell>
-                      <TableCell>{vendor.contactName}</TableCell>
-                      <TableCell>{vendor.contactPhone}</TableCell>
-                      <TableCell>{vendor.faxNumber || '-'}</TableCell>
-                      <TableCell>{vendor.paymentDate}</TableCell>
-                      <TableCell>{vendor.paymentMethod}</TableCell>
+                      <TableCell className="font-medium text-base">{vendor.code}</TableCell>
+                      <TableCell className="text-base">{vendor.type}</TableCell>
+                      <TableCell className="text-base">{vendor.businessName}</TableCell>
+                      <TableCell className="text-base">{vendor.businessNumber}</TableCell>
+                      <TableCell className="text-base">{vendor.contactName}</TableCell>
+                      <TableCell className="text-base">{vendor.contactPhone}</TableCell>
+                      <TableCell className="text-base">{vendor.faxNumber || '-'}</TableCell>
+                      <TableCell className="text-base">{vendor.paymentDate}</TableCell>
+                      <TableCell className="text-base">{vendor.paymentMethod}</TableCell>
+                      <TableCell className="text-base">
+                        <Badge variant="secondary">{vendor.salesPerson || '-'}</Badge>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -323,27 +341,31 @@ const Vendors = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>코드</TableHead>
-                    <TableHead>사업자명</TableHead>
-                    <TableHead>사업자번호</TableHead>
-                    <TableHead>담당자</TableHead>
-                    <TableHead>연락처</TableHead>
-                    <TableHead>팩스</TableHead>
-                    <TableHead>결제일</TableHead>
-                    <TableHead>결제방법</TableHead>
+                    <TableHead className="text-base">코드</TableHead>
+                    <TableHead className="text-base">사업자명</TableHead>
+                    <TableHead className="text-base">사업자번호</TableHead>
+                    <TableHead className="text-base">담당자</TableHead>
+                    <TableHead className="text-base">연락처</TableHead>
+                    <TableHead className="text-base">팩스</TableHead>
+                    <TableHead className="text-base">결제일</TableHead>
+                    <TableHead className="text-base">결제방법</TableHead>
+                    <TableHead className="text-base">담당영업사원</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredVendors.filter(v => v.type === '매입처').map((vendor) => (
                     <TableRow key={vendor.id}>
-                      <TableCell className="font-medium">{vendor.code}</TableCell>
-                      <TableCell>{vendor.businessName}</TableCell>
-                      <TableCell>{vendor.businessNumber}</TableCell>
-                      <TableCell>{vendor.contactName}</TableCell>
-                      <TableCell>{vendor.contactPhone}</TableCell>
-                      <TableCell>{vendor.faxNumber || '-'}</TableCell>
-                      <TableCell>{vendor.paymentDate}</TableCell>
-                      <TableCell>{vendor.paymentMethod}</TableCell>
+                      <TableCell className="font-medium text-base">{vendor.code}</TableCell>
+                      <TableCell className="text-base">{vendor.businessName}</TableCell>
+                      <TableCell className="text-base">{vendor.businessNumber}</TableCell>
+                      <TableCell className="text-base">{vendor.contactName}</TableCell>
+                      <TableCell className="text-base">{vendor.contactPhone}</TableCell>
+                      <TableCell className="text-base">{vendor.faxNumber || '-'}</TableCell>
+                      <TableCell className="text-base">{vendor.paymentDate}</TableCell>
+                      <TableCell className="text-base">{vendor.paymentMethod}</TableCell>
+                      <TableCell className="text-base">
+                        <Badge variant="secondary">{vendor.salesPerson || '-'}</Badge>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -353,27 +375,31 @@ const Vendors = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>코드</TableHead>
-                    <TableHead>사업자명</TableHead>
-                    <TableHead>사업자번호</TableHead>
-                    <TableHead>담당자</TableHead>
-                    <TableHead>연락처</TableHead>
-                    <TableHead>팩스</TableHead>
-                    <TableHead>결제일</TableHead>
-                    <TableHead>결제방법</TableHead>
+                    <TableHead className="text-base">코드</TableHead>
+                    <TableHead className="text-base">사업자명</TableHead>
+                    <TableHead className="text-base">사업자번호</TableHead>
+                    <TableHead className="text-base">담당자</TableHead>
+                    <TableHead className="text-base">연락처</TableHead>
+                    <TableHead className="text-base">팩스</TableHead>
+                    <TableHead className="text-base">결제일</TableHead>
+                    <TableHead className="text-base">결제방법</TableHead>
+                    <TableHead className="text-base">담당영업사원</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredVendors.filter(v => v.type === '매출처').map((vendor) => (
                     <TableRow key={vendor.id}>
-                      <TableCell className="font-medium">{vendor.code}</TableCell>
-                      <TableCell>{vendor.businessName}</TableCell>
-                      <TableCell>{vendor.businessNumber}</TableCell>
-                      <TableCell>{vendor.contactName}</TableCell>
-                      <TableCell>{vendor.contactPhone}</TableCell>
-                      <TableCell>{vendor.faxNumber || '-'}</TableCell>
-                      <TableCell>{vendor.paymentDate}</TableCell>
-                      <TableCell>{vendor.paymentMethod}</TableCell>
+                      <TableCell className="font-medium text-base">{vendor.code}</TableCell>
+                      <TableCell className="text-base">{vendor.businessName}</TableCell>
+                      <TableCell className="text-base">{vendor.businessNumber}</TableCell>
+                      <TableCell className="text-base">{vendor.contactName}</TableCell>
+                      <TableCell className="text-base">{vendor.contactPhone}</TableCell>
+                      <TableCell className="text-base">{vendor.faxNumber || '-'}</TableCell>
+                      <TableCell className="text-base">{vendor.paymentDate}</TableCell>
+                      <TableCell className="text-base">{vendor.paymentMethod}</TableCell>
+                      <TableCell className="text-base">
+                        <Badge variant="secondary">{vendor.salesPerson || '-'}</Badge>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
