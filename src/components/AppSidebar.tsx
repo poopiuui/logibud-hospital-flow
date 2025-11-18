@@ -1,4 +1,4 @@
-import { LayoutDashboard, Package, FileText, Truck, Users, Settings } from "lucide-react";
+import { LayoutDashboard, Package, FileText, Truck, Users, Settings, Building2, PackagePlus, ClipboardList, ShoppingCart } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
   Sidebar,
@@ -14,7 +14,12 @@ import {
 
 const menuItems = [
   { title: "대시보드", url: "/", icon: LayoutDashboard },
-  { title: "재고 관리", url: "/inventory", icon: Package },
+  { title: "매입/매출처 관리", url: "/vendors", icon: Building2 },
+  { title: "상품 등록", url: "/product-registration", icon: PackagePlus },
+  { title: "상품 관리", url: "/products", icon: Package },
+  { title: "재고 관리", url: "/inventory", icon: ClipboardList },
+  { title: "매입 관리", url: "/purchase", icon: ShoppingCart },
+  { title: "출고 관리", url: "/outbound", icon: Truck },
   { title: "청구 관리", url: "/billing", icon: FileText },
   { title: "배송 관리", url: "/shipping", icon: Truck },
   { title: "사용자 관리", url: "/users", icon: Users },
@@ -58,7 +63,11 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter className="border-t p-4">
-        <div className="flex items-center gap-3">
+        <NavLink 
+          to="/profile"
+          className="flex items-center gap-3 hover:bg-accent p-2 rounded-lg transition-colors"
+          activeClassName="bg-accent"
+        >
           <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-semibold">
             관
           </div>
@@ -66,7 +75,7 @@ export function AppSidebar() {
             <p className="text-sm font-medium truncate">관리자</p>
             <p className="text-xs text-muted-foreground truncate">admin@logibot.com</p>
           </div>
-        </div>
+        </NavLink>
       </SidebarFooter>
     </Sidebar>
   );
