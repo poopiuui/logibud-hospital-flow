@@ -7,6 +7,12 @@ import { ThemeProvider } from "next-themes";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Chatbot } from "@/components/Chatbot";
+import Dashboard from "./pages/Dashboard";
+import Vendors from "./pages/Vendors";
+import ProductRegistration from "./pages/ProductRegistration";
+import PurchaseManagement from "./pages/PurchaseManagement";
+import OutboundManagement from "./pages/OutboundManagement";
+import Profile from "./pages/Profile";
 import Index from "./pages/Index";
 import Analytics from "./pages/Analytics";
 import ProductDetail from "./pages/ProductDetail";
@@ -31,7 +37,12 @@ const App = () => (
               <AppSidebar />
               <main className="flex-1">
                 <Routes>
-                  <Route path="/" element={<Index />} />
+                  <Route path="/" element={<Dashboard />} />
+                  <Route path="/vendors" element={<Vendors />} />
+                  <Route path="/product-registration" element={<ProductRegistration />} />
+                  <Route path="/products" element={<Index />} />
+                  <Route path="/purchase" element={<PurchaseManagement />} />
+                  <Route path="/outbound" element={<OutboundManagement />} />
                   <Route path="/analytics" element={<Analytics />} />
                   <Route path="/product/:id" element={<ProductDetail />} />
                   <Route path="/inventory" element={<Inventory />} />
@@ -39,6 +50,7 @@ const App = () => (
                   <Route path="/shipping" element={<Shipping />} />
                   <Route path="/users" element={<Users />} />
                   <Route path="/settings" element={<Settings />} />
+                  <Route path="/profile" element={<Profile />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
