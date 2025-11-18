@@ -4,10 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { PackagePlus, Upload, CheckCircle2, XCircle } from "lucide-react";
+import { PackagePlus, Upload, CheckCircle2, XCircle, Settings } from "lucide-react";
 import * as XLSX from "xlsx";
+import { PRODUCT_CATEGORIES, getCategoryByCode } from "@/data/categories";
 
 interface RegistrationResult {
   success: boolean;
@@ -19,12 +22,14 @@ export default function ProductRegistration() {
   const { toast } = useToast();
   const [singleProduct, setSingleProduct] = useState({
     name: "",
-    category: "",
+    categoryCode: "",
     barcode: "",
     price: "",
-    description: ""
+    description: "",
+    keywords: ["", "", "", "", "", "", "", "", "", ""]
   });
   const [bulkResults, setBulkResults] = useState<RegistrationResult[]>([]);
+  const [showCategoryDialog, setShowCategoryDialog] = useState(false);
 
   const handleSingleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,10 +44,11 @@ export default function ProductRegistration() {
       });
       setSingleProduct({
         name: "",
-        category: "",
+        categoryCode: "",
         barcode: "",
         price: "",
-        description: ""
+        description: "",
+        keywords: ["", "", "", "", "", "", "", "", "", ""]
       });
     } else {
       toast({
@@ -150,12 +156,27 @@ export default function ProductRegistration() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="category">카테고리 *</Label>
-                    <Input
-                      id="category"
-                      value={singleProduct.category}
-                      onChange={(e) => setSingleProduct({ ...singleProduct, category: e.target.value })}
-                      required
-                    />
+                    <div className="flex gap-2">
+                      <Select
+                        value={singleProduct.categoryCode}
+                        onValueChange={(value) => setSingleProduct({ ...singleProduct, categoryCode: value })}
+                        required
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="카테고리 선택" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {PRODUCT_CATEGORIES.map(cat => (
+                            <SelectItem key={cat.code} value={cat.code}>
+                              {cat.code} - {cat.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button type="button" variant="outline" size="icon" onClick={() => setShowCategoryDialog(true)}>
+                        <Settings className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="barcode">바코드 *</Label>
