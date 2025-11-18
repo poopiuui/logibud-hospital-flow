@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { FileText, Download, Eye, CheckCircle2, Clock, X, FileDown, FilePlus, Filter, Trash2 } from "lucide-react";
+import { FileText, Download, Eye, CheckCircle2, Clock, X, FileDown, FilePlus, Filter, Trash2, ChevronDown, DollarSign } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import { useToast } from "@/hooks/use-toast";
@@ -24,15 +25,18 @@ interface Invoice {
   invoiceIssued: boolean;
   issueDate?: string;
   items?: { name: string; quantity: number; price: number }[];
+  paymentConfirmed: boolean;
+  paymentDate?: string;
+  paymentAmount?: number;
 }
 
 export default function Billing() {
   const { toast } = useToast();
   const [invoices, setInvoices] = useState<Invoice[]>([
-    { id: 'INV-001', customer: '고객 A', amount: 12500000, status: '완료', date: '2024-01-15', invoiceIssued: true, issueDate: '2024-01-16', items: [{ name: '주사기(5ml)', quantity: 100, price: 150 }] },
-    { id: 'INV-002', customer: '고객 B', amount: 8300000, status: '진행중', date: '2024-01-14', invoiceIssued: false, items: [{ name: '거즈 패드', quantity: 200, price: 80 }] },
-    { id: 'INV-003', customer: '고객 C', amount: 15200000, status: '대기', date: '2024-01-13', invoiceIssued: false, items: [{ name: '일회용 장갑', quantity: 500, price: 50 }] },
-    { id: 'INV-004', customer: '고객 D', amount: 5600000, status: '완료', date: '2024-01-12', invoiceIssued: true, issueDate: '2024-01-13', items: [{ name: '알코올 솜', quantity: 300, price: 30 }] },
+    { id: 'INV-001', customer: '고객 A', amount: 12500000, status: '완료', date: '2024-01-15', invoiceIssued: true, issueDate: '2024-01-16', items: [{ name: '주사기(5ml)', quantity: 100, price: 150 }], paymentConfirmed: true, paymentDate: '2024-01-17', paymentAmount: 12500000 },
+    { id: 'INV-002', customer: '고객 B', amount: 8300000, status: '진행중', date: '2024-01-14', invoiceIssued: false, items: [{ name: '거즈 패드', quantity: 200, price: 80 }], paymentConfirmed: false },
+    { id: 'INV-003', customer: '고객 C', amount: 15200000, status: '대기', date: '2024-01-13', invoiceIssued: false, items: [{ name: '일회용 장갑', quantity: 500, price: 50 }], paymentConfirmed: false },
+    { id: 'INV-004', customer: '고객 D', amount: 5600000, status: '완료', date: '2024-01-12', invoiceIssued: true, issueDate: '2024-01-13', items: [{ name: '알코올 솜', quantity: 300, price: 30 }], paymentConfirmed: true, paymentDate: '2024-01-14', paymentAmount: 5600000 },
   ]);
   const [selectedInvoices, setSelectedInvoices] = useState<string[]>([]);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
@@ -41,6 +45,8 @@ export default function Billing() {
   const [newInvoice, setNewInvoice] = useState({ customer: '', amount: '', date: '' });
   const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({ from: undefined, to: undefined });
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
+  const [paymentData, setPaymentData] = useState({ invoiceId: '', paymentDate: '', paymentAmount: '' });
 
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
@@ -116,31 +122,111 @@ export default function Billing() {
     setSelectedInvoices([]);
   };
 
-  const downloadInvoiceExcel = (filteredOnly: boolean = false) => {
-    const invoiceData = filteredOnly 
-      ? filteredInvoices 
-      : selectedInvoices.length > 0
-        ? invoices.filter(inv => selectedInvoices.includes(inv.id))
-        : invoices;
+  const handlePaymentRegister = () => {
+    if (!paymentData.invoiceId || !paymentData.paymentDate || !paymentData.paymentAmount) {
+      toast({
+        title: "입력 오류",
+        description: "모든 입금 정보를 입력해주세요.",
+        variant: "destructive"
+      });
+      return;
+    }
 
+    setInvoices(invoices.map(inv =>
+      inv.id === paymentData.invoiceId
+        ? { ...inv, paymentConfirmed: true, paymentDate: paymentData.paymentDate, paymentAmount: parseFloat(paymentData.paymentAmount) }
+        : inv
+    ));
+
+    toast({
+      title: "입금 확인 완료",
+      description: "입금 내역이 등록되었습니다."
+    });
+
+    setShowPaymentDialog(false);
+    setPaymentData({ invoiceId: '', paymentDate: '', paymentAmount: '' });
+  };
+
+  const downloadInvoiceCSV = (filteredOnly: boolean = false) => {
+    const invoiceData = filteredOnly ? filteredInvoices : invoices;
     const ws = XLSX.utils.json_to_sheet(invoiceData.map(inv => ({
       '청구번호': inv.id,
       '고객명': inv.customer,
       '금액': inv.amount,
       '상태': inv.status,
-      '계산서발행': inv.invoiceIssued ? '발행' : '미발행',
+      '청구서발행': inv.invoiceIssued ? '발행' : '미발행',
       '발행일자': inv.issueDate || '',
-      '청구일자': inv.date
+      '청구일자': inv.date,
+      '입금확인': inv.paymentConfirmed ? '확인' : '미확인',
+      '입금일자': inv.paymentDate || '',
+      '입금금액': inv.paymentAmount || 0
     })));
-    
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "청구서");
+    XLSX.writeFile(wb, `청구서_${new Date().toISOString().split('T')[0]}.csv`);
+    toast({ title: "CSV 다운로드 완료" });
+  };
+
+  const downloadInvoiceExcel = (filteredOnly: boolean = false) => {
+    const invoiceData = filteredOnly ? filteredInvoices : invoices;
+    const ws = XLSX.utils.json_to_sheet(invoiceData.map(inv => ({
+      '청구번호': inv.id,
+      '고객명': inv.customer,
+      '금액': inv.amount,
+      '상태': inv.status,
+      '청구서발행': inv.invoiceIssued ? '발행' : '미발행',
+      '발행일자': inv.issueDate || '',
+      '청구일자': inv.date,
+      '입금확인': inv.paymentConfirmed ? '확인' : '미확인',
+      '입금일자': inv.paymentDate || '',
+      '입금금액': inv.paymentAmount || 0
+    })));
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "청구서");
     XLSX.writeFile(wb, `청구서_${new Date().toISOString().split('T')[0]}.xlsx`);
+    toast({ title: "Excel 다운로드 완료" });
+  };
+
+  const downloadInvoiceForHometax = (filteredOnly: boolean = false) => {
+    const invoiceData = filteredOnly ? filteredInvoices.filter(inv => inv.invoiceIssued) : invoices.filter(inv => inv.invoiceIssued);
+    
+    const ws = XLSX.utils.json_to_sheet(invoiceData.map(inv => ({
+      '계산서발행키': `HOMETAX-${inv.id}-${inv.issueDate}`,
+      '청구번호': inv.id,
+      '고객명': inv.customer,
+      '발행일자': inv.issueDate,
+      '공급가액': Math.round(inv.amount / 1.1),
+      '세액': Math.round(inv.amount - (inv.amount / 1.1)),
+      '합계금액': inv.amount,
+      '입금확인': inv.paymentConfirmed ? 'Y' : 'N',
+      '입금일자': inv.paymentDate || ''
+    })));
+    
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "홈텍스연동");
+    XLSX.writeFile(wb, `홈텍스_계산서발행_${new Date().toISOString().split('T')[0]}.xlsx`);
     
     toast({
-      title: "청구서 다운로드 완료",
-      description: "청구서가 Excel 형식으로 다운로드되었습니다."
+      title: "홈텍스 연동 파일 생성 완료",
+      description: "홈텍스에 업로드하실 수 있는 파일이 생성되었습니다."
     });
+  };
+
+  const downloadInvoicePDF = (filteredOnly: boolean = false) => {
+    const invoiceData = filteredOnly ? filteredInvoices : invoices;
+    const doc = new jsPDF();
+    doc.text("청구서 목록", 20, 20);
+    let y = 40;
+    invoiceData.forEach((inv) => {
+      if (y > 270) {
+        doc.addPage();
+        y = 20;
+      }
+      doc.text(`${inv.id} - ${inv.customer}: ${inv.amount.toLocaleString()}원 ${inv.paymentConfirmed ? '[입금확인]' : ''}`, 20, y);
+      y += 10;
+    });
+    doc.save(`청구서_${new Date().toISOString().split('T')[0]}.pdf`);
+    toast({ title: "PDF 다운로드 완료" });
   };
 
   const issueInvoice = (invoice: Invoice) => {
@@ -183,8 +269,8 @@ export default function Billing() {
     }
 
     toast({
-      title: "계산서 발행 완료",
-      description: `${invoice.customer}에 대한 계산서가 Excel로 발행되었습니다.`
+      title: "청구서 발행 완료",
+      description: `${invoice.customer}에 대한 청구서가 Excel로 발행되었습니다.`
     });
   };
 
@@ -210,7 +296,8 @@ export default function Billing() {
       status: '대기',
       date: newInvoice.date,
       invoiceIssued: false,
-      items: []
+      items: [],
+      paymentConfirmed: false
     };
     
     setInvoices(prev => [...prev, invoice]);
@@ -231,18 +318,67 @@ export default function Billing() {
           <p className="text-muted-foreground text-lg mt-2">청구서 및 결제 관리</p>
         </div>
         <div className="flex gap-2">
-          <Button onClick={() => downloadInvoiceExcel()} variant="outline" size="lg">
-            <Download className="w-5 h-5 mr-2" />
-            전체 엑셀
-          </Button>
-          <Button onClick={() => downloadInvoiceExcel(false)} variant="outline" size="lg" disabled={selectedInvoices.length === 0}>
-            <Download className="w-5 h-5 mr-2" />
-            선택 엑셀
-          </Button>
           <Button size="lg" className="gap-2" onClick={() => setShowNewInvoice(true)}>
             <FilePlus className="w-5 h-5" />
             청구서 등록
           </Button>
+          
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="lg" variant="outline" className="gap-2">
+                <Download className="w-5 h-5" />
+                전체 다운로드
+                <ChevronDown className="w-4 h-4 ml-1" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => downloadInvoiceCSV(false)}>
+                <FileDown className="mr-2 h-4 w-4" />
+                CSV로 다운로드
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => downloadInvoiceExcel(false)}>
+                <FileDown className="mr-2 h-4 w-4" />
+                Excel로 다운로드
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => downloadInvoicePDF(false)}>
+                <FileDown className="mr-2 h-4 w-4" />
+                PDF로 다운로드
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => downloadInvoiceForHometax(false)}>
+                <FileDown className="mr-2 h-4 w-4" />
+                홈텍스 연동 파일
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="lg" variant="outline" className="gap-2">
+                <Download className="w-5 h-5" />
+                필터링 다운로드
+                <ChevronDown className="w-4 h-4 ml-1" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => downloadInvoiceCSV(true)}>
+                <FileDown className="mr-2 h-4 w-4" />
+                CSV로 다운로드
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => downloadInvoiceExcel(true)}>
+                <FileDown className="mr-2 h-4 w-4" />
+                Excel로 다운로드
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => downloadInvoicePDF(true)}>
+                <FileDown className="mr-2 h-4 w-4" />
+                PDF로 다운로드
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => downloadInvoiceForHometax(true)}>
+                <FileDown className="mr-2 h-4 w-4" />
+                홈텍스 연동 파일
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          
           <Button 
             variant="ghost" 
             size="icon"
@@ -302,7 +438,8 @@ export default function Billing() {
                 <TableHead>고객명</TableHead>
                 <TableHead>금액</TableHead>
                 <TableHead>상태</TableHead>
-                <TableHead>계산서 발행</TableHead>
+                <TableHead>청구서 발행</TableHead>
+                <TableHead>입금확인</TableHead>
                 <TableHead>날짜</TableHead>
                 <TableHead>작업</TableHead>
               </TableRow>
@@ -349,6 +486,22 @@ export default function Billing() {
                       )}
                     </div>
                   </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      {invoice.paymentConfirmed ? (
+                        <>
+                          <CheckCircle2 className="w-4 h-4 text-blue-600" />
+                          <span className="text-sm text-blue-600">입금완료</span>
+                          <span className="text-xs text-muted-foreground ml-2">{invoice.paymentDate}</span>
+                        </>
+                      ) : (
+                        <>
+                          <Clock className="w-4 h-4 text-orange-600" />
+                          <span className="text-sm text-orange-600">미확인</span>
+                        </>
+                      )}
+                    </div>
+                  </TableCell>
                   <TableCell>{invoice.date}</TableCell>
                   <TableCell>
                     <div className="flex gap-2">
@@ -358,7 +511,20 @@ export default function Billing() {
                           size="sm"
                           onClick={() => issueInvoice(invoice)}
                         >
-                          계산서 발행
+                          청구서 발행
+                        </Button>
+                      )}
+                      {!invoice.paymentConfirmed && (
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => {
+                            setPaymentData({ invoiceId: invoice.id, paymentDate: '', paymentAmount: invoice.amount.toString() });
+                            setShowPaymentDialog(true);
+                          }}
+                        >
+                          <DollarSign className="w-4 h-4 mr-1" />
+                          입금확인
                         </Button>
                       )}
                     </div>
@@ -510,7 +676,8 @@ export default function Billing() {
                 amount: Number(newInvoice.amount),
                 status: '대기',
                 date: newInvoice.date,
-                invoiceIssued: false
+                invoiceIssued: false,
+                paymentConfirmed: false
               }]);
               toast({
                 title: "청구서 등록 완료",
@@ -519,6 +686,42 @@ export default function Billing() {
               setShowNewInvoice(false);
               setNewInvoice({ customer: '', amount: '', date: '' });
             }}>등록</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Payment Registration Dialog */}
+      <Dialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>입금 확인 등록</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>청구서 번호</Label>
+              <Input value={paymentData.invoiceId} disabled />
+            </div>
+            <div>
+              <Label>입금일자</Label>
+              <Input
+                type="date"
+                value={paymentData.paymentDate}
+                onChange={(e) => setPaymentData({ ...paymentData, paymentDate: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label>입금금액</Label>
+              <Input
+                type="number"
+                value={paymentData.paymentAmount}
+                onChange={(e) => setPaymentData({ ...paymentData, paymentAmount: e.target.value })}
+                placeholder="입금금액 입력"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowPaymentDialog(false)}>취소</Button>
+            <Button onClick={handlePaymentRegister}>입금 확인</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

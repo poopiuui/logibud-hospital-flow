@@ -10,7 +10,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Truck, Package, CheckCircle2, Download, Upload, PackagePlus, X, FileDown, Filter, Trash2, ChevronUp, ChevronDown } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import * as XLSX from "xlsx";
+import jsPDF from "jspdf";
 import { useToast } from "@/hooks/use-toast";
 import { DateRangeFilter } from "@/components/DateRangeFilter";
 import { SwipeableTableRow } from "@/components/SwipeableTableRow";
@@ -183,6 +185,58 @@ export default function Shipping() {
     setSelectedShipments([]);
   };
 
+  const exportToCSV = () => {
+    const ws = XLSX.utils.json_to_sheet(filteredShipments.map(s => ({
+      '배송번호': s.id,
+      '고객명': s.customer,
+      '전화번호': s.customerPhone,
+      '주소': s.address,
+      '배송지': s.shippingLocation,
+      '상태': s.status,
+      '송장번호': s.trackingNumber,
+      '출고일': s.shipDate,
+      '완료일': s.deliveryDate || ''
+    })));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "배송관리");
+    XLSX.writeFile(wb, "배송관리_데이터.csv");
+    toast({ title: "CSV 다운로드 완료" });
+  };
+
+  const exportToExcel = () => {
+    const ws = XLSX.utils.json_to_sheet(filteredShipments.map(s => ({
+      '배송번호': s.id,
+      '고객명': s.customer,
+      '전화번호': s.customerPhone,
+      '주소': s.address,
+      '배송지': s.shippingLocation,
+      '상태': s.status,
+      '송장번호': s.trackingNumber,
+      '출고일': s.shipDate,
+      '완료일': s.deliveryDate || ''
+    })));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "배송관리");
+    XLSX.writeFile(wb, "배송관리_데이터.xlsx");
+    toast({ title: "Excel 다운로드 완료" });
+  };
+
+  const exportToPDF = () => {
+    const doc = new jsPDF();
+    doc.text("배송 관리 목록", 20, 20);
+    let y = 40;
+    filteredShipments.forEach((ship) => {
+      if (y > 270) {
+        doc.addPage();
+        y = 20;
+      }
+      doc.text(`${ship.id} - ${ship.customer}: ${ship.status}`, 20, y);
+      y += 10;
+    });
+    doc.save("배송관리_데이터.pdf");
+    toast({ title: "PDF 다운로드 완료" });
+  };
+
   const stats = {
     preparing: filteredShipments.filter(s => s.status === '출고준비중').length,
     inTransit: filteredShipments.filter(s => s.status === '배송중').length,
@@ -288,18 +342,30 @@ export default function Shipping() {
           <p className="text-muted-foreground text-lg mt-2">배송 현황 및 물류 추적</p>
         </div>
         <div className="flex gap-2 flex-wrap">
-          <Button onClick={() => downloadExcel(false)} variant="outline" size="lg">
-            <Download className="mr-2 h-5 w-5" />
-            전체 엑셀
-          </Button>
-          <Button onClick={() => downloadExcel(true)} variant="outline" size="lg" disabled={selectedShipments.length === 0}>
-            <Download className="mr-2 h-5 w-5" />
-            선택 엑셀
-          </Button>
-          <Button onClick={downloadCSV} variant="outline" size="lg">
-            <FileDown className="mr-2 h-5 w-5" />
-            CSV
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="lg" variant="outline" className="gap-2">
+                <Download className="w-5 h-5" />
+                다운로드
+                <ChevronDown className="w-4 h-4 ml-1" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={exportToCSV}>
+                <FileDown className="mr-2 h-4 w-4" />
+                CSV로 다운로드
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={exportToExcel}>
+                <FileDown className="mr-2 h-4 w-4" />
+                Excel로 다운로드
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={exportToPDF}>
+                <FileDown className="mr-2 h-4 w-4" />
+                PDF로 다운로드
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          
           <Button 
             onClick={() => setIsBulkTrackingDialogOpen(true)}
             disabled={selectedShipments.length === 0}
