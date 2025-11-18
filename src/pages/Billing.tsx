@@ -490,9 +490,9 @@ export default function Billing() {
                 <TableHead>고객명</TableHead>
                 <TableHead>금액</TableHead>
                 <TableHead>상태</TableHead>
-                <TableHead>청구서 발행</TableHead>
+                <TableHead>계산서 발행여부</TableHead>
+                <TableHead>발행 날짜</TableHead>
                 <TableHead>입금확인</TableHead>
-                <TableHead>날짜</TableHead>
                 <TableHead>작업</TableHead>
               </TableRow>
             </TableHeader>
@@ -528,7 +528,6 @@ export default function Billing() {
                         <>
                           <CheckCircle2 className="w-4 h-4 text-green-600" />
                           <span className="text-sm text-green-600">발행완료</span>
-                          <span className="text-xs text-muted-foreground ml-2">{invoice.issueDate}</span>
                         </>
                       ) : (
                         <>
@@ -539,12 +538,14 @@ export default function Billing() {
                     </div>
                   </TableCell>
                   <TableCell>
+                    <span className="text-sm">{invoice.invoiceIssued && invoice.issueDate ? invoice.issueDate : '-'}</span>
+                  </TableCell>
+                  <TableCell>
                     <div className="flex items-center gap-2">
                       {invoice.paymentConfirmed ? (
                         <>
                           <CheckCircle2 className="w-4 h-4 text-blue-600" />
                           <span className="text-sm text-blue-600">입금완료</span>
-                          <span className="text-xs text-muted-foreground ml-2">{invoice.paymentDate}</span>
                         </>
                       ) : (
                         <>
@@ -554,7 +555,6 @@ export default function Billing() {
                       )}
                     </div>
                   </TableCell>
-                  <TableCell>{invoice.date}</TableCell>
                   <TableCell>
                     <div className="flex gap-2">
                       {!invoice.invoiceIssued && (
