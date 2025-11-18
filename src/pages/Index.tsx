@@ -65,16 +65,17 @@ interface Product {
   keywords?: string;
   createdBy?: string;
   lastOrderQuantity?: number;
+  b2bEnabled?: boolean;
 }
 
 const CATEGORIES = ['의료소모품', '주사기/바늘', '붕대/거즈', '보호구', '수액/주사액', '기타'];
 
   const generateSampleProducts = (): Product[] => [
-  { userCode: 'USER001', barcode: '8801234567890', productCode: 'A-001', productName: '주사기(5ml)', currentStock: 850, safetyStock: 1000, unitPrice: 150, consumerPrice: 200, purchasePrice: 120, shippingPrice: 180, supplier: '㈜메디칼', registeredDate: new Date().toISOString().split('T')[0], category: '주사기/바늘', images: ['/placeholder.svg'], keywords: '주사기, 5ml, 의료용', createdBy: '김관리', lastOrderQuantity: 1000 },
-  { userCode: 'USER002', barcode: '8801234567891', productCode: 'B-012', productName: '거즈 패드', currentStock: 2100, safetyStock: 2000, unitPrice: 80, consumerPrice: 100, purchasePrice: 60, shippingPrice: 90, supplier: '㈜헬스케어', registeredDate: new Date().toISOString().split('T')[0], category: '붕대/거즈', images: ['/placeholder.svg'], keywords: '거즈, 패드, 상처', createdBy: '이관리', lastOrderQuantity: 2000 },
-  { userCode: 'USER003', barcode: '8801234567892', productCode: 'C-045', productName: '일회용 장갑(M)', currentStock: 400, safetyStock: 5000, unitPrice: 50, consumerPrice: 70, purchasePrice: 40, shippingPrice: 60, supplier: '㈜메디칼', registeredDate: new Date().toISOString().split('T')[0], category: '보호구', images: ['/placeholder.svg'], keywords: '장갑, 일회용, M사이즈', createdBy: '김관리', lastOrderQuantity: 5000 },
-  { userCode: 'USER004', barcode: '8801234567893', productCode: 'D-078', productName: '알코올 솜', currentStock: 8900, safetyStock: 10000, unitPrice: 30, consumerPrice: 40, purchasePrice: 25, shippingPrice: 35, supplier: '㈜의료용품', registeredDate: new Date().toISOString().split('T')[0], category: '의료소모품', images: ['/placeholder.svg'], keywords: '알코올, 솜, 소독', createdBy: '박관리', lastOrderQuantity: 10000 },
-  { userCode: 'USER005', barcode: '8801234567894', productCode: 'E-092', productName: '링거 세트', currentStock: 500, safetyStock: 1500, unitPrice: 2500, consumerPrice: 3000, purchasePrice: 2200, shippingPrice: 2800, supplier: '㈜메디텍', registeredDate: new Date().toISOString().split('T')[0], category: '수액/주사액', images: ['/placeholder.svg'], keywords: '링거, 수액, 주사', createdBy: '이관리' },
+  { userCode: 'USER001', barcode: '8801234567890', productCode: 'A-001', productName: '주사기(5ml)', currentStock: 850, safetyStock: 1000, unitPrice: 150, consumerPrice: 200, purchasePrice: 120, shippingPrice: 180, supplier: '㈜메디칼', registeredDate: new Date().toISOString().split('T')[0], category: '주사기/바늘', images: ['/placeholder.svg'], keywords: '주사기, 5ml, 의료용', createdBy: '김관리', lastOrderQuantity: 1000, b2bEnabled: true },
+  { userCode: 'USER002', barcode: '8801234567891', productCode: 'B-012', productName: '거즈 패드', currentStock: 2100, safetyStock: 2000, unitPrice: 80, consumerPrice: 100, purchasePrice: 60, shippingPrice: 90, supplier: '㈜헬스케어', registeredDate: new Date().toISOString().split('T')[0], category: '붕대/거즈', images: ['/placeholder.svg'], keywords: '거즈, 패드, 상처', createdBy: '이관리', lastOrderQuantity: 2000, b2bEnabled: true },
+  { userCode: 'USER003', barcode: '8801234567892', productCode: 'C-045', productName: '일회용 장갑(M)', currentStock: 400, safetyStock: 5000, unitPrice: 50, consumerPrice: 70, purchasePrice: 40, shippingPrice: 60, supplier: '㈜메디칼', registeredDate: new Date().toISOString().split('T')[0], category: '보호구', images: ['/placeholder.svg'], keywords: '장갑, 일회용, M사이즈', createdBy: '김관리', lastOrderQuantity: 5000, b2bEnabled: false },
+  { userCode: 'USER004', barcode: '8801234567893', productCode: 'D-078', productName: '알코올 솜', currentStock: 8900, safetyStock: 10000, unitPrice: 30, consumerPrice: 40, purchasePrice: 25, shippingPrice: 35, supplier: '㈜의료용품', registeredDate: new Date().toISOString().split('T')[0], category: '의료소모품', images: ['/placeholder.svg'], keywords: '알코올, 솜, 소독', createdBy: '박관리', lastOrderQuantity: 10000, b2bEnabled: true },
+  { userCode: 'USER005', barcode: '8801234567894', productCode: 'E-092', productName: '링거 세트', currentStock: 500, safetyStock: 1500, unitPrice: 2500, consumerPrice: 3000, purchasePrice: 2200, shippingPrice: 2800, supplier: '㈜메디텍', registeredDate: new Date().toISOString().split('T')[0], category: '수액/주사액', images: ['/placeholder.svg'], keywords: '링거, 수액, 주사', createdBy: '이관리', b2bEnabled: true },
 ];
 
 const Index = () => {
@@ -644,7 +645,19 @@ const Index = () => {
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>제품 수정</DialogTitle>
+            <div className="flex items-center justify-between">
+              <DialogTitle>제품 수정</DialogTitle>
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="editB2bEnabled"
+                  checked={editingProduct?.b2bEnabled ?? true}
+                  onChange={(e) => editingProduct && setEditingProduct({ ...editingProduct, b2bEnabled: e.target.checked })}
+                  className="w-4 h-4 rounded border-gray-300"
+                />
+                <Label htmlFor="editB2bEnabled" className="cursor-pointer">B2B 연동</Label>
+              </div>
+            </div>
           </DialogHeader>
           {editingProduct && (
             <div className="grid grid-cols-2 gap-4">
@@ -721,6 +734,20 @@ const Index = () => {
                   value={editingProduct.supplier}
                   onChange={(e) => setEditingProduct({ ...editingProduct, supplier: e.target.value })}
                 />
+              </div>
+              <div className="space-y-2 col-span-2">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="editB2bEnabledCheck"
+                    checked={editingProduct.b2bEnabled ?? true}
+                    onChange={(e) => setEditingProduct({ ...editingProduct, b2bEnabled: e.target.checked })}
+                    className="w-4 h-4 rounded border-gray-300"
+                  />
+                  <Label htmlFor="editB2bEnabledCheck" className="cursor-pointer">
+                    B2B 포털에 노출
+                  </Label>
+                </div>
               </div>
             </div>
           )}

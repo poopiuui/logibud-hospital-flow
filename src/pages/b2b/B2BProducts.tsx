@@ -52,6 +52,7 @@ export default function B2BProducts() {
       const { data, error } = await supabase
         .from('products')
         .select('*')
+        .eq('b2b_enabled', true)
         .gt('stock', 0)
         .order('category', { ascending: true });
 
