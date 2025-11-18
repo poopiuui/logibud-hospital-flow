@@ -89,7 +89,7 @@ const Index = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
   const [filterSupplier, setFilterSupplier] = useState("all");
-  const [sortBy, setSortBy] = useState<'name' | 'stock' | 'price'>('name');
+  const [sortBy, setSortBy] = useState<'name' | 'stock' | 'price' | 'date'>('name');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -159,6 +159,9 @@ const Index = () => {
           break;
         case 'price':
           comparison = a.unitPrice - b.unitPrice;
+          break;
+        case 'date':
+          comparison = new Date(a.registeredDate).getTime() - new Date(b.registeredDate).getTime();
           break;
       }
       return sortOrder === 'asc' ? comparison : -comparison;
@@ -314,35 +317,69 @@ const Index = () => {
             storageKey="products-date-filter"
           />
           
-          {/* 일괄 작업 툴바 */}
-          {selectedProducts.length > 0 && (
-            <Card className="bg-primary/10 border-primary">
-              <CardContent className="py-4">
-                <div className="flex flex-wrap items-center gap-4">
-                  <span className="text-sm font-medium">
-                    {selectedProducts.length}개 선택됨
-                  </span>
-                  <div className="flex gap-2">
-                    <Button onClick={openQuotationDialog} size="sm">
-                      <FileText className="w-4 h-4 mr-2" />
-                      견적서 생성
-                    </Button>
-                    <Button onClick={() => downloadCSV(true)} variant="outline" size="sm">
-                      <Download className="w-4 h-4 mr-2" />
-                      선택 내보내기
-                    </Button>
-                    <Button onClick={handleBulkDelete} variant="destructive" size="sm">
-                      <Trash2 className="w-4 h-4 mr-2" />
-                      삭제
-                    </Button>
-                  </div>
+        {/* 일괄 작업 툴바 */}
+        {selectedProducts.length > 0 && (
+          <Card className="bg-primary/10 border-primary">
+            <CardContent className="py-4">
+              <div className="flex flex-wrap items-center gap-4">
+                <span className="text-sm font-medium">
+                  {selectedProducts.length}개 선택됨
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  <Button onClick={openQuotationDialog} size="sm">
+                    <FileText className="w-4 h-4 mr-2" />
+                    견적서 생성
+                  </Button>
+                  <Button 
+                    onClick={() => {
+                      const selected = getSelectedProductsData();
+                      if (selected.length === 1) {
+                        openHistoryDialog(selected[0]);
+                      } else {
+                        toast({ title: "상품을 1개만 선택하세요", description: "입출고 내역은 한 번에 하나의 상품만 조회할 수 있습니다.", variant: "destructive" });
+                      }
+                    }}
+                    variant="outline" 
+                    size="sm"
+                  >
+                    <History className="w-4 h-4 mr-2" />
+                    입출고 내역
+                  </Button>
+                  <Button 
+                    onClick={() => {
+                      const selected = getSelectedProductsData();
+                      if (selected.length === 1) {
+                        openPriceCardDialog(selected[0]);
+                      } else {
+                        toast({ title: "상품을 1개만 선택하세요", description: "프라이스카드는 한 번에 하나의 상품만 생성할 수 있습니다.", variant: "destructive" });
+                      }
+                    }}
+                    variant="outline" 
+                    size="sm"
+                  >
+                    <CreditCard className="w-4 h-4 mr-2" />
+                    프라이스카드
+                  </Button>
+                  <Button onClick={() => downloadCSV(true)} variant="outline" size="sm">
+                    <Download className="w-4 h-4 mr-2" />
+                    선택 CSV
+                  </Button>
+                  <Button onClick={() => downloadPDF(true)} variant="outline" size="sm">
+                    <Download className="w-4 h-4 mr-2" />
+                    선택 PDF
+                  </Button>
+                  <Button onClick={handleBulkDelete} variant="destructive" size="sm">
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    삭제
+                  </Button>
                 </div>
-              </CardContent>
-            </Card>
-          )}
-        </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <Card className="border-2">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
@@ -400,53 +437,9 @@ const Index = () => {
           </Card>
         </div>
 
-        {selectedProducts.length > 0 && (
-          <Card className="border-2 border-primary">
-            <CardHeader>
-              <CardTitle>선택된 상품 작업</CardTitle>
-            </CardHeader>
-            <CardContent className="flex gap-3">
-              <Button onClick={openQuotationDialog} className="gap-2">
-                <FileText className="h-4 w-4" />
-                견적서 생성
-              </Button>
-              <Button 
-                onClick={() => {
-                  const selected = getSelectedProductsData();
-                  if (selected.length === 1) {
-                    openHistoryDialog(selected[0]);
-                  } else {
-                    toast({ title: "상품을 1개만 선택하세요", description: "입출고 내역은 한 번에 하나의 상품만 조회할 수 있습니다.", variant: "destructive" });
-                  }
-                }}
-                variant="outline" 
-                className="gap-2"
-              >
-                <History className="h-4 w-4" />
-                입출고 내역
-              </Button>
-              <Button 
-                onClick={() => {
-                  const selected = getSelectedProductsData();
-                  if (selected.length === 1) {
-                    openPriceCardDialog(selected[0]);
-                  } else {
-                    toast({ title: "상품을 1개만 선택하세요", description: "프라이스카드는 한 번에 하나의 상품만 생성할 수 있습니다.", variant: "destructive" });
-                  }
-                }}
-                variant="outline" 
-                className="gap-2"
-              >
-                <CreditCard className="h-4 w-4" />
-                프라이스카드 생성
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-
         <Card>
           <CardHeader>
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-4">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
               <div>
                 <CardTitle className="text-2xl">제품 목록</CardTitle>
                 <CardDescription>등록된 제품을 관리하고 조회합니다</CardDescription>
@@ -460,30 +453,6 @@ const Index = () => {
                   <FileText className="h-4 w-4 mr-2" />
                   발주서 등록
                 </Button>
-                {selectedProducts.length > 0 && (
-                  <>
-                    <Button onClick={openQuotationDialog} variant="outline" size="sm">
-                      <FileText className="h-4 w-4 mr-2" />
-                      견적서 ({selectedProducts.length})
-                    </Button>
-                    <Button
-                      onClick={() => downloadCSV(true)}
-                      variant="outline"
-                      size="sm"
-                    >
-                      <FileDown className="h-4 w-4 mr-2" />
-                      선택 CSV
-                    </Button>
-                    <Button
-                      onClick={() => downloadPDF(true)}
-                      variant="outline"
-                      size="sm"
-                    >
-                      <FileDown className="h-4 w-4 mr-2" />
-                      선택 PDF
-                    </Button>
-                  </>
-                )}
                 <Button onClick={() => downloadCSV(false)} variant="outline" size="sm">
                   <Download className="h-4 w-4 mr-2" />
                   전체 CSV
@@ -541,6 +510,7 @@ const Index = () => {
                   <SelectItem value="name">이름순</SelectItem>
                   <SelectItem value="stock">재고순</SelectItem>
                   <SelectItem value="price">가격순</SelectItem>
+                  <SelectItem value="date">등록일순</SelectItem>
                 </SelectContent>
               </Select>
 
