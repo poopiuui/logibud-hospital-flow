@@ -14,6 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
+      company_profiles: {
+        Row: {
+          address: string | null
+          business_certificate_url: string | null
+          business_number: string
+          ceo_name: string
+          company_name: string
+          created_at: string | null
+          email: string
+          id: string
+          phone: string
+          status: string
+          updated_at: string | null
+          user_id: string
+          username: string
+        }
+        Insert: {
+          address?: string | null
+          business_certificate_url?: string | null
+          business_number: string
+          ceo_name: string
+          company_name: string
+          created_at?: string | null
+          email: string
+          id?: string
+          phone: string
+          status?: string
+          updated_at?: string | null
+          user_id: string
+          username: string
+        }
+        Update: {
+          address?: string | null
+          business_certificate_url?: string | null
+          business_number?: string
+          ceo_name?: string
+          company_name?: string
+          created_at?: string | null
+          email?: string
+          id?: string
+          phone?: string
+          status?: string
+          updated_at?: string | null
+          user_id?: string
+          username?: string
+        }
+        Relationships: []
+      }
       dashboard_settings: {
         Row: {
           created_at: string
