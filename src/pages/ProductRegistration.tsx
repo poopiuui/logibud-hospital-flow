@@ -206,6 +206,25 @@ export default function ProductRegistration() {
                       rows={4}
                     />
                   </div>
+
+                  {/* 키워드 입력 필드 10개 */}
+                  <div className="col-span-2 space-y-2">
+                    <Label>검색 키워드 (최대 10개)</Label>
+                    <div className="grid grid-cols-2 gap-3">
+                      {singleProduct.keywords.map((keyword, index) => (
+                        <Input
+                          key={index}
+                          placeholder={`키워드 ${index + 1}`}
+                          value={keyword}
+                          onChange={(e) => {
+                            const newKeywords = [...singleProduct.keywords];
+                            newKeywords[index] = e.target.value;
+                            setSingleProduct({ ...singleProduct, keywords: newKeywords });
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </div>
                 </div>
                 <div className="flex justify-end">
                   <Button type="submit">등록하기</Button>
@@ -239,7 +258,12 @@ export default function ProductRegistration() {
                 </div>
                 <p className="text-sm text-muted-foreground">
                   * 엑셀 템플릿을 다운로드하여 양식에 맞게 작성 후 업로드하세요
+                  <br />
+                  * 카테고리는 카테고리 코드로 입력하세요 (카테고리 코드 보기 버튼 클릭)
                 </p>
+                <Button type="button" variant="outline" size="sm" onClick={() => setShowCategoryDialog(true)}>
+                  카테고리 코드 보기
+                </Button>
               </div>
 
               {bulkResults.length > 0 && (
@@ -284,6 +308,28 @@ export default function ProductRegistration() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* 카테고리 코드 Dialog */}
+      <Dialog open={showCategoryDialog} onOpenChange={setShowCategoryDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>카테고리 코드 목록</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            <p className="text-sm text-muted-foreground">
+              대량 등록 시 카테고리 컬럼에 아래 코드를 사용하세요:
+            </p>
+            <div className="border rounded-lg p-4 space-y-2 max-h-96 overflow-y-auto">
+              {PRODUCT_CATEGORIES.map(cat => (
+                <div key={cat.code} className="flex items-center justify-between p-2 bg-muted rounded">
+                  <span className="font-medium">{cat.name}</span>
+                  <code className="bg-background px-2 py-1 rounded text-sm font-mono">{cat.code}</code>
+                </div>
+              ))}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

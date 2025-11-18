@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { LayoutDashboard, Package, FileText, Truck, Users, Settings, Building2, PackagePlus, ClipboardList, ShoppingCart } from "lucide-react";
+import { LayoutDashboard, Package, FileText, Truck, Users, Settings, Building2, PackagePlus, ClipboardList, ShoppingCart, FolderTree, ListChecks } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
   Sidebar,
@@ -16,6 +16,15 @@ import {
 const menuItems = [
   { title: "대시보드", url: "/", icon: LayoutDashboard },
   { title: "매입/매출처 관리", url: "/vendors", icon: Building2 },
+  { 
+    title: "등록관리", 
+    icon: FolderTree,
+    subItems: [
+      { title: "카테고리 등록", url: "/category-management", icon: FolderTree },
+      { title: "발주서 관리", url: "/purchase-order-management", icon: ListChecks },
+      { title: "견적서 관리", url: "/quotation-management", icon: FileText },
+    ]
+  },
   { title: "상품 등록", url: "/product-registration", icon: PackagePlus },
   { title: "상품 관리", url: "/products", icon: Package },
   { title: "재고 관리", url: "/inventory", icon: ClipboardList },
@@ -68,17 +77,40 @@ export function AppSidebar() {
             <SidebarMenu>
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <NavLink 
-                      to={item.url} 
-                      end={item.url === "/"}
-                      className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-sidebar-accent transition-colors text-sidebar-foreground"
-                      activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
-                    >
-                      <item.icon className="w-5 h-5" />
-                      <span>{item.title}</span>
-                    </NavLink>
-                  </SidebarMenuButton>
+                  {'subItems' in item ? (
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-3 px-3 py-2 text-sidebar-foreground font-medium">
+                        <item.icon className="w-5 h-5" />
+                        <span>{item.title}</span>
+                      </div>
+                      <div className="ml-8 space-y-1">
+                        {item.subItems.map((subItem) => (
+                          <SidebarMenuButton asChild key={subItem.title}>
+                            <NavLink 
+                              to={subItem.url}
+                              className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-sidebar-accent transition-colors text-sidebar-foreground text-sm"
+                              activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
+                            >
+                              <subItem.icon className="w-4 h-4" />
+                              <span>{subItem.title}</span>
+                            </NavLink>
+                          </SidebarMenuButton>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <SidebarMenuButton asChild>
+                      <NavLink 
+                        to={item.url} 
+                        end={item.url === "/"}
+                        className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-sidebar-accent transition-colors text-sidebar-foreground"
+                        activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
+                      >
+                        <item.icon className="w-5 h-5" />
+                        <span>{item.title}</span>
+                      </NavLink>
+                    </SidebarMenuButton>
+                  )}
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
