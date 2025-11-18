@@ -11,6 +11,8 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { BarcodeScanner } from "@/components/BarcodeScanner";
+import { StockAlertSystem } from "@/components/StockAlertSystem";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Package, 
@@ -25,7 +27,9 @@ import {
   BarChart3,
   Pencil,
   Trash2,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Camera,
+  FolderOpen
 } from "lucide-react";
 import * as XLSX from 'xlsx';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
@@ -41,6 +45,8 @@ interface Product {
   supplier: string;
   registeredDate: string;
   thumbnail?: string;
+  images?: string[];
+  category?: string;
 }
 
 interface OrderData {
@@ -59,12 +65,14 @@ interface PurchaseData {
   status: '완료' | '진행중' | '대기';
 }
 
+const CATEGORIES = ['의료소모품', '주사기/바늘', '붕대/거즈', '보호구', '수액/주사액', '기타'];
+
 const generateSampleProducts = (): Product[] => [
-  { userCode: 'USER001', barcode: '8801234567890', productCode: 'A-001', productName: '주사기(5ml)', currentStock: 850, safetyStock: 1000, unitPrice: 150, supplier: '㈜메디칼', registeredDate: new Date().toISOString().split('T')[0] },
-  { userCode: 'USER002', barcode: '8801234567891', productCode: 'B-012', productName: '거즈 패드', currentStock: 2100, safetyStock: 2000, unitPrice: 80, supplier: '㈜헬스케어', registeredDate: new Date().toISOString().split('T')[0] },
-  { userCode: 'USER003', barcode: '8801234567892', productCode: 'C-045', productName: '일회용 장갑(M)', currentStock: 4500, safetyStock: 5000, unitPrice: 50, supplier: '㈜메디칼', registeredDate: new Date().toISOString().split('T')[0] },
-  { userCode: 'USER004', barcode: '8801234567893', productCode: 'D-078', productName: '알코올 솜', currentStock: 8900, safetyStock: 10000, unitPrice: 30, supplier: '㈜의료용품', registeredDate: new Date().toISOString().split('T')[0] },
-  { userCode: 'USER005', barcode: '8801234567894', productCode: 'E-092', productName: '링거 세트', currentStock: 1200, safetyStock: 1500, unitPrice: 2500, supplier: '㈜메디텍', registeredDate: new Date().toISOString().split('T')[0] },
+  { userCode: 'USER001', barcode: '8801234567890', productCode: 'A-001', productName: '주사기(5ml)', currentStock: 850, safetyStock: 1000, unitPrice: 150, supplier: '㈜메디칼', registeredDate: new Date().toISOString().split('T')[0], category: '주사기/바늘', images: ['/placeholder.svg'] },
+  { userCode: 'USER002', barcode: '8801234567891', productCode: 'B-012', productName: '거즈 패드', currentStock: 2100, safetyStock: 2000, unitPrice: 80, supplier: '㈜헬스케어', registeredDate: new Date().toISOString().split('T')[0], category: '붕대/거즈', images: ['/placeholder.svg'] },
+  { userCode: 'USER003', barcode: '8801234567892', productCode: 'C-045', productName: '일회용 장갑(M)', currentStock: 400, safetyStock: 5000, unitPrice: 50, supplier: '㈜메디칼', registeredDate: new Date().toISOString().split('T')[0], category: '보호구', images: ['/placeholder.svg'] },
+  { userCode: 'USER004', barcode: '8801234567893', productCode: 'D-078', productName: '알코올 솜', currentStock: 8900, safetyStock: 10000, unitPrice: 30, supplier: '㈜의료용품', registeredDate: new Date().toISOString().split('T')[0], category: '의료소모품', images: ['/placeholder.svg'] },
+  { userCode: 'USER005', barcode: '8801234567894', productCode: 'E-092', productName: '링거 세트', currentStock: 500, safetyStock: 1500, unitPrice: 2500, supplier: '㈜메디텍', registeredDate: new Date().toISOString().split('T')[0], category: '수액/주사액', images: ['/placeholder.svg'] },
 ];
 
 const generateOrderData = (): OrderData[] => {
@@ -108,11 +116,13 @@ const Index = () => {
   const [products, setProducts] = useState<Product[]>(generateSampleProducts());
   const [searchTerm, setSearchTerm] = useState("");
   const [filterSupplier, setFilterSupplier] = useState<string>("all");
+  const [filterCategory, setFilterCategory] = useState<string>("all");
   const [newProduct, setNewProduct] = useState<Partial<Product>>({});
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [deletingProduct, setDeletingProduct] = useState<Product | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
 
   const orderData = generateOrderData();
   const purchaseData = generatePurchaseData();
@@ -128,10 +138,28 @@ const Index = () => {
         String(val).toLowerCase().includes(searchTerm.toLowerCase())
       );
     const matchesSupplier = filterSupplier === "all" || product.supplier === filterSupplier;
-    return matchesSearch && matchesSupplier;
+    const matchesCategory = filterCategory === "all" || product.category === filterCategory;
+    return matchesSearch && matchesSupplier && matchesCategory;
   });
 
   const uniqueSuppliers = Array.from(new Set(products.map(p => p.supplier)));
+  
+  const handleBarcodeScanned = (barcode: string) => {
+    setSearchTerm(barcode);
+    const foundProduct = products.find(p => p.barcode === barcode);
+    if (foundProduct) {
+      toast({
+        title: "제품 찾음",
+        description: `${foundProduct.productName}이(가) 검색되었습니다.`,
+      });
+    } else {
+      toast({
+        title: "제품 없음",
+        description: "해당 바코드의 제품을 찾을 수 없습니다.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const stockChartData = products.map(p => ({
     name: p.productName,
@@ -239,6 +267,8 @@ const Index = () => {
       </header>
 
       <div className="container mx-auto p-6 md:p-8 max-w-[1600px] space-y-8">
+        {/* 재고 알림 시스템 */}
+        <StockAlertSystem products={products} />
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <Card className="stat-card border-2">
@@ -327,11 +357,31 @@ const Index = () => {
                 <div className="flex flex-col md:flex-row gap-4">
                   <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                    <Input placeholder="제품명, 코드, 공급사 검색..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10 h-12 text-base" />
+                    <Input placeholder="제품명, 코드, 공급사, 바코드 검색..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10 h-12 text-base" />
                   </div>
+                  <Button 
+                    variant="outline" 
+                    size="lg" 
+                    onClick={() => setIsScannerOpen(true)}
+                    className="gap-2 h-12 text-base"
+                  >
+                    <Camera className="h-4 w-4" />
+                    바코드 스캔
+                  </Button>
+                  <Select value={filterCategory} onValueChange={setFilterCategory}>
+                    <SelectTrigger className="w-full md:w-[200px] h-12 text-base">
+                      <SelectValue placeholder="카테고리" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all" className="text-base">전체 카테고리</SelectItem>
+                      {CATEGORIES.map(category => (
+                        <SelectItem key={category} value={category} className="text-base">{category}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <Select value={filterSupplier} onValueChange={setFilterSupplier}>
-                    <SelectTrigger className="w-full md:w-[240px] h-12 text-base">
-                      <SelectValue placeholder="공급사 필터" />
+                    <SelectTrigger className="w-full md:w-[200px] h-12 text-base">
+                      <SelectValue placeholder="공급사" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all" className="text-base">전체 공급사</SelectItem>
@@ -351,6 +401,7 @@ const Index = () => {
                       <TableRow className="bg-muted/50">
                         <TableHead className="font-bold text-base">제품코드</TableHead>
                         <TableHead className="font-bold text-base">제품명</TableHead>
+                        <TableHead className="font-bold text-base">카테고리</TableHead>
                         <TableHead className="font-bold text-base">현재고</TableHead>
                         <TableHead className="font-bold text-base">안전재고</TableHead>
                         <TableHead className="font-bold text-base">단가</TableHead>
@@ -369,8 +420,8 @@ const Index = () => {
                           <TableCell className="font-mono font-semibold text-base">{product.productCode}</TableCell>
                           <TableCell>
                             <div className="flex items-center gap-3">
-                              {product.thumbnail ? (
-                                <img src={product.thumbnail} alt={product.productName} className="w-10 h-10 rounded object-cover" />
+                              {product.thumbnail || (product.images && product.images[0]) ? (
+                                <img src={product.thumbnail || product.images![0]} alt={product.productName} className="w-10 h-10 rounded object-cover" />
                               ) : (
                                 <div className="w-10 h-10 rounded bg-muted flex items-center justify-center">
                                   <ImageIcon className="w-5 h-5 text-muted-foreground" />
@@ -378,6 +429,11 @@ const Index = () => {
                               )}
                               <span className="font-semibold text-base">{product.productName}</span>
                             </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="secondary" className="text-sm">
+                              {product.category || '미분류'}
+                            </Badge>
                           </TableCell>
                           <TableCell className="text-base font-semibold">{product.currentStock.toLocaleString()}</TableCell>
                           <TableCell className="text-base text-muted-foreground">{product.safetyStock.toLocaleString()}</TableCell>
@@ -460,6 +516,19 @@ const Index = () => {
                   <div className="space-y-2">
                     <Label htmlFor="unitPrice" className="text-base font-semibold">단가</Label>
                     <Input id="unitPrice" type="number" placeholder="0" value={newProduct.unitPrice || ''} onChange={(e) => setNewProduct({...newProduct, unitPrice: parseInt(e.target.value) || 0})} className="h-11 text-base" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="category" className="text-base font-semibold">카테고리</Label>
+                    <Select value={newProduct.category || ''} onValueChange={(value) => setNewProduct({...newProduct, category: value})}>
+                      <SelectTrigger className="h-11 text-base">
+                        <SelectValue placeholder="카테고리 선택" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {CATEGORIES.map(category => (
+                          <SelectItem key={category} value={category} className="text-base">{category}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="supplier" className="text-base font-semibold">공급사</Label>
@@ -637,6 +706,19 @@ const Index = () => {
                 <Input id="edit-unitPrice" type="number" value={editingProduct.unitPrice} onChange={(e) => setEditingProduct({...editingProduct, unitPrice: parseInt(e.target.value) || 0})} className="h-11 text-base" />
               </div>
               <div className="space-y-2">
+                <Label htmlFor="edit-category" className="text-base font-semibold">카테고리</Label>
+                <Select value={editingProduct.category || ''} onValueChange={(value) => setEditingProduct({...editingProduct, category: value})}>
+                  <SelectTrigger className="h-11 text-base">
+                    <SelectValue placeholder="카테고리 선택" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CATEGORIES.map(category => (
+                      <SelectItem key={category} value={category} className="text-base">{category}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
                 <Label htmlFor="edit-supplier" className="text-base font-semibold">공급사</Label>
                 <Input id="edit-supplier" value={editingProduct.supplier} onChange={(e) => setEditingProduct({...editingProduct, supplier: e.target.value})} className="h-11 text-base" />
               </div>
@@ -669,6 +751,13 @@ const Index = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* 바코드 스캐너 */}
+      <BarcodeScanner 
+        isOpen={isScannerOpen}
+        onOpenChange={setIsScannerOpen}
+        onScan={handleBarcodeScanned}
+      />
     </div>
   );
 };
