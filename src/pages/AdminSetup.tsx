@@ -21,6 +21,7 @@ export default function AdminSetup() {
         email: 'admin@logiprofit.com',
         password: 'admin1234!',
         options: {
+          emailRedirectTo: `${window.location.origin}/`,
           data: {
             username: 'admin'
           }
