@@ -3,11 +3,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Truck, Package, Download, X, Plus, FileSpreadsheet } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Truck, Package, CheckCircle2, Download, Upload, PackagePlus, X, ChevronDown, ChevronUp, FileDown, Filter } from "lucide-react";
 import * as XLSX from "xlsx";
 import { useToast } from "@/hooks/use-toast";
 
@@ -15,12 +17,13 @@ interface Shipment {
   id: string;
   customer: string;
   customerPhone: string;
-  customerAddress: string;
+  address: string;
+  shippingLocation: string;
   items: { name: string; quantity: number }[];
   status: string;
   trackingNumber: string;
   shipDate: string;
-  completeDate?: string;
+  deliveryDate?: string;
 }
 
 export default function Shipping() {
@@ -30,41 +33,46 @@ export default function Shipping() {
       id: 'SHP-001',
       customer: '고객 A',
       customerPhone: '010-1234-5678',
-      customerAddress: '서울시 강남구 테헤란로 123',
+      address: '서울시 강남구 테헤란로 123',
+      shippingLocation: '서울창고',
       items: [{ name: '주사기 5ml', quantity: 100 }, { name: '거즈 패드', quantity: 50 }],
       status: '배송중',
       trackingNumber: '123456789',
       shipDate: '2024-01-15',
-      completeDate: undefined
+      deliveryDate: undefined
     },
     {
       id: 'SHP-002',
       customer: '고객 B',
       customerPhone: '010-2345-6789',
-      customerAddress: '부산시 해운대구 해운대로 456',
+      address: '부산시 해운대구 해운대로 456',
+      shippingLocation: '부산창고',
       items: [{ name: '의료용 장갑', quantity: 200 }],
       status: '출고준비중',
       trackingNumber: '',
       shipDate: '2024-01-15',
-      completeDate: undefined
+      deliveryDate: undefined
     },
     {
       id: 'SHP-003',
       customer: '고객 C',
       customerPhone: '010-3456-7890',
-      customerAddress: '대구시 수성구 수성로 789',
+      address: '대구시 수성구 수성로 789',
+      shippingLocation: '서울창고',
       items: [{ name: '붕대', quantity: 150 }],
       status: '배송완료',
       trackingNumber: '456789123',
       shipDate: '2024-01-13',
-      completeDate: '2024-01-14'
+      deliveryDate: '2024-01-14'
     }
   ]);
 
   const [selectedShipments, setSelectedShipments] = useState<string[]>([]);
+  const [expandedRow, setExpandedRow] = useState<string | null>(null);
+  const [productFilter, setProductFilter] = useState("");
+  const [locationFilter, setLocationFilter] = useState("");
   const [isBulkTrackingDialogOpen, setIsBulkTrackingDialogOpen] = useState(false);
   const [isNewShipmentDialogOpen, setIsNewShipmentDialogOpen] = useState(false);
-  const [isExcelUploadDialogOpen, setIsExcelUploadDialogOpen] = useState(false);
 
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
@@ -76,11 +84,19 @@ export default function Shipping() {
     return () => window.removeEventListener('keydown', handleEsc);
   }, []);
 
+  const filteredShipments = shipments.filter(ship => {
+    const productMatch = productFilter === "" || ship.items.some(item => 
+      item.name.toLowerCase().includes(productFilter.toLowerCase())
+    );
+    const locationMatch = locationFilter === "" || ship.shippingLocation === locationFilter;
+    return productMatch && locationMatch;
+  });
+
   const toggleSelectAll = () => {
-    if (selectedShipments.length === shipments.length) {
+    if (selectedShipments.length === filteredShipments.length && filteredShipments.length > 0) {
       setSelectedShipments([]);
     } else {
-      setSelectedShipments(shipments.map(s => s.id));
+      setSelectedShipments(filteredShipments.map(s => s.id));
     }
   };
 
@@ -92,17 +108,29 @@ export default function Shipping() {
     }
   };
 
-  const downloadExcel = () => {
-    const data = shipments.map(ship => ({
+  const stats = {
+    preparing: filteredShipments.filter(s => s.status === '출고준비중').length,
+    inTransit: filteredShipments.filter(s => s.status === '배송중').length,
+    delivered: filteredShipments.filter(s => s.status === '배송완료').length,
+    onTimeRate: filteredShipments.length > 0 ? Math.round((filteredShipments.filter(s => s.status === '배송완료').length / filteredShipments.length) * 100) : 0
+  };
+
+  const downloadExcel = (filtered = false) => {
+    const dataToExport = filtered && selectedShipments.length > 0 
+      ? filteredShipments.filter(ship => selectedShipments.includes(ship.id))
+      : filteredShipments;
+    
+    const data = dataToExport.map(ship => ({
       '배송번호': ship.id,
       '고객명': ship.customer,
       '전화번호': ship.customerPhone,
-      '주소': ship.customerAddress,
+      '주소': ship.address,
+      '출고지': ship.shippingLocation,
       '품목수': ship.items.length,
       '상태': ship.status,
       '송장번호': ship.trackingNumber || '미등록',
       '출고날짜': ship.shipDate,
-      '완료날짜': ship.completeDate || '-'
+      '완료날짜': ship.deliveryDate || '-'
     }));
     
     const ws = XLSX.utils.json_to_sheet(data);
@@ -112,7 +140,29 @@ export default function Shipping() {
     
     toast({
       title: "다운로드 완료",
-      description: "엑셀 파일이 다운로드되었습니다."
+      description: `${dataToExport.length}건의 배송 데이터가 다운로드되었습니다.`
+    });
+  };
+
+  const downloadCSV = () => {
+    const csv = [
+      ['배송번호', '고객명', '전화번호', '주소', '출고지', '품목수', '상태', '송장번호', '출고날짜', '완료날짜'],
+      ...filteredShipments.map(ship => [
+        ship.id, ship.customer, ship.customerPhone, ship.address, ship.shippingLocation,
+        ship.items.length, ship.status, ship.trackingNumber || '미등록',
+        ship.shipDate, ship.deliveryDate || '-'
+      ])
+    ].map(row => row.join(',')).join('\n');
+    
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = '배송관리_목록.csv';
+    link.click();
+    
+    toast({
+      title: "CSV 다운로드 완료",
+      description: `${filteredShipments.length}건의 배송 데이터가 다운로드되었습니다.`
     });
   };
 
@@ -125,10 +175,10 @@ export default function Shipping() {
     setSelectedShipments([]);
   };
 
-  const handleNewShipment = () => {
+  const handleNewShipment = (mode: 'individual' | 'bulk') => {
     toast({
-      title: "배송 등록 완료",
-      description: "새로운 배송이 등록되었습니다."
+      title: mode === 'individual' ? "배송 등록 완료" : "대량 배송 등록 완료",
+      description: mode === 'individual' ? "새로운 배송이 등록되었습니다." : "엑셀 파일의 배송들이 등록되었습니다."
     });
     setIsNewShipmentDialogOpen(false);
   };
@@ -148,7 +198,6 @@ export default function Shipping() {
           title: "엑셀 업로드 완료",
           description: `${data.length}건의 배송 데이터가 등록되었습니다.`
         });
-        setIsExcelUploadDialogOpen(false);
       };
       reader.readAsBinaryString(file);
     }
@@ -160,10 +209,10 @@ export default function Shipping() {
       "배송중": "default",
       "배송완료": "outline",
     };
-    return <Badge variant={variants[status] || "default"}>{status}</Badge>;
+    return <Badge variant={variants[status] || "default"} className="text-sm">{status}</Badge>;
   };
 
-  const onTimeRate = Math.round((shipments.filter(s => s.status === '배송완료').length / shipments.length) * 100);
+  const locations = Array.from(new Set(shipments.map(s => s.shippingLocation)));
 
   return (
     <div className="p-8 space-y-8">
@@ -172,10 +221,18 @@ export default function Shipping() {
           <h1 className="text-4xl font-bold">배송 관리</h1>
           <p className="text-muted-foreground text-lg mt-2">배송 현황 및 물류 추적</p>
         </div>
-        <div className="flex gap-2">
-          <Button onClick={downloadExcel} variant="outline" size="lg">
+        <div className="flex gap-2 flex-wrap">
+          <Button onClick={() => downloadExcel(false)} variant="outline" size="lg">
             <Download className="mr-2 h-5 w-5" />
-            엑셀 다운로드
+            전체 엑셀
+          </Button>
+          <Button onClick={() => downloadExcel(true)} variant="outline" size="lg" disabled={selectedShipments.length === 0}>
+            <Download className="mr-2 h-5 w-5" />
+            선택 엑셀
+          </Button>
+          <Button onClick={downloadCSV} variant="outline" size="lg">
+            <FileDown className="mr-2 h-5 w-5" />
+            CSV
           </Button>
           <Button 
             onClick={() => setIsBulkTrackingDialogOpen(true)}
@@ -187,108 +244,177 @@ export default function Shipping() {
             일괄 송장등록 ({selectedShipments.length})
           </Button>
           <Button onClick={() => setIsNewShipmentDialogOpen(true)} size="lg">
-            <Plus className="mr-2 h-5 w-5" />
+            <PackagePlus className="mr-2 h-5 w-5" />
             새 배송등록
           </Button>
-          <Button onClick={() => window.history.back()} variant="ghost" size="lg">
+          <Button onClick={() => window.history.back()} variant="ghost" size="icon">
             <X className="h-5 w-5" />
           </Button>
         </div>
       </div>
 
-      {/* 상태 요약 카드 */}
+      {/* 상태 요약 - 한 줄로 */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-lg font-medium">출고준비중</CardTitle>
-            <Package className="h-6 w-6 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">{shipments.filter(s => s.status === '출고준비중').length}</div>
+        <Card className="hover:shadow-lg transition-shadow">
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <p className="text-sm text-muted-foreground mb-1">출고준비중</p>
+              <p className="text-3xl font-bold text-yellow-600">{stats.preparing}</p>
+            </div>
           </CardContent>
         </Card>
-        
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-lg font-medium">배송중</CardTitle>
-            <Truck className="h-6 w-6 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">{shipments.filter(s => s.status === '배송중').length}</div>
+        <Card className="hover:shadow-lg transition-shadow">
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <p className="text-sm text-muted-foreground mb-1">배송중</p>
+              <p className="text-3xl font-bold text-blue-600">{stats.inTransit}</p>
+            </div>
           </CardContent>
         </Card>
-        
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-lg font-medium">배송완료</CardTitle>
-            <Package className="h-6 w-6 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">{shipments.filter(s => s.status === '배송완료').length}</div>
+        <Card className="hover:shadow-lg transition-shadow">
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <p className="text-sm text-muted-foreground mb-1">배송완료</p>
+              <p className="text-3xl font-bold text-green-600">{stats.delivered}</p>
+            </div>
           </CardContent>
         </Card>
-        
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-lg font-medium">정시배송율</CardTitle>
-            <Truck className="h-6 w-6 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">{onTimeRate}%</div>
+        <Card className="hover:shadow-lg transition-shadow">
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <p className="text-sm text-muted-foreground mb-1">정시배송율</p>
+              <p className="text-3xl font-bold text-primary">{stats.onTimeRate}%</p>
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* 배송 목록 (가로형 테이블) */}
+      {/* 필터링 */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-2xl">배송 목록</CardTitle>
+          <CardTitle className="flex items-center gap-2 text-xl">
+            <Filter className="w-5 h-5" />
+            필터링
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="border-2 rounded-lg overflow-x-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label className="text-base">상품명</Label>
+              <Input 
+                placeholder="상품명 검색..." 
+                value={productFilter}
+                onChange={(e) => setProductFilter(e.target.value)}
+                className="text-base"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-base">출고지</Label>
+              <Select value={locationFilter} onValueChange={setLocationFilter}>
+                <SelectTrigger className="text-base">
+                  <SelectValue placeholder="전체" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">전체</SelectItem>
+                  {locations.map(loc => (
+                    <SelectItem key={loc} value={loc}>{loc}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-end">
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setProductFilter("");
+                  setLocationFilter("");
+                }}
+                className="w-full"
+              >
+                필터 초기화
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* 배송 목록 */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-xl">배송 목록 ({filteredShipments.length}건)</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow className="bg-muted/50">
+                <TableRow>
                   <TableHead className="w-12">
-                    <Checkbox
-                      checked={selectedShipments.length === shipments.length}
+                    <Checkbox 
+                      checked={selectedShipments.length === filteredShipments.length && filteredShipments.length > 0}
                       onCheckedChange={toggleSelectAll}
                     />
                   </TableHead>
-                  <TableHead className="font-bold text-base">배송번호</TableHead>
-                  <TableHead className="font-bold text-base">고객명</TableHead>
-                  <TableHead className="font-bold text-base">전화번호</TableHead>
-                  <TableHead className="font-bold text-base">배송주소</TableHead>
-                  <TableHead className="font-bold text-base">품목수</TableHead>
-                  <TableHead className="font-bold text-base">상태</TableHead>
-                  <TableHead className="font-bold text-base">송장번호</TableHead>
-                  <TableHead className="font-bold text-base">출고날짜</TableHead>
-                  <TableHead className="font-bold text-base">완료날짜</TableHead>
+                  <TableHead className="text-base">배송번호</TableHead>
+                  <TableHead className="text-base">고객명</TableHead>
+                  <TableHead className="text-base">출고지</TableHead>
+                  <TableHead className="text-base cursor-pointer hover:bg-muted">
+                    품목수
+                  </TableHead>
+                  <TableHead className="text-base">상태</TableHead>
+                  <TableHead className="text-base">송장번호</TableHead>
+                  <TableHead className="text-base">출고날짜</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {shipments.map((shipment) => (
-                  <TableRow key={shipment.id} className="hover:bg-muted/50">
-                    <TableCell onClick={(e) => e.stopPropagation()}>
-                      <Checkbox
-                        checked={selectedShipments.includes(shipment.id)}
-                        onCheckedChange={() => toggleSelectShipment(shipment.id)}
-                      />
-                    </TableCell>
-                    <TableCell className="font-mono font-semibold text-base">{shipment.id}</TableCell>
-                    <TableCell className="font-medium text-base">{shipment.customer}</TableCell>
-                    <TableCell className="text-base">{shipment.customerPhone}</TableCell>
-                    <TableCell className="text-base max-w-xs truncate">{shipment.customerAddress}</TableCell>
-                    <TableCell className="text-center text-base">
-                      <Badge variant="secondary">{shipment.items.length}개</Badge>
-                    </TableCell>
-                    <TableCell>{getStatusBadge(shipment.status)}</TableCell>
-                    <TableCell className="font-mono text-base">
-                      {shipment.trackingNumber || <span className="text-muted-foreground">미등록</span>}
-                    </TableCell>
-                    <TableCell className="text-base">{shipment.shipDate}</TableCell>
-                    <TableCell className="text-base">{shipment.completeDate || '-'}</TableCell>
-                  </TableRow>
+                {filteredShipments.map((shipment) => (
+                  <>
+                    <TableRow key={shipment.id} className="cursor-pointer hover:bg-muted/50">
+                      <TableCell>
+                        <Checkbox 
+                          checked={selectedShipments.includes(shipment.id)}
+                          onCheckedChange={() => toggleSelectShipment(shipment.id)}
+                        />
+                      </TableCell>
+                      <TableCell className="font-medium text-base">{shipment.id}</TableCell>
+                      <TableCell className="text-base">{shipment.customer}</TableCell>
+                      <TableCell className="text-base">{shipment.shippingLocation}</TableCell>
+                      <TableCell 
+                        className="text-base text-primary font-medium cursor-pointer hover:underline"
+                        onClick={() => setExpandedRow(expandedRow === shipment.id ? null : shipment.id)}
+                      >
+                        {shipment.items.length}개
+                        {expandedRow === shipment.id ? <ChevronUp className="inline ml-2 w-4 h-4" /> : <ChevronDown className="inline ml-2 w-4 h-4" />}
+                      </TableCell>
+                      <TableCell>{getStatusBadge(shipment.status)}</TableCell>
+                      <TableCell className="text-base">{shipment.trackingNumber || '-'}</TableCell>
+                      <TableCell className="text-base">{shipment.shipDate}</TableCell>
+                    </TableRow>
+                    {expandedRow === shipment.id && (
+                      <TableRow>
+                        <TableCell colSpan={8} className="bg-muted/30">
+                          <div className="p-4 space-y-2">
+                            <h4 className="font-semibold text-base mb-2">출고 품목:</h4>
+                            <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead>품목명</TableHead>
+                                  <TableHead className="text-right">수량</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {shipment.items.map((item, idx) => (
+                                  <TableRow key={idx}>
+                                    <TableCell>{item.name}</TableCell>
+                                    <TableCell className="text-right">{item.quantity}개</TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </>
                 ))}
               </TableBody>
             </Table>
@@ -296,107 +422,95 @@ export default function Shipping() {
         </CardContent>
       </Card>
 
-      {/* 일괄 송장 등록 Dialog */}
+      {/* 일괄 송장 등록 다이얼로그 */}
       <Dialog open={isBulkTrackingDialogOpen} onOpenChange={setIsBulkTrackingDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle className="text-2xl">일괄 송장번호 등록</DialogTitle>
+            <DialogTitle>일괄 송장번호 등록</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="text-sm text-muted-foreground">
-              선택된 {selectedShipments.length}건의 배송에 송장번호를 일괄 등록합니다.
-            </div>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              {selectedShipments.length}건의 배송에 송장번호를 등록합니다.
+            </p>
             <div className="space-y-2">
               <Label>송장번호 (쉼표로 구분)</Label>
               <Input placeholder="123456789, 987654321, ..." />
             </div>
+            <div className="flex gap-2">
+              <Button onClick={handleBulkTrackingSubmit} className="flex-1">등록</Button>
+              <Button variant="outline" onClick={() => setIsBulkTrackingDialogOpen(false)} className="flex-1">취소</Button>
+            </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsBulkTrackingDialogOpen(false)}>취소</Button>
-            <Button onClick={handleBulkTrackingSubmit}>등록</Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* 새 배송등록 Dialog */}
+      {/* 새 배송 등록 다이얼로그 */}
       <Dialog open={isNewShipmentDialogOpen} onOpenChange={setIsNewShipmentDialogOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle className="text-2xl">새 배송 등록</DialogTitle>
+            <DialogTitle>새 배송 등록</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="flex gap-4">
-              <Button 
-                variant="outline" 
-                className="flex-1 h-20 flex flex-col gap-2"
-                onClick={() => setIsNewShipmentDialogOpen(false)}
-              >
-                <Plus className="h-6 w-6" />
-                개별 등록
-              </Button>
-              <Button 
-                variant="outline" 
-                className="flex-1 h-20 flex flex-col gap-2"
-                onClick={() => {
-                  setIsNewShipmentDialogOpen(false);
-                  setIsExcelUploadDialogOpen(true);
-                }}
-              >
-                <FileSpreadsheet className="h-6 w-6" />
-                엑셀 대량등록
-              </Button>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>고객명</Label>
-                <Input placeholder="고객명 입력" />
+          <Tabs defaultValue="individual">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="individual">개별 등록</TabsTrigger>
+              <TabsTrigger value="bulk">일괄 엑셀 등록</TabsTrigger>
+            </TabsList>
+            <TabsContent value="individual" className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>고객명</Label>
+                  <Input placeholder="고객명" />
+                </div>
+                <div className="space-y-2">
+                  <Label>전화번호</Label>
+                  <Input placeholder="010-0000-0000" />
+                </div>
+                <div className="col-span-2 space-y-2">
+                  <Label>배송지 주소</Label>
+                  <Input placeholder="주소 입력" />
+                </div>
+                <div className="space-y-2">
+                  <Label>출고지</Label>
+                  <Select>
+                    <SelectTrigger>
+                      <SelectValue placeholder="출고지 선택" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {locations.map(loc => (
+                        <SelectItem key={loc} value={loc}>{loc}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>송장번호</Label>
+                  <Input placeholder="송장번호 (선택)" />
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label>전화번호</Label>
-                <Input placeholder="전화번호 입력" />
+              <div className="flex gap-2">
+                <Button onClick={() => handleNewShipment('individual')} className="flex-1">등록</Button>
+                <Button variant="outline" onClick={() => setIsNewShipmentDialogOpen(false)} className="flex-1">취소</Button>
               </div>
-              <div className="space-y-2 col-span-2">
-                <Label>배송주소</Label>
-                <Input placeholder="배송주소 입력" />
+            </TabsContent>
+            <TabsContent value="bulk" className="space-y-4">
+              <div className="border-2 border-dashed rounded-lg p-8 text-center space-y-4">
+                <Upload className="w-12 h-12 mx-auto text-muted-foreground" />
+                <div>
+                  <p className="text-sm font-medium mb-2">엑셀 파일을 업로드하세요</p>
+                  <p className="text-xs text-muted-foreground mb-4">
+                    대량의 배송 정보를 한 번에 등록할 수 있습니다
+                  </p>
+                </div>
+                <Input 
+                  type="file" 
+                  accept=".xlsx,.xls"
+                  onChange={handleExcelUpload}
+                  className="max-w-xs mx-auto"
+                />
               </div>
-              <div className="space-y-2">
-                <Label>제품명</Label>
-                <Input placeholder="제품명 입력" />
-              </div>
-              <div className="space-y-2">
-                <Label>수량</Label>
-                <Input type="number" placeholder="수량 입력" />
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsNewShipmentDialogOpen(false)}>취소</Button>
-            <Button onClick={handleNewShipment}>등록</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* 엑셀 업로드 Dialog */}
-      <Dialog open={isExcelUploadDialogOpen} onOpenChange={setIsExcelUploadDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="text-2xl">엑셀 대량등록</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="text-sm text-muted-foreground">
-              엑셀 파일을 업로드하여 배송 정보를 일괄 등록합니다.
-            </div>
-            <div className="space-y-2">
-              <Label>엑셀 파일 선택</Label>
-              <Input type="file" accept=".xlsx,.xls" onChange={handleExcelUpload} />
-            </div>
-            <div className="text-xs text-muted-foreground">
-              * 엑셀 파일 형식: 배송번호, 고객명, 전화번호, 주소, 제품명, 수량
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsExcelUploadDialogOpen(false)}>취소</Button>
-          </DialogFooter>
+              <Button onClick={() => handleNewShipment('bulk')} className="w-full">업로드</Button>
+            </TabsContent>
+          </Tabs>
         </DialogContent>
       </Dialog>
     </div>
