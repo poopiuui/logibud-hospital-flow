@@ -93,9 +93,41 @@ export default function Billing() {
         ? { ...inv, invoiceIssued: true, issueDate }
         : inv
     ));
+
+    // Generate Excel invoice
+    const invoiceData = [{
+      '청구번호': invoice.id,
+      '고객명': invoice.customer,
+      '청구일자': invoice.date,
+      '발행일자': issueDate,
+      '금액': invoice.amount,
+      '상태': invoice.status,
+    }];
+
+    if (invoice.items && invoice.items.length > 0) {
+      const itemsData = invoice.items.map(item => ({
+        '품목명': item.name,
+        '수량': item.quantity,
+        '단가': item.price,
+        '금액': item.quantity * item.price,
+      }));
+      
+      const ws1 = XLSX.utils.json_to_sheet(invoiceData);
+      const ws2 = XLSX.utils.json_to_sheet(itemsData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws1, "청구서");
+      XLSX.utils.book_append_sheet(wb, ws2, "품목내역");
+      XLSX.writeFile(wb, `청구서_${invoice.id}_${issueDate}.xlsx`);
+    } else {
+      const ws = XLSX.utils.json_to_sheet(invoiceData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "청구서");
+      XLSX.writeFile(wb, `청구서_${invoice.id}_${issueDate}.xlsx`);
+    }
+
     toast({
       title: "계산서 발행 완료",
-      description: `${invoice.id} 계산서가 발행되었습니다.`
+      description: `${invoice.customer}에 대한 계산서가 Excel로 발행되었습니다.`
     });
   };
 

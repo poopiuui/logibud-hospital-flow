@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Search, X, ChevronDown, ChevronUp, Calendar, FileDown } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
@@ -50,6 +50,17 @@ const PurchaseManagement = () => {
   const [selectedPurchases, setSelectedPurchases] = useState<string[]>([]);
   const [selectedPurchase, setSelectedPurchase] = useState<Purchase | null>(null);
   const [showDetailDialog, setShowDetailDialog] = useState(false);
+
+  const confirmPurchase = (purchaseId: string) => {
+    const updatedPurchases = purchases.map(p => 
+      p.id === purchaseId ? { ...p, status: '완료' } : p
+    );
+    toast({
+      title: "매입 확인 완료",
+      description: "매입 상태가 완료로 변경되었습니다."
+    });
+    setShowDetailDialog(false);
+  };
 
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
@@ -508,6 +519,16 @@ const PurchaseManagement = () => {
                   </div>
                 </div>
               </div>
+              {selectedPurchase.status !== '완료' && (
+                <DialogFooter className="mt-6">
+                  <Button 
+                    onClick={() => confirmPurchase(selectedPurchase.id)}
+                    className="w-full"
+                  >
+                    매입 확인
+                  </Button>
+                </DialogFooter>
+              )}
             </div>
           )}
         </DialogContent>

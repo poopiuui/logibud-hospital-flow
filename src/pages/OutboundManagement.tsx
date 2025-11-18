@@ -47,6 +47,20 @@ const OutboundManagement = () => {
   const [selectedOutbounds, setSelectedOutbounds] = useState<string[]>([]);
   const [showDetailDialog, setShowDetailDialog] = useState(false);
 
+  const toggleSelectAll = () => {
+    if (selectedOutbounds.length === filteredAndSortedOutbounds.slice(0, showCount).length) {
+      setSelectedOutbounds([]);
+    } else {
+      setSelectedOutbounds(filteredAndSortedOutbounds.slice(0, showCount).map(o => o.id));
+    }
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedOutbounds(prev => 
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
+
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -88,20 +102,6 @@ const OutboundManagement = () => {
     });
 
   const displayedOutbounds = filteredAndSortedOutbounds.slice(0, showCount);
-
-  const toggleSelectAll = () => {
-    if (selectedOutbounds.length === displayedOutbounds.length) {
-      setSelectedOutbounds([]);
-    } else {
-      setSelectedOutbounds(displayedOutbounds.map(o => o.id));
-    }
-  };
-
-  const toggleSelect = (id: string) => {
-    setSelectedOutbounds(prev =>
-      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
-    );
-  };
 
   const showDetail = (outbound: Outbound) => {
     setSelectedOutbound(outbound);
