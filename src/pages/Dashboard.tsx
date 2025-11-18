@@ -6,6 +6,7 @@ import { StockAlertWidget } from "@/components/StockAlertWidget";
 import { InventoryVisualization } from "@/components/InventoryVisualization";
 import { AutoReorderSystem } from "@/components/AutoReorderSystem";
 import { DashboardCustomizer } from "@/components/DashboardCustomizer";
+import { LogisticsWidget } from "@/components/LogisticsWidget";
 import { ArrowUpRight, ArrowDownRight, Package, TrendingUp, DollarSign, Users, X, RefreshCw } from "lucide-react";
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import GridLayout from "react-grid-layout";
@@ -22,12 +23,13 @@ const Dashboard = () => {
   
   const [layout, setLayout] = useState([
     { i: 'kpi', x: 0, y: 0, w: 12, h: 2 },
-    { i: 'stock-alert', x: 0, y: 2, w: 12, h: 3 },
-    { i: 'sales', x: 0, y: 5, w: 6, h: 4 },
-    { i: 'inventory', x: 6, y: 5, w: 6, h: 4 },
-    { i: 'inventory-viz', x: 0, y: 9, w: 12, h: 5 },
-    { i: 'auto-reorder', x: 0, y: 14, w: 12, h: 5 },
-    { i: 'ai-prediction', x: 0, y: 19, w: 12, h: 4 },
+    { i: 'logistics', x: 0, y: 2, w: 12, h: 3 },
+    { i: 'stock-alert', x: 0, y: 5, w: 12, h: 3 },
+    { i: 'sales', x: 0, y: 8, w: 6, h: 4 },
+    { i: 'inventory', x: 6, y: 8, w: 6, h: 4 },
+    { i: 'inventory-viz', x: 0, y: 12, w: 12, h: 5 },
+    { i: 'auto-reorder', x: 0, y: 17, w: 12, h: 5 },
+    { i: 'ai-prediction', x: 0, y: 22, w: 12, h: 4 },
   ]);
 
   const handleSettingsChange = (settings: { widgetVisibility: Record<string, boolean>; themeColor: string }) => {
@@ -216,53 +218,18 @@ const Dashboard = () => {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-4 gap-4">
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <DollarSign className="h-4 w-4" />
-                      <span className="text-sm">총 매출</span>
-                    </div>
-                    <div className="text-2xl font-bold">₩32,900,000</div>
-                    <div className="flex items-center gap-1 text-sm text-green-600">
-                      <ArrowUpRight className="h-4 w-4" />
-                      <span>12.5%</span>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <Package className="h-4 w-4" />
-                      <span className="text-sm">재고 현황</span>
-                    </div>
-                    <div className="text-2xl font-bold">1,245개</div>
-                    <div className="flex items-center gap-1 text-sm text-orange-600">
-                      <ArrowDownRight className="h-4 w-4" />
-                      <span>3.2%</span>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <TrendingUp className="h-4 w-4" />
-                      <span className="text-sm">주문 건수</span>
-                    </div>
-                    <div className="text-2xl font-bold">187건</div>
-                    <div className="flex items-center gap-1 text-sm text-green-600">
-                      <ArrowUpRight className="h-4 w-4" />
-                      <span>8.7%</span>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <Users className="h-4 w-4" />
-                      <span className="text-sm">활성 고객</span>
-                    </div>
-                    <div className="text-2xl font-bold">342명</div>
-                    <div className="flex items-center gap-1 text-sm text-green-600">
-                      <ArrowUpRight className="h-4 w-4" />
-                      <span>5.1%</span>
-                    </div>
-                  </div>
+...
                 </div>
               </CardContent>
             </Card>
+          </div>
+        )}
+
+        {widgetVisibility['logistics'] !== false && (
+          <div key="logistics" className="bg-background">
+            <div className="drag-handle cursor-move h-full">
+              <LogisticsWidget />
+            </div>
           </div>
         )}
 
