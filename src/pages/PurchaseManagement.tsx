@@ -5,16 +5,18 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, X, ChevronDown, ChevronUp, Calendar, FileDown, Trash2, Plus } from "lucide-react";
+import { X, FileDown, Trash2, Plus, Upload, ChevronDown, ChevronUp } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import { useToast } from "@/hooks/use-toast";
 import { DateRangeFilter } from "@/components/DateRangeFilter";
 import { SwipeableTableRow } from "@/components/SwipeableTableRow";
+import { CommonFilters } from "@/components/CommonFilters";
 
 interface Purchase {
   id: string;
@@ -52,6 +54,8 @@ const PurchaseManagement = () => {
   const [selectedPurchases, setSelectedPurchases] = useState<string[]>([]);
   const [selectedPurchase, setSelectedPurchase] = useState<Purchase | null>(null);
   const [showDetailDialog, setShowDetailDialog] = useState(false);
+  const [showRegistrationDialog, setShowRegistrationDialog] = useState(false);
+  const [registrationMode, setRegistrationMode] = useState<'individual' | 'excel'>('individual');
   const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({ from: undefined, to: undefined });
 
   const toggleSelectAll = () => {
