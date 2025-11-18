@@ -21,6 +21,7 @@ interface RegistrationResult {
 export default function ProductRegistration() {
   const { toast } = useToast();
   const [singleProduct, setSingleProduct] = useState({
+    productCode: "",
     name: "",
     categoryCode: "",
     barcode: "",
@@ -43,6 +44,7 @@ export default function ProductRegistration() {
         description: `${singleProduct.name}이(가) 성공적으로 등록되었습니다.`,
       });
       setSingleProduct({
+        productCode: "",
         name: "",
         categoryCode: "",
         barcode: "",
@@ -144,7 +146,17 @@ export default function ProductRegistration() {
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSingleSubmit} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="productCode">상품코드 *</Label>
+                    <Input
+                      id="productCode"
+                      value={singleProduct.productCode}
+                      onChange={(e) => setSingleProduct({ ...singleProduct, productCode: e.target.value })}
+                      placeholder="자동 생성 또는 수동 입력"
+                      required
+                    />
+                  </div>
                   <div className="space-y-2">
                     <Label htmlFor="name">제품명 *</Label>
                     <Input

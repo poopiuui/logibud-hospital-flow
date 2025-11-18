@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { FileText, Download, Eye, CheckCircle2, Clock, X, FileDown, FilePlus, Filter, Trash2, ChevronDown, DollarSign } from "lucide-react";
+import { Combobox, ComboboxOption } from "@/components/ui/combobox";
+import { FileText, Download, Eye, CheckCircle2, Clock, X, FileDown, FilePlus, Filter, Trash2, ChevronDown, DollarSign, Plus } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
@@ -43,6 +44,19 @@ export default function Billing() {
   const [showInvoiceDetail, setShowInvoiceDetail] = useState(false);
   const [showNewInvoice, setShowNewInvoice] = useState(false);
   const [newInvoice, setNewInvoice] = useState({ customer: '', amount: '', date: '' });
+  const [invoiceItems, setInvoiceItems] = useState<{ name: string; quantity: number; price: number }[]>([]);
+  const [newItem, setNewItem] = useState({ name: '', quantity: 0, price: 0 });
+  
+  // 상품 목록 (출고 단가)
+  const products = [
+    { name: '노트북 A1', shipmentPrice: 1400000, purchasePrice: 1250000 },
+    { name: '스마트폰 X2', shipmentPrice: 900000, purchasePrice: 800000 },
+    { name: '태블릿 T3', shipmentPrice: 600000, purchasePrice: 500000 },
+    { name: '모니터 M4', shipmentPrice: 400000, purchasePrice: 350000 },
+    { name: '키보드 K5', shipmentPrice: 80000, purchasePrice: 50000 },
+    { name: '마우스 M6', shipmentPrice: 50000, purchasePrice: 32000 },
+  ];
+  
   const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({ from: undefined, to: undefined });
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
@@ -280,34 +294,72 @@ export default function Billing() {
   };
 
   const saveNewInvoice = () => {
-    if (!newInvoice.customer || !newInvoice.amount || !newInvoice.date) {
+    if (!newInvoice.customer || !newInvoice.date) {
       toast({
         title: "입력 오류",
-        description: "모든 필드를 입력해주세요.",
+        description: "고객명과 날짜를 입력해주세요.",
         variant: "destructive"
       });
       return;
     }
     
+    if (invoiceItems.length === 0) {
+      toast({
+        title: "입력 오류",
+        description: "최소 한 개의 품목을 추가해주세요.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    const totalAmount = invoiceItems.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+    
     const invoice: Invoice = {
       id: `INV-${String(invoices.length + 1).padStart(3, '0')}`,
       customer: newInvoice.customer,
-      amount: parseFloat(newInvoice.amount),
+      amount: totalAmount,
       status: '대기',
       date: newInvoice.date,
       invoiceIssued: false,
-      items: [],
+      items: invoiceItems,
       paymentConfirmed: false
     };
     
     setInvoices(prev => [...prev, invoice]);
     setShowNewInvoice(false);
     setNewInvoice({ customer: '', amount: '', date: '' });
+    setInvoiceItems([]);
+    setNewItem({ name: '', quantity: 0, price: 0 });
     
     toast({
       title: "청구서 등록 완료",
       description: "새 청구서가 등록되었습니다."
     });
+  };
+
+  const addInvoiceItem = () => {
+    if (!newItem.name || newItem.quantity <= 0 || newItem.price <= 0) {
+      toast({
+        title: "입력 오류",
+        description: "상품, 수량, 단가를 올바르게 입력해주세요.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setInvoiceItems([...invoiceItems, { ...newItem }]);
+    setNewItem({ name: '', quantity: 0, price: 0 });
+  };
+
+  const removeInvoiceItem = (index: number) => {
+    setInvoiceItems(invoiceItems.filter((_, i) => i !== index));
+  };
+
+  const selectProduct = (productName: string) => {
+    const product = products.find(p => p.name === productName);
+    if (product) {
+      setNewItem({ ...newItem, name: productName, price: product.shipmentPrice });
+    }
   };
 
   return (
@@ -635,57 +687,117 @@ export default function Billing() {
 
       {/* New Invoice Dialog */}
       <Dialog open={showNewInvoice} onOpenChange={setShowNewInvoice}>
-        <DialogContent>
+        <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle>청구서 등록</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <div>
-              <Label>고객명</Label>
-              <Input
-                value={newInvoice.customer}
-                onChange={(e) => setNewInvoice({ ...newInvoice, customer: e.target.value })}
-                placeholder="고객명 입력"
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>고객명 *</Label>
+                <Input
+                  value={newInvoice.customer}
+                  onChange={(e) => setNewInvoice({ ...newInvoice, customer: e.target.value })}
+                  placeholder="고객명 입력"
+                />
+              </div>
+              <div>
+                <Label>청구일자 *</Label>
+                <Input
+                  type="date"
+                  value={newInvoice.date}
+                  onChange={(e) => setNewInvoice({ ...newInvoice, date: e.target.value })}
+                />
+              </div>
             </div>
-            <div>
-              <Label>금액</Label>
-              <Input
-                type="number"
-                value={newInvoice.amount}
-                onChange={(e) => setNewInvoice({ ...newInvoice, amount: e.target.value })}
-                placeholder="금액 입력"
-              />
-            </div>
-            <div>
-              <Label>청구일자</Label>
-              <Input
-                type="date"
-                value={newInvoice.date}
-                onChange={(e) => setNewInvoice({ ...newInvoice, date: e.target.value })}
-              />
+            
+            <div className="border-t pt-4">
+              <h3 className="font-semibold mb-3">품목 추가</h3>
+              <div className="grid grid-cols-12 gap-2 mb-3">
+                <div className="col-span-5">
+                  <Label>상품명 *</Label>
+                  <Combobox
+                    options={products.map(p => ({ value: p.name, label: p.name }))}
+                    value={newItem.name}
+                    onValueChange={selectProduct}
+                    placeholder="상품 검색..."
+                    searchPlaceholder="상품명 검색..."
+                    emptyText="검색 결과가 없습니다."
+                  />
+                </div>
+                <div className="col-span-3">
+                  <Label>수량 *</Label>
+                  <Input
+                    type="number"
+                    value={newItem.quantity || ''}
+                    onChange={(e) => setNewItem({ ...newItem, quantity: parseInt(e.target.value) || 0 })}
+                    placeholder="수량"
+                  />
+                </div>
+                <div className="col-span-3">
+                  <Label>단가 (출고가) *</Label>
+                  <Input
+                    type="number"
+                    value={newItem.price || ''}
+                    onChange={(e) => setNewItem({ ...newItem, price: parseInt(e.target.value) || 0 })}
+                    placeholder="단가"
+                  />
+                </div>
+                <div className="col-span-1 flex items-end">
+                  <Button onClick={addInvoiceItem} size="icon">
+                    <Plus className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+              
+              {invoiceItems.length > 0 && (
+                <div className="border rounded-lg overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>상품명</TableHead>
+                        <TableHead>수량</TableHead>
+                        <TableHead>단가</TableHead>
+                        <TableHead>합계</TableHead>
+                        <TableHead className="w-16"></TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {invoiceItems.map((item, index) => (
+                        <TableRow key={index}>
+                          <TableCell>{item.name}</TableCell>
+                          <TableCell>{item.quantity}</TableCell>
+                          <TableCell>₩{item.price.toLocaleString()}</TableCell>
+                          <TableCell className="font-semibold">₩{(item.quantity * item.price).toLocaleString()}</TableCell>
+                          <TableCell>
+                            <Button variant="ghost" size="icon" onClick={() => removeInvoiceItem(index)}>
+                              <X className="w-4 h-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+              
+              {invoiceItems.length > 0 && (
+                <div className="mt-4 text-right">
+                  <p className="text-2xl font-bold">
+                    최종 합계: ₩{invoiceItems.reduce((sum, item) => sum + (item.quantity * item.price), 0).toLocaleString()}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowNewInvoice(false)}>취소</Button>
-            <Button onClick={() => {
-              const id = `INV-${String(invoices.length + 1).padStart(3, '0')}`;
-              setInvoices([...invoices, {
-                id,
-                customer: newInvoice.customer,
-                amount: Number(newInvoice.amount),
-                status: '대기',
-                date: newInvoice.date,
-                invoiceIssued: false,
-                paymentConfirmed: false
-              }]);
-              toast({
-                title: "청구서 등록 완료",
-                description: `${id}가 등록되었습니다.`
-              });
+            <Button variant="outline" onClick={() => {
               setShowNewInvoice(false);
               setNewInvoice({ customer: '', amount: '', date: '' });
-            }}>등록</Button>
+              setInvoiceItems([]);
+              setNewItem({ name: '', quantity: 0, price: 0 });
+            }}>취소</Button>
+            <Button onClick={saveNewInvoice}>등록</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
