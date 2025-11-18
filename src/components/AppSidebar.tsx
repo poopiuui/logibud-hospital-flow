@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { LayoutDashboard, Package, FileText, Truck, Users, Settings, Building2, PackagePlus, ClipboardList, ShoppingCart } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
@@ -27,14 +28,36 @@ const menuItems = [
 ];
 
 export function AppSidebar() {
+  const [companyName, setCompanyName] = useState("로지봇");
+  const [companyLogo, setCompanyLogo] = useState("");
+
+  useEffect(() => {
+    const savedName = localStorage.getItem('companyName');
+    const savedLogo = localStorage.getItem('companyLogo');
+    
+    if (savedName) setCompanyName(savedName);
+    if (savedLogo) setCompanyLogo(savedLogo);
+  }, []);
+
   return (
     <Sidebar className="border-r">
-      <SidebarHeader className="border-b p-4">
+      <SidebarHeader 
+        className="border-b p-4 cursor-pointer hover:bg-accent transition-colors"
+        onClick={() => window.location.href = '/settings'}
+      >
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center">
-            <Package className="w-6 h-6 text-primary-foreground" />
-          </div>
-          <span className="text-xl font-bold">로지봇</span>
+          {companyLogo ? (
+            <img 
+              src={companyLogo} 
+              alt={companyName} 
+              className="w-10 h-10 rounded-lg object-cover"
+            />
+          ) : (
+            <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center">
+              <Package className="w-6 h-6 text-primary-foreground" />
+            </div>
+          )}
+          <span className="text-xl font-bold">{companyName}</span>
         </div>
       </SidebarHeader>
 
