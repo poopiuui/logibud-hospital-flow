@@ -17,8 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 import { DateRangeFilter } from "@/components/DateRangeFilter";
 import { SwipeableTableRow } from "@/components/SwipeableTableRow";
 import { CommonFilters } from "@/components/CommonFilters";
-
-// Purchase Management - handles purchase registration and tracking
+import { PurchaseOrderRegistration } from "@/components/PurchaseOrderRegistration";
 
 interface Purchase {
   id: string;
