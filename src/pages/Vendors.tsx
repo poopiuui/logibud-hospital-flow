@@ -64,6 +64,9 @@ const Vendors = () => {
   ]);
   const [searchTerm, setSearchTerm] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
   const [vendorType, setVendorType] = useState<'매입처' | '매출처'>('매입처');
   const [formData, setFormData] = useState({
     businessName: '',
@@ -96,6 +99,30 @@ const Vendors = () => {
       .filter(n => !isNaN(n));
     const maxNum = existingCodes.length > 0 ? Math.max(...existingCodes) : 0;
     return `${prefix}-${String(maxNum + 1).padStart(3, '0')}`;
+  };
+
+  const handleViewDetail = (vendor: Vendor) => {
+    setSelectedVendor(vendor);
+    setIsDetailOpen(true);
+    setIsEditing(false);
+  };
+
+  const handleEdit = () => {
+    if (selectedVendor) {
+      setFormData({
+        businessName: selectedVendor.businessName,
+        businessNumber: selectedVendor.businessNumber,
+        contactName: selectedVendor.contactName,
+        contactPhone: selectedVendor.contactPhone,
+        faxNumber: selectedVendor.faxNumber,
+        paymentDate: selectedVendor.paymentDate,
+        paymentMethod: selectedVendor.paymentMethod,
+        bankAccount: selectedVendor.bankAccount,
+        invoiceEmail: selectedVendor.invoiceEmail,
+        logisticsManager: selectedVendor.logisticsManager || ''
+      });
+      setIsEditing(true);
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -319,7 +346,7 @@ const Vendors = () => {
                 </TableHeader>
                 <TableBody>
                   {filteredVendors.map((vendor) => (
-                    <TableRow key={vendor.id}>
+                    <TableRow key={vendor.id} className="cursor-pointer hover:bg-muted/50" onClick={() => handleViewDetail(vendor)}>
                       <TableCell className="font-medium text-base">{vendor.code}</TableCell>
                       <TableCell className="text-base">{vendor.type}</TableCell>
                       <TableCell className="text-base">{vendor.businessName}</TableCell>
@@ -408,6 +435,122 @@ const Vendors = () => {
           </Tabs>
         </CardContent>
       </Card>
+
+      {/* Detail/Edit Dialog */}
+      <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{isEditing ? '거래처 수정' : '거래처 상세정보'}</DialogTitle>
+          </DialogHeader>
+          {selectedVendor && (
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>코드</Label>
+                  <Input value={selectedVendor.code} disabled />
+                </div>
+                <div>
+                  <Label>구분</Label>
+                  <Input value={selectedVendor.type} disabled />
+                </div>
+                <div className="col-span-2">
+                  <Label>사업자명</Label>
+                  <Input 
+                    value={isEditing ? formData.businessName : selectedVendor.businessName}
+                    onChange={(e) => setFormData({...formData, businessName: e.target.value})}
+                    disabled={!isEditing}
+                  />
+                </div>
+                <div>
+                  <Label>사업자번호</Label>
+                  <Input 
+                    value={isEditing ? formData.businessNumber : selectedVendor.businessNumber}
+                    onChange={(e) => setFormData({...formData, businessNumber: e.target.value})}
+                    disabled={!isEditing}
+                  />
+                </div>
+                <div>
+                  <Label>담당자명</Label>
+                  <Input 
+                    value={isEditing ? formData.contactName : selectedVendor.contactName}
+                    onChange={(e) => setFormData({...formData, contactName: e.target.value})}
+                    disabled={!isEditing}
+                  />
+                </div>
+                <div>
+                  <Label>담당자 전화번호</Label>
+                  <Input 
+                    value={isEditing ? formData.contactPhone : selectedVendor.contactPhone}
+                    onChange={(e) => setFormData({...formData, contactPhone: e.target.value})}
+                    disabled={!isEditing}
+                  />
+                </div>
+                <div>
+                  <Label>팩스번호</Label>
+                  <Input 
+                    value={isEditing ? formData.faxNumber : selectedVendor.faxNumber}
+                    onChange={(e) => setFormData({...formData, faxNumber: e.target.value})}
+                    disabled={!isEditing}
+                  />
+                </div>
+                <div>
+                  <Label>결제일</Label>
+                  <Input 
+                    value={isEditing ? formData.paymentDate : selectedVendor.paymentDate}
+                    onChange={(e) => setFormData({...formData, paymentDate: e.target.value})}
+                    disabled={!isEditing}
+                  />
+                </div>
+                <div>
+                  <Label>결제방법</Label>
+                  <Input 
+                    value={isEditing ? formData.paymentMethod : selectedVendor.paymentMethod}
+                    onChange={(e) => setFormData({...formData, paymentMethod: e.target.value})}
+                    disabled={!isEditing}
+                  />
+                </div>
+                <div className="col-span-2">
+                  <Label>통장번호</Label>
+                  <Input 
+                    value={isEditing ? formData.bankAccount : selectedVendor.bankAccount}
+                    onChange={(e) => setFormData({...formData, bankAccount: e.target.value})}
+                    disabled={!isEditing}
+                  />
+                </div>
+                <div className="col-span-2">
+                  <Label>계산서 발행 메일주소</Label>
+                  <Input 
+                    value={isEditing ? formData.invoiceEmail : selectedVendor.invoiceEmail}
+                    onChange={(e) => setFormData({...formData, invoiceEmail: e.target.value})}
+                    disabled={!isEditing}
+                  />
+                </div>
+                <div className="col-span-2">
+                  <Label>물류 출고담당</Label>
+                  <Input 
+                    value={isEditing ? formData.logisticsManager : (selectedVendor.logisticsManager || '-')}
+                    onChange={(e) => setFormData({...formData, logisticsManager: e.target.value})}
+                    disabled={!isEditing}
+                  />
+                </div>
+              </div>
+              <div className="flex gap-2 justify-end">
+                {!isEditing ? (
+                  <>
+                    <Button type="button" onClick={handleEdit}>수정</Button>
+                    <Button type="button" variant="outline" onClick={() => setIsDetailOpen(false)}>닫기</Button>
+                  </>
+                ) : (
+                  <>
+                    <Button type="submit">저장</Button>
+                    <Button type="button" variant="outline" onClick={() => setIsEditing(false)}>취소</Button>
+                  </>
+                )}
+              </div>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

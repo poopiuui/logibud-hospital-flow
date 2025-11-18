@@ -6,9 +6,10 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, X, ChevronDown, ChevronUp, Calendar } from "lucide-react";
+import { Search, X, ChevronDown, ChevronUp, Calendar, FileDown } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
 
 interface Purchase {
   id: string;
@@ -53,11 +54,39 @@ const PurchaseManagement = () => {
     return () => window.removeEventListener('keydown', handleEsc);
   }, []);
 
-  const handleExcelDownload = () => {
-    const ws = XLSX.utils.json_to_sheet(purchases);
+  const handleExcelDownload = (filtered: boolean = false) => {
+    const dataToExport = filtered ? filteredAndSortedPurchases : purchases;
+    const ws = XLSX.utils.json_to_sheet(dataToExport);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "매입관리");
-    XLSX.writeFile(wb, "매입관리_데이터.xlsx");
+    XLSX.writeFile(wb, `매입관리_${filtered ? '필터링' : '전체'}_데이터.xlsx`);
+  };
+
+  const handleCSVDownload = (filtered: boolean = false) => {
+    const dataToExport = filtered ? filteredAndSortedPurchases : purchases;
+    const ws = XLSX.utils.json_to_sheet(dataToExport);
+    const csv = XLSX.utils.sheet_to_csv(ws);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `매입관리_${filtered ? '필터링' : '전체'}_데이터.csv`;
+    link.click();
+  };
+
+  const handlePDFDownload = (filtered: boolean = false) => {
+    const dataToExport = filtered ? filteredAndSortedPurchases : purchases;
+    const doc = new jsPDF();
+    doc.text("매입 관리", 20, 20);
+    let y = 40;
+    dataToExport.forEach((purchase) => {
+      if (y > 270) {
+        doc.addPage();
+        y = 20;
+      }
+      doc.text(`${purchase.id} - ${purchase.product}: ${purchase.quantity} (₩${purchase.price.toLocaleString()})`, 20, y);
+      y += 10;
+    });
+    doc.save(`매입관리_${filtered ? '필터링' : '전체'}_데이터.pdf`);
   };
 
   const availableYears = Array.from(new Set(purchases.map(p => new Date(p.date).getFullYear()))).sort((a, b) => b - a);
@@ -118,20 +147,35 @@ const PurchaseManagement = () => {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold">매입관리</h1>
-          <p className="text-muted-foreground">제품 매입 내역을 관리합니다</p>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-4xl font-bold">매입 관리</h1>
+          <div className="flex gap-2">
+            <Button onClick={() => handleExcelDownload(false)} size="lg" variant="outline" className="gap-2">
+              <FileDown className="w-4 h-4" />
+              Excel (전체)
+            </Button>
+            <Button onClick={() => handleExcelDownload(true)} size="lg" variant="outline" className="gap-2">
+              <FileDown className="w-4 h-4" />
+              Excel (필터링)
+            </Button>
+            <Button onClick={() => handleCSVDownload(false)} size="lg" variant="secondary" className="gap-2">
+              <FileDown className="w-4 h-4" />
+              CSV (전체)
+            </Button>
+            <Button onClick={() => handleCSVDownload(true)} size="lg" variant="secondary" className="gap-2">
+              <FileDown className="w-4 h-4" />
+              CSV (필터링)
+            </Button>
+            <Button onClick={() => handlePDFDownload(false)} size="lg" className="gap-2">
+              <FileDown className="w-4 h-4" />
+              PDF (전체)
+            </Button>
+            <Button onClick={() => handlePDFDownload(true)} size="lg" className="gap-2">
+              <FileDown className="w-4 h-4" />
+              PDF (필터링)
+            </Button>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <Button onClick={handleExcelDownload} variant="outline">
-            엑셀 다운로드
-          </Button>
-          <Button onClick={() => window.history.back()} variant="ghost" size="icon">
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
 
       <Tabs defaultValue="list" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
