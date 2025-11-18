@@ -16,142 +16,105 @@ export default function AdminSetup() {
     setIsCreating(true);
 
     try {
-      // 1. 관리자 계정 생성
+      let adminUserId: string | null = null;
+      let masterUserId: string | null = null;
+      
+      // Admin 계정 생성 시도
       const { data: authData, error: signUpError } = await supabase.auth.signUp({
         email: 'admin@logiprofit.com',
         password: 'admin1234!',
         options: {
           emailRedirectTo: `${window.location.origin}/`,
-          data: {
-            username: 'admin'
-          }
+          data: { username: 'admin' }
         }
       });
 
-      if (signUpError) {
-        if (signUpError.message.includes('already registered')) {
-          // 이미 존재하면 마스터 계정 생성 시도
-          const { data: masterAuthData, error: masterSignUpError } = await supabase.auth.signUp({
-            email: 'master@logiprofit.com',
-            password: 'master1234!',
-            options: {
-              emailRedirectTo: `${window.location.origin}/`,
-              data: {
-                username: 'master'
-              }
-            }
-          });
-
-          if (masterSignUpError) {
-            if (masterSignUpError.message.includes('already registered')) {
-              toast({
-                title: "계정 존재",
-                description: "관리자 계정과 마스터 계정이 모두 존재합니다. 로그인 페이지로 이동합니다.",
-              });
-              setTimeout(() => navigate('/login'), 2000);
-              return;
-            }
-            throw masterSignUpError;
-          }
-
-          if (!masterAuthData.user) throw new Error("사용자 생성 실패");
-
-          // 마스터 회사 프로필 생성
-          const { error: masterProfileError } = await supabase
-            .from('company_profiles')
-            .insert({
-              user_id: masterAuthData.user.id,
-              username: 'master',
-              company_name: '로지프로핏 마스터',
-              business_number: '999-99-99999',
-              ceo_name: '마스터 관리자',
-              phone: '010-9999-9999',
-              email: 'master@logiprofit.com',
-              status: 'approved'
-            });
-
-          if (masterProfileError) throw masterProfileError;
-
-          // 마스터 역할 부여
-          const { error: masterRoleError } = await supabase
-            .from('user_roles')
-            .insert({
-              user_id: masterAuthData.user.id,
-              role: 'admin'
-            });
-
-          if (masterRoleError) throw masterRoleError;
-
-          setIsCreated(true);
-          toast({
-            title: "마스터 계정 생성 완료",
-            description: "이메일: master@logiprofit.com / 비밀번호: master1234!",
-          });
-          setTimeout(() => navigate('/login'), 3000);
-          return;
+      // 이미 존재하는 경우 auth.users에서 조회
+      if (signUpError?.message.includes('already registered')) {
+        const { data: users } = await supabase
+          .from('company_profiles')
+          .select('user_id')
+          .eq('email', 'admin@logiprofit.com')
+          .single();
+        
+        if (users) {
+          adminUserId = users.user_id;
         }
-        throw signUpError;
+      } else if (authData.user) {
+        adminUserId = authData.user.id;
       }
 
-      if (signUpError) {
-        // 이미 존재하는 계정인 경우 처리
-        if (signUpError.message.includes('already registered')) {
-          toast({
-            title: "계정 존재",
-            description: "관리자 계정이 이미 존재합니다. 로그인 페이지로 이동합니다.",
+      // Admin 프로필 및 역할 생성
+      if (adminUserId) {
+        const { data: existingProfile } = await supabase
+          .from('company_profiles')
+          .select('id')
+          .eq('user_id', adminUserId)
+          .maybeSingle();
+
+        if (!existingProfile) {
+          await supabase.from('company_profiles').insert({
+            user_id: adminUserId,
+            username: 'admin',
+            company_name: '로지프로핏 관리',
+            business_number: '000-00-00000',
+            ceo_name: '관리자',
+            phone: '010-0000-0000',
+            email: 'admin@logiprofit.com',
+            status: 'approved'
           });
-          setTimeout(() => navigate('/login'), 2000);
-          return;
         }
-        throw signUpError;
+
+        const { data: existingRole } = await supabase
+          .from('user_roles')
+          .select('id')
+          .eq('user_id', adminUserId)
+          .maybeSingle();
+
+        if (!existingRole) {
+          await supabase.from('user_roles').insert({
+            user_id: adminUserId,
+            role: 'admin'
+          });
+        }
       }
 
-      if (!authData.user) throw new Error("사용자 생성 실패");
-
-      // 2. 회사 프로필 생성
-      const { error: profileError } = await supabase
-        .from('company_profiles')
-        .insert({
-          user_id: authData.user.id,
-          username: 'admin',
-          company_name: '로지프로핏 관리',
-          business_number: '000-00-00000',
-          ceo_name: '관리자',
-          phone: '010-0000-0000',
-          email: 'admin@logiprofit.com',
-          status: 'approved' // 자동 승인
-        });
-
-      if (profileError) throw profileError;
-
-      // 3. 관리자 역할 부여
-      const { error: roleError } = await supabase
-        .from('user_roles')
-        .insert({
-          user_id: authData.user.id,
-          role: 'admin'
-        });
-
-      if (roleError) throw roleError;
-
-      // 마스터 계정도 함께 생성
+      // Master 계정 생성 시도
       const { data: masterAuthData, error: masterSignUpError } = await supabase.auth.signUp({
         email: 'master@logiprofit.com',
         password: 'master1234!',
         options: {
           emailRedirectTo: `${window.location.origin}/`,
-          data: {
-            username: 'master'
-          }
+          data: { username: 'master' }
         }
       });
 
-      if (!masterSignUpError && masterAuthData.user) {
-        // 마스터 회사 프로필 생성
-        await supabase
+      // 이미 존재하는 경우 조회
+      if (masterSignUpError?.message.includes('already registered')) {
+        const { data: users } = await supabase
           .from('company_profiles')
-          .insert({
-            user_id: masterAuthData.user.id,
+          .select('user_id')
+          .eq('email', 'master@logiprofit.com')
+          .single();
+        
+        if (users) {
+          masterUserId = users.user_id;
+        }
+      } else if (masterAuthData.user) {
+        masterUserId = masterAuthData.user.id;
+      }
+
+      // Master 프로필 및 역할 생성
+      if (masterUserId) {
+        const { data: existingProfile } = await supabase
+          .from('company_profiles')
+          .select('id')
+          .eq('user_id', masterUserId)
+          .maybeSingle();
+
+        if (!existingProfile) {
+          await supabase.from('company_profiles').insert({
+            user_id: masterUserId,
             username: 'master',
             company_name: '로지프로핏 마스터',
             business_number: '999-99-99999',
@@ -160,33 +123,38 @@ export default function AdminSetup() {
             email: 'master@logiprofit.com',
             status: 'approved'
           });
+        }
 
-        // 마스터 역할 부여
-        await supabase
+        const { data: existingRole } = await supabase
           .from('user_roles')
-          .insert({
-            user_id: masterAuthData.user.id,
+          .select('id')
+          .eq('user_id', masterUserId)
+          .maybeSingle();
+
+        if (!existingRole) {
+          await supabase.from('user_roles').insert({
+            user_id: masterUserId,
             role: 'admin'
           });
+        }
       }
 
       setIsCreated(true);
       
       toast({
-        title: "계정 생성 완료",
-        description: "관리자 및 마스터 계정이 생성되었습니다.",
+        title: "계정 설정 완료",
+        description: "관리자 및 마스터 계정이 준비되었습니다.",
       });
 
-      // 3초 후 로그인 페이지로 이동
       setTimeout(() => {
         navigate('/login');
       }, 3000);
 
     } catch (error: any) {
-      console.error('Admin creation error:', error);
+      console.error('Admin setup error:', error);
       toast({
-        title: "계정 생성 실패",
-        description: error.message || "관리자 계정 생성 중 오류가 발생했습니다.",
+        title: "계정 설정 실패",
+        description: error.message || "계정 설정 중 오류가 발생했습니다.",
         variant: "destructive",
       });
     } finally {
