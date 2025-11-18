@@ -283,13 +283,31 @@ const Dashboard = () => {
               <CardContent>
                 <ResponsiveContainer width="100%" height={250}>
                   <BarChart data={salesData}>
-                    <CartesianGrid strokeDasharray="3 3" />
+                    <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
                     <XAxis dataKey="month" />
                     <YAxis />
-                    <Tooltip />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: 'hsl(var(--background))',
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '8px'
+                      }}
+                    />
                     <Legend />
-                    <Bar dataKey="매출" fill="hsl(var(--primary))" />
-                    <Bar dataKey="매입" fill="hsl(var(--secondary))" />
+                    <Bar 
+                      dataKey="매출" 
+                      fill="hsl(var(--primary))"
+                      radius={[8, 8, 0, 0]}
+                      animationDuration={1000}
+                      animationEasing="ease-in-out"
+                    />
+                    <Bar 
+                      dataKey="매입" 
+                      fill="hsl(var(--secondary))"
+                      radius={[8, 8, 0, 0]}
+                      animationDuration={1000}
+                      animationEasing="ease-in-out"
+                    />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -306,12 +324,27 @@ const Dashboard = () => {
               <CardContent>
                 <ResponsiveContainer width="100%" height={250}>
                   <LineChart data={inventoryData}>
-                    <CartesianGrid strokeDasharray="3 3" />
+                    <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
                     <XAxis dataKey="category" />
                     <YAxis />
-                    <Tooltip />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: 'hsl(var(--background))',
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '8px'
+                      }}
+                    />
                     <Legend />
-                    <Line type="monotone" dataKey="재고" stroke="hsl(var(--primary))" strokeWidth={2} />
+                    <Line 
+                      type="monotone" 
+                      dataKey="재고" 
+                      stroke="hsl(var(--primary))" 
+                      strokeWidth={2}
+                      dot={{ fill: 'hsl(var(--primary))', r: 4 }}
+                      activeDot={{ r: 6 }}
+                      animationDuration={1000}
+                      animationEasing="ease-in-out"
+                    />
                   </LineChart>
                 </ResponsiveContainer>
               </CardContent>

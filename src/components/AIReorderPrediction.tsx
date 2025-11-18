@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Label } from "@/components/ui/label";
 import { Brain, TrendingUp, AlertTriangle, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -31,6 +32,8 @@ export function AIReorderPrediction({ products }: { products: Product[] }) {
   const { toast } = useToast();
   const [predictions, setPredictions] = useState<PredictionResult[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisInterval, setAnalysisInterval] = useState<number>(0); // 0 = 수동, 1 = 1시간, 24 = 1일
+  const [autoAnalysisEnabled, setAutoAnalysisEnabled] = useState(false);
 
   const analyzePredictions = () => {
     setIsAnalyzing(true);
@@ -86,11 +89,17 @@ export function AIReorderPrediction({ products }: { products: Product[] }) {
     }, 2000);
   };
 
+  // 자동 분석 타이머
   useEffect(() => {
-    if (products.length > 0) {
-      analyzePredictions();
+    if (autoAnalysisEnabled && analysisInterval > 0 && products.length > 0) {
+      const intervalMs = analysisInterval * 60 * 60 * 1000; // 시간을 밀리초로 변환
+      const timer = setInterval(() => {
+        analyzePredictions();
+      }, intervalMs);
+
+      return () => clearInterval(timer);
     }
-  }, [products]);
+  }, [autoAnalysisEnabled, analysisInterval, products]);
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -113,19 +122,43 @@ export function AIReorderPrediction({ products }: { products: Product[] }) {
   return (
     <Card>
       <CardHeader>
-        <div className="flex justify-between items-center">
-          <CardTitle className="flex items-center gap-2">
-            <Brain className="w-5 h-5 text-primary" />
-            AI 재주문 예측
-          </CardTitle>
-          <Button 
-            onClick={analyzePredictions} 
-            disabled={isAnalyzing}
-            variant="outline"
-            size="sm"
-          >
-            {isAnalyzing ? "분석 중..." : "재분석"}
-          </Button>
+        <div className="flex flex-col gap-4">
+          <div className="flex justify-between items-center">
+            <CardTitle className="flex items-center gap-2">
+              <Brain className="w-5 h-5 text-primary" />
+              AI 재주문 예측
+            </CardTitle>
+            <div className="flex items-center gap-2">
+              <select
+                value={analysisInterval}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value);
+                  setAnalysisInterval(val);
+                  setAutoAnalysisEnabled(val > 0);
+                }}
+                className="rounded-md border border-input bg-background px-3 py-1.5 text-sm"
+              >
+                <option value="0">수동</option>
+                <option value="1">1시간마다</option>
+                <option value="3">3시간마다</option>
+                <option value="6">6시간마다</option>
+                <option value="24">1일마다</option>
+              </select>
+              <Button 
+                onClick={analyzePredictions} 
+                disabled={isAnalyzing}
+                variant="outline"
+                size="sm"
+              >
+                {isAnalyzing ? "분석 중..." : "분석 시작"}
+              </Button>
+            </div>
+          </div>
+          {autoAnalysisEnabled && (
+            <div className="text-sm text-muted-foreground bg-muted/30 px-3 py-2 rounded-md">
+              ⏰ 자동 분석 활성화: {analysisInterval}시간마다 실행됩니다
+            </div>
+          )}
         </div>
       </CardHeader>
       <CardContent>
