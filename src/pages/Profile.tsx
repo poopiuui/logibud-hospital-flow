@@ -16,6 +16,13 @@ export default function Profile() {
     department: "물류팀"
   });
 
+  const [companyInfo, setCompanyInfo] = useState({
+    name: "로지프로핏",
+    businessNumber: "123-45-67890",
+    fax: "02-1234-5678",
+    phone: "02-9876-5432"
+  });
+
   const [password, setPassword] = useState({
     current: "",
     new: "",
@@ -50,12 +57,65 @@ export default function Profile() {
     setPassword({ current: "", new: "", confirm: "" });
   };
 
+  const handleCompanyUpdate = (e: React.FormEvent) => {
+    e.preventDefault();
+    toast({
+      title: "회사 정보 업데이트",
+      description: "회사 정보가 성공적으로 업데이트되었습니다."
+    });
+  };
+
   return (
     <div className="p-6 space-y-6 max-w-4xl mx-auto">
       <div>
         <h1 className="text-3xl font-bold">계정 정보</h1>
         <p className="text-muted-foreground">계정 정보를 관리합니다</p>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>회사 정보</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleCompanyUpdate} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="companyName">회사명</Label>
+                <Input
+                  id="companyName"
+                  value={companyInfo.name}
+                  onChange={(e) => setCompanyInfo({ ...companyInfo, name: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="businessNumber">사업자번호</Label>
+                <Input
+                  id="businessNumber"
+                  value={companyInfo.businessNumber}
+                  onChange={(e) => setCompanyInfo({ ...companyInfo, businessNumber: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="companyPhone">대표전화번호</Label>
+                <Input
+                  id="companyPhone"
+                  value={companyInfo.phone}
+                  onChange={(e) => setCompanyInfo({ ...companyInfo, phone: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="fax">팩스번호</Label>
+                <Input
+                  id="fax"
+                  value={companyInfo.fax}
+                  onChange={(e) => setCompanyInfo({ ...companyInfo, fax: e.target.value })}
+                />
+              </div>
+            </div>
+            <Button type="submit">회사 정보 저장</Button>
+          </form>
+        </CardContent>
+      </Card>
 
       <div className="flex items-center gap-4 p-6 bg-muted rounded-lg">
         <Avatar className="w-20 h-20">

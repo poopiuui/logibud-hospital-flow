@@ -16,6 +16,7 @@ import { ExcelAdvanced } from "@/components/ExcelAdvanced";
 import { RealtimeNotifications } from "@/components/RealtimeNotifications";
 import { QRCodeGenerator } from "@/components/QRCodeGenerator";
 import { QuotationGenerator } from "@/components/QuotationGenerator";
+import { QuotationGeneratorEditable } from "@/components/QuotationGeneratorEditable";
 import { StockHistory } from "@/components/StockHistory";
 import { PriceCardGenerator } from "@/components/PriceCardGenerator";
 import { PurchaseOrderRegistration } from "@/components/PurchaseOrderRegistration";
@@ -726,7 +727,7 @@ const Index = () => {
       )}
 
       {/* Quotation Dialog */}
-      <QuotationGenerator
+      <QuotationGeneratorEditable
         products={getSelectedProductsData()}
         isOpen={isQuotationDialogOpen}
         onClose={() => setIsQuotationDialogOpen(false)}
