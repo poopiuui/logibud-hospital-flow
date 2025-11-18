@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -82,7 +83,7 @@ const Index = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   
-  const [products, setProducts] = useState<Product[]>(generateSampleProducts());
+  const [products, setProducts] = useState<Product[]>([]);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [deletingProduct, setDeletingProduct] = useState<Product | null>(null);
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
@@ -117,6 +118,43 @@ const Index = () => {
     window.addEventListener('keydown', handleEsc);
     return () => window.removeEventListener('keydown', handleEsc);
   }, []);
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  const fetchProducts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        const formattedProducts: Product[] = data.map(p => ({
+          userCode: p.code,
+          barcode: p.code,
+          productCode: p.code,
+          productName: p.name,
+          currentStock: p.stock || 0,
+          safetyStock: 100,
+          unitPrice: p.price || 0,
+          supplier: '미지정',
+          registeredDate: new Date(p.created_at).toISOString().split('T')[0],
+          category: p.category || '기타',
+          b2bEnabled: p.b2b_enabled || false
+        }));
+        setProducts(formattedProducts);
+      } else {
+        setProducts(generateSampleProducts());
+      }
+    } catch (error) {
+      console.error('상품 조회 오류:', error);
+      setProducts(generateSampleProducts());
+    }
+  };
 
   const uniqueSuppliers = Array.from(new Set(products.map(p => p.supplier)));
 
