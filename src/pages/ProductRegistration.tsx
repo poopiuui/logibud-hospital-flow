@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { PackagePlus, Upload, CheckCircle2, XCircle, Settings } from "lucide-react";
 import * as XLSX from "xlsx";
 import { PRODUCT_CATEGORIES, getCategoryByCode } from "@/data/categories";
+import { supabase } from "@/integrations/supabase/client";
 
 interface RegistrationResult {
   success: boolean;
@@ -32,6 +33,8 @@ export default function ProductRegistration() {
   });
   const [bulkResults, setBulkResults] = useState<RegistrationResult[]>([]);
   const [showCategoryDialog, setShowCategoryDialog] = useState(false);
+  const [showBulkCompleteDialog, setShowBulkCompleteDialog] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
   const handleSingleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,12 +66,13 @@ export default function ProductRegistration() {
     }
   };
 
-  const handleBulkUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleBulkUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    setIsUploading(true);
     const reader = new FileReader();
-    reader.onload = (event) => {
+    reader.onload = async (event) => {
       try {
         const data = new Uint8Array(event.target?.result as ArrayBuffer);
         const workbook = XLSX.read(data, { type: "array" });
@@ -76,14 +80,48 @@ export default function ProductRegistration() {
         const worksheet = workbook.Sheets[sheetName];
         const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
-        // 시뮬레이션: 각 제품 등록 결과
-        const results: RegistrationResult[] = jsonData.map((row: any) => ({
-          success: Math.random() > 0.15, // 85% 성공률
-          productName: row['제품명'] || row['name'] || '알 수 없음',
-          message: Math.random() > 0.15 ? '등록 완료' : '바코드 중복'
-        }));
+        const results: RegistrationResult[] = [];
+
+        for (const row of jsonData as any[]) {
+          try {
+            const productData = {
+              code: row['상품코드'] || row['productCode'] || `AUTO-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+              name: row['제품명'] || row['name'] || row['productName'],
+              category: row['카테고리'] || row['category'] || '기타',
+              price: parseInt(row['가격'] || row['price'] || '0'),
+              stock: parseInt(row['재고'] || row['stock'] || '0'),
+              description: row['설명'] || row['description'] || '',
+              b2b_enabled: row['B2B연동'] === 'Y' || row['b2bEnabled'] === true || true
+            };
+
+            const { error } = await supabase
+              .from('products')
+              .insert([productData]);
+
+            if (error) {
+              results.push({
+                success: false,
+                productName: productData.name,
+                message: error.message
+              });
+            } else {
+              results.push({
+                success: true,
+                productName: productData.name,
+                message: '등록 완료'
+              });
+            }
+          } catch (error: any) {
+            results.push({
+              success: false,
+              productName: row['제품명'] || row['name'] || '알 수 없음',
+              message: error.message || '등록 실패'
+            });
+          }
+        }
 
         setBulkResults(results);
+        setShowBulkCompleteDialog(true);
 
         const successCount = results.filter(r => r.success).length;
         const failCount = results.length - successCount;
@@ -98,6 +136,8 @@ export default function ProductRegistration() {
           description: "엑셀 파일을 읽는 중 오류가 발생했습니다.",
           variant: "destructive"
         });
+      } finally {
+        setIsUploading(false);
       }
     };
     reader.readAsArrayBuffer(file);
@@ -279,6 +319,7 @@ export default function ProductRegistration() {
                     accept=".xlsx,.xls"
                     onChange={handleBulkUpload}
                     className="flex-1"
+                    disabled={isUploading}
                   />
                   <Button type="button" variant="outline" onClick={downloadTemplate}>
                     템플릿 다운로드
@@ -354,6 +395,59 @@ export default function ProductRegistration() {
                   <code className="bg-background px-2 py-1 rounded text-sm font-mono">{cat.code}</code>
                 </div>
               ))}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* 대량등록 완료 다이얼로그 */}
+      <Dialog open={showBulkCompleteDialog} onOpenChange={setShowBulkCompleteDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>대량 등록 완료</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium">성공</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-green-600">
+                    {bulkResults.filter(r => r.success).length}건
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium">실패</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-red-600">
+                    {bulkResults.filter(r => !r.success).length}건
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+            
+            <div className="max-h-[400px] overflow-y-auto space-y-2">
+              {bulkResults.map((result, index) => (
+                <div key={index} className="flex items-center gap-2 p-2 rounded border">
+                  {result.success ? (
+                    <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0" />
+                  ) : (
+                    <XCircle className="h-5 w-5 text-red-600 flex-shrink-0" />
+                  )}
+                  <span className="flex-1">{result.productName}</span>
+                  <span className="text-sm text-muted-foreground">{result.message}</span>
+                </div>
+              ))}
+            </div>
+            
+            <div className="flex justify-end">
+              <Button onClick={() => setShowBulkCompleteDialog(false)}>
+                완료
+              </Button>
             </div>
           </div>
         </DialogContent>
