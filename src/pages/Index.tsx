@@ -13,6 +13,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { BarcodeScanner } from "@/components/BarcodeScanner";
 import { StockAlertSystem } from "@/components/StockAlertSystem";
+import { ExcelAdvanced } from "@/components/ExcelAdvanced";
+import { RealtimeNotifications } from "@/components/RealtimeNotifications";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Package, 
@@ -249,13 +251,17 @@ const Index = () => {
     <>
       <div className="p-8 space-y-8">
         {/* 헤더 */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-4xl font-bold">대시보드</h1>
-            <p className="text-lg text-muted-foreground mt-2">물류 정보를 한눈에 확인하세요</p>
-          </div>
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-4xl font-bold">대시보드</h1>
+          <p className="text-lg text-muted-foreground mt-2">물류 정보를 한눈에 확인하세요</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <ExcelAdvanced data={products} filename="products" />
+          <RealtimeNotifications />
           <ThemeToggle />
         </div>
+      </div>
 
         {/* 재고 알림 시스템 */}
         <StockAlertSystem products={products} />
