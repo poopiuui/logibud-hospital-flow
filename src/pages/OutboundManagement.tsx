@@ -139,6 +139,43 @@ const OutboundManagement = () => {
     }
   };
 
+  const handleBulkMoveToShipping = () => {
+    if (selectedOutbounds.length === 0) {
+      toast({
+        title: "선택된 항목 없음",
+        description: "배송중으로 변경할 출고 건을 선택해주세요.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const existingShipments = JSON.parse(localStorage.getItem('shipments') || '[]');
+    const selectedOutboundsData = outbounds.filter(o => selectedOutbounds.includes(o.id));
+    
+    selectedOutboundsData.forEach(outbound => {
+      const newShipment = {
+        id: `S-${Date.now()}-${outbound.id}`,
+        outboundId: outbound.id,
+        trackingNumber: '미등록',
+        customer: outbound.customer,
+        destination: outbound.destination,
+        items: outbound.items || [],
+        status: '배송중',
+        shipmentDate: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+      };
+      existingShipments.push(newShipment);
+    });
+
+    localStorage.setItem('shipments', JSON.stringify(existingShipments));
+    setSelectedOutbounds([]);
+    
+    toast({
+      title: "배송중으로 변경 완료",
+      description: `${selectedOutboundsData.length}건이 배송관리로 이동되었습니다.`,
+    });
+  };
+
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') window.history.back(); };
     window.addEventListener('keydown', handleEsc);
@@ -150,6 +187,11 @@ const OutboundManagement = () => {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">출고관리</h1>
         <div className="flex gap-2">
+          {selectedOutbounds.length > 0 && (
+            <Button onClick={handleBulkMoveToShipping} variant="secondary">
+              배송중으로 변경 ({selectedOutbounds.length}건)
+            </Button>
+          )}
           <Button onClick={() => setShowRegistrationDialog(true)}><Plus className="mr-2 h-4 w-4" />출고 등록</Button>
           
           <DropdownMenu>
