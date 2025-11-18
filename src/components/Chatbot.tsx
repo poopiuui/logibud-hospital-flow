@@ -19,10 +19,17 @@ const COLORS = ['hsl(var(--primary))', 'hsl(var(--success))', 'hsl(var(--warning
 
 export const Chatbot = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [companyName, setCompanyName] = useState("로지봇");
+  
+  useState(() => {
+    const savedName = localStorage.getItem('companyName');
+    if (savedName) setCompanyName(savedName);
+  });
+
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      text: '안녕하세요! 로지봇입니다. 재고, 주문, 통계에 대해 질문해주세요.',
+      text: `안녕하세요! ${companyName}입니다. 재고, 주문, 통계에 대해 질문해주세요.`,
       sender: 'bot',
       timestamp: new Date()
     }
@@ -116,7 +123,7 @@ export const Chatbot = () => {
           <div className="p-4 border-b flex items-center justify-between bg-primary text-primary-foreground">
             <div className="flex items-center gap-2">
               <MessageCircle className="w-5 h-5" />
-              <span className="font-semibold">로지봇</span>
+              <span className="font-semibold text-lg">{companyName}</span>
             </div>
             <Button
               variant="ghost"

@@ -1,12 +1,41 @@
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Slider } from "@/components/ui/slider";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { Bell, Lock, Database, Mail } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { Bell, Lock, Database, Mail, Type, Building } from "lucide-react";
 
 export default function Settings() {
+  const { toast } = useToast();
+  const [fontSize, setFontSize] = useState([100]);
+  const [companyName, setCompanyName] = useState(localStorage.getItem('companyName') || '로지봇');
+  const [companyLogo, setCompanyLogo] = useState(localStorage.getItem('companyLogo') || '');
+  const [companyDescription, setCompanyDescription] = useState(localStorage.getItem('companyDescription') || '');
+
+  const handleFontSizeChange = (value: number[]) => {
+    setFontSize(value);
+    document.documentElement.style.fontSize = `${value[0]}%`;
+  };
+
+  const handleCompanyInfoSave = () => {
+    localStorage.setItem('companyName', companyName);
+    localStorage.setItem('companyLogo', companyLogo);
+    localStorage.setItem('companyDescription', companyDescription);
+    
+    toast({
+      title: "회사 정보 저장",
+      description: "회사 정보가 업데이트되었습니다. 페이지를 새로고침하면 반영됩니다.",
+    });
+
+    setTimeout(() => {
+      window.location.reload();
+    }, 1000);
+  };
+
   return (
     <div className="p-8 space-y-8">
       <div>
@@ -29,6 +58,32 @@ export default function Settings() {
               </div>
               <ThemeToggle />
             </div>
+            
+            <div className="space-y-4">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <Type className="h-4 w-4" />
+                  <Label>글자 크기</Label>
+                </div>
+                <p className="text-sm text-muted-foreground">전체 화면의 글자 크기를 조절합니다</p>
+              </div>
+              <div className="flex items-center gap-4">
+                <span className="text-sm w-12">작게</span>
+                <Slider
+                  value={fontSize}
+                  onValueChange={handleFontSizeChange}
+                  min={80}
+                  max={120}
+                  step={5}
+                  className="flex-1"
+                />
+                <span className="text-sm w-12">크게</span>
+              </div>
+              <p className="text-xs text-muted-foreground text-center">
+                현재: {fontSize[0]}%
+              </p>
+            </div>
+
             <div className="flex items-center justify-between">
               <div className="space-y-1">
                 <Label>자동 저장</Label>
@@ -97,6 +152,54 @@ export default function Settings() {
               </div>
               <Button variant="outline">내보내기</Button>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* 회사 정보 설정 */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-2xl flex items-center gap-2">
+              <Building className="w-6 h-6" />
+              회사 정보
+            </CardTitle>
+            <CardDescription>회사 로고와 이름을 설정합니다. 사이드바에 표시됩니다.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="company-name">회사 이름</Label>
+              <Input 
+                id="company-name" 
+                placeholder="로지봇" 
+                value={companyName}
+                onChange={(e) => setCompanyName(e.target.value)}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="company-logo">회사 로고 URL</Label>
+              <Input 
+                id="company-logo" 
+                placeholder="https://example.com/logo.png"
+                type="url"
+                value={companyLogo}
+                onChange={(e) => setCompanyLogo(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                로고 이미지 URL을 입력하세요. 사이드바 상단에 표시됩니다.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="company-description">회사 설명</Label>
+              <Input 
+                id="company-description" 
+                placeholder="물류 통합 관리 시스템"
+                value={companyDescription}
+                onChange={(e) => setCompanyDescription(e.target.value)}
+              />
+            </div>
+
+            <Button onClick={handleCompanyInfoSave}>회사 정보 저장</Button>
           </CardContent>
         </Card>
 
