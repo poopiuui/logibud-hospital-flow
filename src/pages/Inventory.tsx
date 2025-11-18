@@ -1,27 +1,57 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { ArrowUpCircle, ArrowDownCircle, Package, Camera, QrCode } from "lucide-react";
+import { ArrowUpCircle, Search, FileDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { BarcodeScanner } from "@/components/BarcodeScanner";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
 
 const COLORS = ['#4CAF50', '#F44336', '#2196F3', '#FF9800'];
 
+interface InventoryItem {
+  id: string;
+  productCode: string;
+  productName: string;
+  category: string;
+  currentStock: number;
+  safetyStock: number;
+  lastInboundDate: string;
+  location: string;
+  createdBy: string;
+}
+
+interface Transaction {
+  id: number;
+  type: '매입' | '출고' | '조정';
+  product: string;
+  quantity: number;
+  date: string;
+  amount: number;
+  reason?: string;
+  createdBy: string;
+}
+
 export default function Inventory() {
   const { toast } = useToast();
-  const [purchaseOpen, setPurchaseOpen] = useState(false);
-  const [releaseOpen, setReleaseOpen] = useState(false);
-  const [adjustmentOpen, setAdjustmentOpen] = useState(false);
-  const [scannerOpen, setScannerOpen] = useState(false);
+  const navigate = useNavigate();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortBy, setSortBy] = useState("recent");
+  const [categoryFilter, setCategoryFilter] = useState("all");
 
-  // 월별 데이터
+  const inventoryItems: InventoryItem[] = [
+    { id: '1', productCode: 'A-001', productName: '주사기(5ml)', category: '주사기/바늘', currentStock: 850, safetyStock: 1000, lastInboundDate: '2024-01-15', location: 'A-01', createdBy: '김관리' },
+    { id: '2', productCode: 'B-012', productName: '거즈 패드', category: '붕대/거즈', currentStock: 2100, safetyStock: 2000, lastInboundDate: '2024-01-14', location: 'B-02', createdBy: '이관리' },
+    { id: '3', productCode: 'C-045', productName: '일회용 장갑(M)', category: '보호구', currentStock: 400, safetyStock: 5000, lastInboundDate: '2024-01-13', location: 'C-03', createdBy: '박관리' },
+    { id: '4', productCode: 'D-078', productName: '알코올 솜', category: '의료소모품', currentStock: 8900, safetyStock: 10000, lastInboundDate: '2024-01-16', location: 'D-04', createdBy: '김관리' },
+    { id: '5', productCode: 'E-092', productName: '링거 세트', category: '수액/주사액', currentStock: 500, safetyStock: 1500, lastInboundDate: '2024-01-12', location: 'E-05', createdBy: '이관리' },
+  ];
+
   const monthlyData = [
     { name: '매입', value: 45000000 },
     { name: '출고', value: 38000000 },
@@ -29,7 +59,6 @@ export default function Inventory() {
     { name: '매출', value: 52000000 },
   ];
 
-  // 년별 데이터
   const yearlyData = [
     { month: '1월', 매입: 42000000, 출고: 35000000, 재고: 11000000, 매출: 48000000 },
     { month: '2월', 매입: 45000000, 출고: 38000000, 재고: 12500000, 매출: 52000000 },
@@ -39,56 +68,76 @@ export default function Inventory() {
     { month: '6월', 매입: 50000000, 출고: 42000000, 재고: 14000000, 매출: 57000000 },
   ];
 
-  const recentTransactions = [
-    { id: 1, type: '매입', product: '주사기(5ml)', quantity: 500, date: '2024-01-15', amount: 75000 },
-    { id: 2, type: '출고', product: '거즈 패드', quantity: 200, date: '2024-01-15', amount: 16000 },
-    { id: 3, type: '매입', product: '일회용 장갑(M)', quantity: 1000, date: '2024-01-14', amount: 50000 },
-    { id: 4, type: '조정', product: '알코올 솜', quantity: -50, date: '2024-01-14', amount: 0, reason: '폐기' },
+  const recentTransactions: Transaction[] = [
+    { id: 1, type: '매입', product: '주사기(5ml)', quantity: 500, date: '2024-01-15', amount: 75000, createdBy: '김관리' },
+    { id: 2, type: '출고', product: '거즈 패드', quantity: 200, date: '2024-01-15', amount: 16000, createdBy: '이관리' },
+    { id: 3, type: '매입', product: '일회용 장갑(M)', quantity: 1000, date: '2024-01-14', amount: 50000, createdBy: '박관리' },
+    { id: 4, type: '조정', product: '알코올 솜', quantity: -50, date: '2024-01-14', amount: 0, reason: '폐기', createdBy: '김관리' },
   ];
 
-  const handlePurchase = () => {
-    toast({
-      title: "매입 등록 완료",
-      description: "제품이 성공적으로 등록되었습니다.",
+  const filteredInventory = inventoryItems
+    .filter(item => {
+      const matchesSearch = item.productName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           item.productCode.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesCategory = categoryFilter === "all" || item.category === categoryFilter;
+      return matchesSearch && matchesCategory;
+    })
+    .sort((a, b) => {
+      switch (sortBy) {
+        case "high":
+          return b.currentStock - a.currentStock;
+        case "low":
+          return a.currentStock - a.safetyStock - (b.currentStock - b.safetyStock);
+        case "recent":
+          return new Date(b.lastInboundDate).getTime() - new Date(a.lastInboundDate).getTime();
+        default:
+          return 0;
+      }
     });
-    setPurchaseOpen(false);
+
+  const handleExportCSV = () => {
+    const ws = XLSX.utils.json_to_sheet(filteredInventory);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "재고현황");
+    XLSX.writeFile(wb, "재고관리_데이터.csv");
+    toast({ title: "CSV 내보내기 완료", description: "재고 데이터가 CSV로 내보내졌습니다." });
   };
 
-  const handleRelease = () => {
-    toast({
-      title: "출고 처리 완료",
-      description: "재고가 출고 처리되었습니다.",
+  const handleExportPDF = () => {
+    const doc = new jsPDF();
+    doc.text("재고 현황", 20, 20);
+    let y = 40;
+    filteredInventory.forEach((item) => {
+      if (y > 270) {
+        doc.addPage();
+        y = 20;
+      }
+      doc.text(`${item.productCode} - ${item.productName}: ${item.currentStock}`, 20, y);
+      y += 10;
     });
-    setReleaseOpen(false);
-  };
-
-  const handleAdjustment = () => {
-    toast({
-      title: "재고 조정 완료",
-      description: "재고가 조정되었습니다.",
-    });
-    setAdjustmentOpen(false);
+    doc.save("재고관리_데이터.pdf");
+    toast({ title: "PDF 내보내기 완료", description: "재고 데이터가 PDF로 내보내졌습니다." });
   };
 
   return (
-    <div className="p-8 space-y-8">
-      <div className="flex justify-between items-center">
+    <div className="p-4 md:p-8 space-y-6 touch-pan-y">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-4xl font-bold">입출고 관리</h1>
-          <p className="text-muted-foreground text-lg mt-2">재고 입출고 이력 및 통계</p>
+          <h1 className="text-3xl md:text-4xl font-bold">재고 관리</h1>
+          <p className="text-muted-foreground text-base md:text-lg mt-2">재고 현황 및 통계</p>
         </div>
-        <div className="flex gap-3">
-          <Button onClick={() => setPurchaseOpen(true)} size="lg" className="gap-2">
+        <div className="flex flex-wrap gap-2">
+          <Button onClick={() => navigate('/purchase')} size="lg" className="gap-2">
             <ArrowUpCircle className="w-5 h-5" />
-            매입
+            매입 관리로 이동
           </Button>
-          <Button onClick={() => setReleaseOpen(true)} size="lg" variant="secondary" className="gap-2">
-            <ArrowDownCircle className="w-5 h-5" />
-            출고
+          <Button onClick={handleExportCSV} size="lg" variant="secondary" className="gap-2">
+            <FileDown className="w-5 h-5" />
+            CSV
           </Button>
-          <Button onClick={() => setAdjustmentOpen(true)} size="lg" variant="outline" className="gap-2">
-            <Package className="w-5 h-5" />
-            재고 조정
+          <Button onClick={handleExportPDF} size="lg" variant="outline" className="gap-2">
+            <FileDown className="w-5 h-5" />
+            PDF
           </Button>
         </div>
       </div>
@@ -96,210 +145,179 @@ export default function Inventory() {
       {/* 최근 입출고 이력 */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-2xl">최근 입출고 이력</CardTitle>
+          <CardTitle className="text-xl md:text-2xl">최근 입출고 이력</CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="text-base">유형</TableHead>
-                <TableHead className="text-base">제품명</TableHead>
-                <TableHead className="text-base">수량</TableHead>
-                <TableHead className="text-base">금액</TableHead>
-                <TableHead className="text-base">일자</TableHead>
-                <TableHead className="text-base">등록자</TableHead>
-                <TableHead className="text-base">비고</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {recentTransactions.map((transaction) => (
-                <TableRow key={transaction.id}>
-                  <TableCell>
-                    <Badge variant={
-                      transaction.type === '매입' ? 'default' : 
-                      transaction.type === '출고' ? 'secondary' : 
-                      'outline'
-                    }>
-                      {transaction.type}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="font-medium text-base">{transaction.product}</TableCell>
-                  <TableCell className="text-base">{transaction.quantity > 0 ? '+' : ''}{transaction.quantity}</TableCell>
-                  <TableCell className="text-base">₩{transaction.amount.toLocaleString()}</TableCell>
-                  <TableCell className="text-base">{transaction.date}</TableCell>
-                  <TableCell className="text-base font-medium">김담당</TableCell>
-                  <TableCell className="text-muted-foreground text-base">
-                    {(transaction as any).reason || '-'}
-                  </TableCell>
+          <div className="overflow-x-auto -mx-2 md:mx-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>날짜</TableHead>
+                  <TableHead>구분</TableHead>
+                  <TableHead>제품명</TableHead>
+                  <TableHead className="text-right">수량</TableHead>
+                  <TableHead className="text-right">금액</TableHead>
+                  <TableHead>등록자</TableHead>
+                  <TableHead>비고</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-
-      {/* 월별 통계 (Pie Chart) */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-2xl">월별 통계</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ResponsiveContainer width="100%" height={400}>
-            <PieChart>
-              <Pie
-                data={monthlyData}
-                cx="50%"
-                cy="50%"
-                labelLine={false}
-                label={({ name, value }) => `${name}: ₩${(value / 1000000).toFixed(1)}M`}
-                outerRadius={150}
-                fill="#8884d8"
-                dataKey="value"
-              >
-                {monthlyData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+              </TableHeader>
+              <TableBody>
+                {recentTransactions.map((transaction) => (
+                  <TableRow key={transaction.id}>
+                    <TableCell className="whitespace-nowrap">{transaction.date}</TableCell>
+                    <TableCell>
+                      <Badge variant={
+                        transaction.type === '매입' ? 'default' :
+                        transaction.type === '출고' ? 'secondary' : 'outline'
+                      }>
+                        {transaction.type}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{transaction.product}</TableCell>
+                    <TableCell className="text-right">{transaction.quantity.toLocaleString()}</TableCell>
+                    <TableCell className="text-right whitespace-nowrap">₩{transaction.amount.toLocaleString()}</TableCell>
+                    <TableCell>{transaction.createdBy}</TableCell>
+                    <TableCell>{transaction.reason || '-'}</TableCell>
+                  </TableRow>
                 ))}
-              </Pie>
-              <Tooltip formatter={(value: number) => `₩${(value / 1000000).toFixed(1)}M`} />
-              <Legend />
-            </PieChart>
-          </ResponsiveContainer>
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
 
-      {/* 년별 통계 (Bar Chart) */}
+      {/* 재고 현황 */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-2xl">년별 통계</CardTitle>
+          <CardTitle className="text-xl md:text-2xl">재고 현황</CardTitle>
         </CardHeader>
-        <CardContent>
-          <ResponsiveContainer width="100%" height={400}>
-            <BarChart data={yearlyData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="month" />
-              <YAxis tickFormatter={(value) => `₩${(value / 1000000)}M`} />
-              <Tooltip formatter={(value: number) => `₩${(value / 1000000).toFixed(1)}M`} />
-              <Legend />
-              <Bar dataKey="매입" fill={COLORS[0]} />
-              <Bar dataKey="출고" fill={COLORS[1]} />
-              <Bar dataKey="재고" fill={COLORS[2]} />
-              <Bar dataKey="매출" fill={COLORS[3]} />
-            </BarChart>
-          </ResponsiveContainer>
+        <CardContent className="space-y-4">
+          <div className="flex flex-col md:flex-row gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="제품명 또는 코드 검색..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+              <SelectTrigger className="w-full md:w-48">
+                <SelectValue placeholder="카테고리" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">전체 카테고리</SelectItem>
+                <SelectItem value="주사기/바늘">주사기/바늘</SelectItem>
+                <SelectItem value="붕대/거즈">붕대/거즈</SelectItem>
+                <SelectItem value="보호구">보호구</SelectItem>
+                <SelectItem value="의료소모품">의료소모품</SelectItem>
+                <SelectItem value="수액/주사액">수액/주사액</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className="w-full md:w-48">
+                <SelectValue placeholder="정렬" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="recent">최근 입고순</SelectItem>
+                <SelectItem value="high">재고 많은순</SelectItem>
+                <SelectItem value="low">재고 부족순</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="overflow-x-auto -mx-2 md:mx-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>제품코드</TableHead>
+                  <TableHead>제품명</TableHead>
+                  <TableHead>카테고리</TableHead>
+                  <TableHead className="text-right">현재고</TableHead>
+                  <TableHead className="text-right">안전재고</TableHead>
+                  <TableHead>최근입고일</TableHead>
+                  <TableHead>위치</TableHead>
+                  <TableHead>등록자</TableHead>
+                  <TableHead>상태</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredInventory.map((item) => (
+                  <TableRow key={item.id}>
+                    <TableCell className="font-medium">{item.productCode}</TableCell>
+                    <TableCell>{item.productName}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{item.category}</Badge>
+                    </TableCell>
+                    <TableCell className="text-right font-semibold">{item.currentStock.toLocaleString()}</TableCell>
+                    <TableCell className="text-right">{item.safetyStock.toLocaleString()}</TableCell>
+                    <TableCell className="whitespace-nowrap">{item.lastInboundDate}</TableCell>
+                    <TableCell>{item.location}</TableCell>
+                    <TableCell>{item.createdBy}</TableCell>
+                    <TableCell>
+                      <Badge variant={item.currentStock < item.safetyStock ? "destructive" : "default"}>
+                        {item.currentStock < item.safetyStock ? "부족" : "정상"}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
 
-      {/* 매입 모달 */}
-      <Dialog open={purchaseOpen} onOpenChange={setPurchaseOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle className="text-2xl">매입 등록</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-6 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="product-name">제품명</Label>
-              <Input id="product-name" placeholder="제품명을 입력하세요" />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="purchase-date">입고일</Label>
-              <Input id="purchase-date" type="date" />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="features">특징</Label>
-              <Input id="features" placeholder="제품 특징을 입력하세요" />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="quantity">수량</Label>
-              <Input id="quantity" type="number" placeholder="수량" />
-            </div>
-            <div className="grid gap-2">
-              <Label>바코드/QR</Label>
-              <div className="flex gap-2">
-                <Input placeholder="바코드 번호" className="flex-1" />
-                <Button variant="outline" onClick={() => setScannerOpen(true)}>
-                  <Camera className="w-4 h-4 mr-2" />
-                  스캔
-                </Button>
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setPurchaseOpen(false)}>취소</Button>
-            <Button onClick={handlePurchase}>저장</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* 통계 차트 */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg md:text-xl">월별 통계</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={monthlyData}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={(entry) => `${entry.name}: ₩${(entry.value / 1000000).toFixed(0)}M`}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {monthlyData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip formatter={(value: number) => `₩${value.toLocaleString()}`} />
+              </PieChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
 
-      {/* 출고 모달 */}
-      <Dialog open={releaseOpen} onOpenChange={setReleaseOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="text-2xl">출고 처리</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-6 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="search-product">제품명 검색</Label>
-              <Input id="search-product" placeholder="제품명을 검색하세요" />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="release-quantity">출고 수량</Label>
-              <Input id="release-quantity" type="number" placeholder="출고 수량" />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setReleaseOpen(false)}>취소</Button>
-            <Button onClick={handleRelease}>저장</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* 재고 조정 모달 */}
-      <Dialog open={adjustmentOpen} onOpenChange={setAdjustmentOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="text-2xl">재고 조정</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-6 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="adjustment-type">조정 유형</Label>
-              <Select>
-                <SelectTrigger>
-                  <SelectValue placeholder="선택하세요" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="disposal">폐기</SelectItem>
-                  <SelectItem value="donation">기부</SelectItem>
-                  <SelectItem value="other">기타</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="adjustment-quantity">조정 수량</Label>
-              <Input id="adjustment-quantity" type="number" placeholder="수량 입력" />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="adjustment-reason">사유</Label>
-              <Input id="adjustment-reason" placeholder="조정 사유를 입력하세요" />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setAdjustmentOpen(false)}>취소</Button>
-            <Button onClick={handleAdjustment}>저장</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* 바코드 스캐너 */}
-      <BarcodeScanner
-        isOpen={scannerOpen}
-        onOpenChange={setScannerOpen}
-        onScan={(barcode) => {
-          toast({
-            title: "바코드 스캔 완료",
-            description: `바코드: ${barcode}`,
-          });
-        }}
-      />
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg md:text-xl">년별 통계</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={yearlyData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="month" />
+                <YAxis tickFormatter={(value) => `${(value / 1000000).toFixed(0)}M`} />
+                <Tooltip formatter={(value: number) => `₩${value.toLocaleString()}`} />
+                <Legend />
+                <Bar dataKey="매입" fill="#4CAF50" />
+                <Bar dataKey="출고" fill="#F44336" />
+                <Bar dataKey="재고" fill="#2196F3" />
+                <Bar dataKey="매출" fill="#FF9800" />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

@@ -54,16 +54,18 @@ interface Product {
   thumbnail?: string;
   images?: string[];
   category?: string;
+  keywords?: string;
+  createdBy?: string;
 }
 
 const CATEGORIES = ['의료소모품', '주사기/바늘', '붕대/거즈', '보호구', '수액/주사액', '기타'];
 
 const generateSampleProducts = (): Product[] => [
-  { userCode: 'USER001', barcode: '8801234567890', productCode: 'A-001', productName: '주사기(5ml)', currentStock: 850, safetyStock: 1000, unitPrice: 150, consumerPrice: 200, purchasePrice: 120, shippingPrice: 180, supplier: '㈜메디칼', registeredDate: new Date().toISOString().split('T')[0], category: '주사기/바늘', images: ['/placeholder.svg'] },
-  { userCode: 'USER002', barcode: '8801234567891', productCode: 'B-012', productName: '거즈 패드', currentStock: 2100, safetyStock: 2000, unitPrice: 80, consumerPrice: 100, purchasePrice: 60, shippingPrice: 90, supplier: '㈜헬스케어', registeredDate: new Date().toISOString().split('T')[0], category: '붕대/거즈', images: ['/placeholder.svg'] },
-  { userCode: 'USER003', barcode: '8801234567892', productCode: 'C-045', productName: '일회용 장갑(M)', currentStock: 400, safetyStock: 5000, unitPrice: 50, consumerPrice: 70, purchasePrice: 40, shippingPrice: 60, supplier: '㈜메디칼', registeredDate: new Date().toISOString().split('T')[0], category: '보호구', images: ['/placeholder.svg'] },
-  { userCode: 'USER004', barcode: '8801234567893', productCode: 'D-078', productName: '알코올 솜', currentStock: 8900, safetyStock: 10000, unitPrice: 30, consumerPrice: 40, purchasePrice: 25, shippingPrice: 35, supplier: '㈜의료용품', registeredDate: new Date().toISOString().split('T')[0], category: '의료소모품', images: ['/placeholder.svg'] },
-  { userCode: 'USER005', barcode: '8801234567894', productCode: 'E-092', productName: '링거 세트', currentStock: 500, safetyStock: 1500, unitPrice: 2500, consumerPrice: 3000, purchasePrice: 2200, shippingPrice: 2800, supplier: '㈜메디텍', registeredDate: new Date().toISOString().split('T')[0], category: '수액/주사액', images: ['/placeholder.svg'] },
+  { userCode: 'USER001', barcode: '8801234567890', productCode: 'A-001', productName: '주사기(5ml)', currentStock: 850, safetyStock: 1000, unitPrice: 150, consumerPrice: 200, purchasePrice: 120, shippingPrice: 180, supplier: '㈜메디칼', registeredDate: new Date().toISOString().split('T')[0], category: '주사기/바늘', images: ['/placeholder.svg'], keywords: '주사기, 5ml, 의료용', createdBy: '김관리' },
+  { userCode: 'USER002', barcode: '8801234567891', productCode: 'B-012', productName: '거즈 패드', currentStock: 2100, safetyStock: 2000, unitPrice: 80, consumerPrice: 100, purchasePrice: 60, shippingPrice: 90, supplier: '㈜헬스케어', registeredDate: new Date().toISOString().split('T')[0], category: '붕대/거즈', images: ['/placeholder.svg'], keywords: '거즈, 패드, 상처', createdBy: '이관리' },
+  { userCode: 'USER003', barcode: '8801234567892', productCode: 'C-045', productName: '일회용 장갑(M)', currentStock: 400, safetyStock: 5000, unitPrice: 50, consumerPrice: 70, purchasePrice: 40, shippingPrice: 60, supplier: '㈜메디칼', registeredDate: new Date().toISOString().split('T')[0], category: '보호구', images: ['/placeholder.svg'], keywords: '장갑, 일회용, M사이즈', createdBy: '김관리' },
+  { userCode: 'USER004', barcode: '8801234567893', productCode: 'D-078', productName: '알코올 솜', currentStock: 8900, safetyStock: 10000, unitPrice: 30, consumerPrice: 40, purchasePrice: 25, shippingPrice: 35, supplier: '㈜의료용품', registeredDate: new Date().toISOString().split('T')[0], category: '의료소모품', images: ['/placeholder.svg'], keywords: '알코올, 솜, 소독', createdBy: '박관리' },
+  { userCode: 'USER005', barcode: '8801234567894', productCode: 'E-092', productName: '링거 세트', currentStock: 500, safetyStock: 1500, unitPrice: 2500, consumerPrice: 3000, purchasePrice: 2200, shippingPrice: 2800, supplier: '㈜메디텍', registeredDate: new Date().toISOString().split('T')[0], category: '수액/주사액', images: ['/placeholder.svg'], keywords: '링거, 수액, 주사', createdBy: '이관리' },
 ];
 
 const Index = () => {
