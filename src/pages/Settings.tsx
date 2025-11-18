@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,18 +7,67 @@ import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useToast } from "@/hooks/use-toast";
-import { Bell, Lock, Database, Mail, Type, Building } from "lucide-react";
+import { Bell, Lock, Database, Mail, Type, Building, Upload, X } from "lucide-react";
 
 export default function Settings() {
   const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [fontSize, setFontSize] = useState([100]);
   const [companyName, setCompanyName] = useState(localStorage.getItem('companyName') || '로지봇');
   const [companyLogo, setCompanyLogo] = useState(localStorage.getItem('companyLogo') || '');
   const [companyDescription, setCompanyDescription] = useState(localStorage.getItem('companyDescription') || '');
+  const [logoPreview, setLogoPreview] = useState(localStorage.getItem('companyLogo') || '');
 
   const handleFontSizeChange = (value: number[]) => {
     setFontSize(value);
     document.documentElement.style.fontSize = `${value[0]}%`;
+  };
+
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "오류",
+        description: "이미지 파일만 업로드 가능합니다.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = 500;
+        canvas.height = 500;
+        const ctx = canvas.getContext('2d');
+        
+        if (ctx) {
+          // 이미지를 500x500에 맞게 그리기 (비율 유지하며 crop)
+          const size = Math.min(img.width, img.height);
+          const x = (img.width - size) / 2;
+          const y = (img.height - size) / 2;
+          ctx.drawImage(img, x, y, size, size, 0, 0, 500, 500);
+          
+          const base64 = canvas.toDataURL('image/png');
+          setCompanyLogo(base64);
+          setLogoPreview(base64);
+        }
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleLogoRemove = () => {
+    setCompanyLogo('');
+    setLogoPreview('');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   const handleCompanyInfoSave = () => {
@@ -176,16 +225,46 @@ export default function Settings() {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="company-logo">회사 로고 URL</Label>
-              <Input 
-                id="company-logo" 
-                placeholder="https://example.com/logo.png"
-                type="url"
-                value={companyLogo}
-                onChange={(e) => setCompanyLogo(e.target.value)}
-              />
+              <Label htmlFor="company-logo">회사 로고 (500x500)</Label>
+              <div className="flex items-center gap-4">
+                <Input
+                  ref={fileInputRef}
+                  id="company-logo"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleLogoUpload}
+                  className="hidden"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex items-center gap-2"
+                >
+                  <Upload className="w-4 h-4" />
+                  로고 업로드
+                </Button>
+                {logoPreview && (
+                  <div className="relative">
+                    <img
+                      src={logoPreview}
+                      alt="Company logo preview"
+                      className="w-16 h-16 object-cover rounded border"
+                    />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="icon"
+                      className="absolute -top-2 -right-2 w-6 h-6 rounded-full"
+                      onClick={handleLogoRemove}
+                    >
+                      <X className="w-3 h-3" />
+                    </Button>
+                  </div>
+                )}
+              </div>
               <p className="text-xs text-muted-foreground">
-                로고 이미지 URL을 입력하세요. 사이드바 상단에 표시됩니다.
+                이미지를 업로드하면 자동으로 500x500 크기로 조정됩니다.
               </p>
             </div>
 
