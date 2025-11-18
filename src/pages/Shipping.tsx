@@ -9,9 +9,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Truck, Package, CheckCircle2, Download, Upload, PackagePlus, X, ChevronDown, ChevronUp, FileDown, Filter } from "lucide-react";
+import { Truck, Package, CheckCircle2, Download, Upload, PackagePlus, X, ChevronDown, ChevronUp, FileDown, Filter, Trash2 } from "lucide-react";
 import * as XLSX from "xlsx";
 import { useToast } from "@/hooks/use-toast";
+import { DateRangeFilter } from "@/components/DateRangeFilter";
+import { SwipeableTableRow } from "@/components/SwipeableTableRow";
 
 interface Shipment {
   id: string;
@@ -73,6 +75,10 @@ export default function Shipping() {
   const [locationFilter, setLocationFilter] = useState("");
   const [isBulkTrackingDialogOpen, setIsBulkTrackingDialogOpen] = useState(false);
   const [isNewShipmentDialogOpen, setIsNewShipmentDialogOpen] = useState(false);
+  const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({ from: undefined, to: undefined });
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [bulkTrackingNumber, setBulkTrackingNumber] = useState("");
+  const [bulkStatusChange, setBulkStatusChange] = useState("");
 
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
@@ -89,7 +95,11 @@ export default function Shipping() {
       item.name.toLowerCase().includes(productFilter.toLowerCase())
     );
     const locationMatch = locationFilter === "" || locationFilter === "all" || ship.shippingLocation === locationFilter;
-    return productMatch && locationMatch;
+    const statusMatch = statusFilter === "all" || ship.status === statusFilter;
+    const shipDate = new Date(ship.shipDate);
+    const matchesDateRange = !dateRange.from || !dateRange.to || 
+      (shipDate >= dateRange.from && shipDate <= dateRange.to);
+    return productMatch && locationMatch && statusMatch && matchesDateRange;
   });
 
   const toggleSelectAll = () => {
@@ -106,6 +116,60 @@ export default function Shipping() {
     } else {
       setSelectedShipments([...selectedShipments, id]);
     }
+  };
+
+  const handleBulkTrackingSubmit = () => {
+    if (!bulkTrackingNumber) {
+      toast({
+        title: "송장번호 입력 필요",
+        description: "송장번호를 입력해주세요.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    toast({
+      title: "일괄 송장 등록 완료",
+      description: `${selectedShipments.length}개의 배송에 송장번호가 등록되었습니다.`
+    });
+    setIsBulkTrackingDialogOpen(false);
+    setBulkTrackingNumber("");
+    setSelectedShipments([]);
+  };
+
+  const handleBulkStatusChange = () => {
+    if (!bulkStatusChange) {
+      toast({
+        title: "상태 선택 필요",
+        description: "변경할 상태를 선택해주세요.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    toast({
+      title: "일괄 상태 변경 완료",
+      description: `${selectedShipments.length}개의 배송 상태가 변경되었습니다.`
+    });
+    setBulkStatusChange("");
+    setSelectedShipments([]);
+  };
+
+  const handleBulkDelete = () => {
+    if (selectedShipments.length === 0) {
+      toast({
+        title: "선택된 배송 없음",
+        description: "삭제할 배송을 선택해주세요.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    toast({
+      title: "삭제 완료",
+      description: `${selectedShipments.length}개의 배송이 삭제되었습니다.`
+    });
+    setSelectedShipments([]);
   };
 
   const stats = {
@@ -148,9 +212,9 @@ export default function Shipping() {
     const csv = [
       ['배송번호', '고객명', '전화번호', '주소', '출고지', '품목수', '상태', '송장번호', '출고날짜', '완료날짜'],
       ...filteredShipments.map(ship => [
-        ship.id, ship.customer, ship.customerPhone, ship.address, ship.shippingLocation,
-        ship.items.length, ship.status, ship.trackingNumber || '미등록',
-        ship.shipDate, ship.deliveryDate || '-'
+        ship.id, ship.customer, ship.customerPhone, ship.address,
+        ship.shippingLocation, ship.items.length, ship.status,
+        ship.trackingNumber || '미등록', ship.shipDate, ship.deliveryDate || '-'
       ])
     ].map(row => row.join(',')).join('\n');
     
@@ -164,15 +228,6 @@ export default function Shipping() {
       title: "CSV 다운로드 완료",
       description: `${filteredShipments.length}건의 배송 데이터가 다운로드되었습니다.`
     });
-  };
-
-  const handleBulkTrackingSubmit = () => {
-    toast({
-      title: "일괄 송장 등록 완료",
-      description: `${selectedShipments.length}건의 송장번호가 등록되었습니다.`
-    });
-    setIsBulkTrackingDialogOpen(false);
-    setSelectedShipments([]);
   };
 
   const handleNewShipment = (mode: 'individual' | 'bulk') => {
