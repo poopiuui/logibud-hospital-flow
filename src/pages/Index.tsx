@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Package, 
@@ -23,7 +24,8 @@ import {
   RefreshCw,
   BarChart3,
   Pencil,
-  Trash2
+  Trash2,
+  Image as ImageIcon
 } from "lucide-react";
 import * as XLSX from 'xlsx';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
@@ -38,6 +40,7 @@ interface Product {
   unitPrice: number;
   supplier: string;
   registeredDate: string;
+  thumbnail?: string;
 }
 
 interface OrderData {
@@ -215,18 +218,27 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background p-6 md:p-8">
-      <div className="max-w-[1600px] mx-auto space-y-8">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-6 border-b-2 border-border">
-          <div>
-            <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-2">물류 관리 시스템</h1>
-            <p className="text-lg text-muted-foreground">제품 재고 및 주문 현황 통합 관리</p>
+    <div className="min-h-screen bg-background">
+      {/* 헤더 */}
+      <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground">물류 관리 시스템</h1>
+              <p className="text-sm text-muted-foreground">제품 재고 및 주문 현황 통합 관리</p>
+            </div>
+            <div className="flex items-center gap-4">
+              <Button onClick={() => navigate('/analytics')} size="lg" className="gap-2 text-base font-semibold">
+                <BarChart3 className="h-5 w-5" />
+                분석 대시보드
+              </Button>
+              <ThemeToggle />
+            </div>
           </div>
-          <Button onClick={() => navigate('/analytics')} size="lg" className="gap-2 text-base font-semibold px-6 py-6">
-            <BarChart3 className="h-5 w-5" />
-            분석 대시보드
-          </Button>
         </div>
+      </header>
+
+      <div className="container mx-auto p-6 md:p-8 max-w-[1600px] space-y-8">
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <Card className="stat-card border-2">
@@ -349,9 +361,24 @@ const Index = () => {
                     </TableHeader>
                     <TableBody>
                       {filteredProducts.map((product) => (
-                        <TableRow key={product.productCode} className="hover:bg-muted/30">
+                        <TableRow 
+                          key={product.productCode} 
+                          className="hover:bg-muted/50 cursor-pointer transition-colors"
+                          onClick={() => navigate(`/product/${product.productCode}`)}
+                        >
                           <TableCell className="font-mono font-semibold text-base">{product.productCode}</TableCell>
-                          <TableCell className="font-semibold text-base">{product.productName}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-3">
+                              {product.thumbnail ? (
+                                <img src={product.thumbnail} alt={product.productName} className="w-10 h-10 rounded object-cover" />
+                              ) : (
+                                <div className="w-10 h-10 rounded bg-muted flex items-center justify-center">
+                                  <ImageIcon className="w-5 h-5 text-muted-foreground" />
+                                </div>
+                              )}
+                              <span className="font-semibold text-base">{product.productName}</span>
+                            </div>
+                          </TableCell>
                           <TableCell className="text-base font-semibold">{product.currentStock.toLocaleString()}</TableCell>
                           <TableCell className="text-base text-muted-foreground">{product.safetyStock.toLocaleString()}</TableCell>
                           <TableCell className="text-base font-medium">₩{product.unitPrice.toLocaleString()}</TableCell>
@@ -361,7 +388,7 @@ const Index = () => {
                               {product.currentStock < product.safetyStock ? "부족" : "정상"}
                             </Badge>
                           </TableCell>
-                          <TableCell>
+                          <TableCell onClick={(e) => e.stopPropagation()}>
                             <div className="flex gap-2 justify-center">
                               <Button variant="ghost" size="sm" onClick={() => openEditDialog(product)} className="h-9 w-9 p-0">
                                 <Pencil className="h-4 w-4 text-primary" />
@@ -387,6 +414,33 @@ const Index = () => {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  <div className="space-y-2 lg:col-span-2">
+                    <Label htmlFor="thumbnail" className="text-base font-semibold">제품 이미지</Label>
+                    <div className="flex items-center gap-4">
+                      {newProduct.thumbnail && (
+                        <img src={newProduct.thumbnail} alt="미리보기" className="w-20 h-20 rounded object-cover" />
+                      )}
+                      <Button variant="outline" size="lg" asChild className="gap-2">
+                        <label className="cursor-pointer">
+                          <ImageIcon className="h-4 w-4" />
+                          이미지 선택
+                          <input 
+                            type="file" 
+                            accept="image/*" 
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                const reader = new FileReader();
+                                reader.onload = (e) => setNewProduct({...newProduct, thumbnail: e.target?.result as string});
+                                reader.readAsDataURL(file);
+                              }
+                            }}
+                            className="hidden" 
+                          />
+                        </label>
+                      </Button>
+                    </div>
+                  </div>
                   <div className="space-y-2">
                     <Label htmlFor="productCode" className="text-base font-semibold">제품코드 *</Label>
                     <Input id="productCode" placeholder="A-001" value={newProduct.productCode || ''} onChange={(e) => setNewProduct({...newProduct, productCode: e.target.value})} className="h-11 text-base" />
@@ -535,6 +589,33 @@ const Index = () => {
           </DialogHeader>
           {editingProduct && (
             <div className="grid grid-cols-2 gap-6 py-4">
+              <div className="space-y-2 col-span-2">
+                <Label htmlFor="edit-thumbnail" className="text-base font-semibold">제품 이미지</Label>
+                <div className="flex items-center gap-4">
+                  {editingProduct.thumbnail && (
+                    <img src={editingProduct.thumbnail} alt="미리보기" className="w-20 h-20 rounded object-cover" />
+                  )}
+                  <Button variant="outline" size="lg" asChild className="gap-2">
+                    <label className="cursor-pointer">
+                      <ImageIcon className="h-4 w-4" />
+                      이미지 변경
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onload = (e) => setEditingProduct({...editingProduct, thumbnail: e.target?.result as string});
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                        className="hidden" 
+                      />
+                    </label>
+                  </Button>
+                </div>
+              </div>
               <div className="space-y-2">
                 <Label htmlFor="edit-productCode" className="text-base font-semibold">제품코드</Label>
                 <Input id="edit-productCode" value={editingProduct.productCode} onChange={(e) => setEditingProduct({...editingProduct, productCode: e.target.value})} className="h-11 text-base" />

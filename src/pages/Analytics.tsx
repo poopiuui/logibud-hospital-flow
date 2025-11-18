@@ -1,5 +1,8 @@
 import { Card } from "@/components/ui/card";
-import { TrendingUp, TrendingDown, Package, Clock } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { TrendingUp, TrendingDown, Package, Clock, ArrowLeft } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import {
   BarChart,
   Bar,
@@ -95,12 +98,12 @@ const KPICard = ({
     : value.toFixed(1);
 
   return (
-    <Card className="p-6 border-2 hover:shadow-lg transition-shadow">
+    <Card className="p-6 border hover:shadow-lg transition-shadow">
       <div className="flex items-start justify-between mb-4">
-        <div className="p-3 rounded-lg" style={{ backgroundColor: color + "20" }}>
+        <div className="p-3 rounded-lg" style={{ backgroundColor: `${color}20` }}>
           <Icon className="w-8 h-8" style={{ color }} />
         </div>
-        <div className={`flex items-center gap-1 text-lg font-bold ${isPositive ? "text-green-600" : "text-red-600"}`}>
+        <div className={`flex items-center gap-1 text-lg font-bold ${isPositive ? "text-success" : "text-destructive"}`}>
           {isPositive ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}
           {Math.abs(trend)}%
         </div>
@@ -113,7 +116,7 @@ const KPICard = ({
         </div>
         {budget && (
           <div className="text-sm text-muted-foreground">
-            예산 대비: {((value / budget) * 100).toFixed(1)}%
+            예산: {(budget / 1000000).toFixed(1)}M{unit}
           </div>
         )}
       </div>
@@ -122,24 +125,42 @@ const KPICard = ({
 };
 
 export default function Analytics() {
+  const navigate = useNavigate();
   const highestCost = activityCostData.reduce((max, item) => 
     item.value > max.value ? item : max
   );
 
   return (
-    <div className="min-h-screen bg-background p-8">
-      <div className="max-w-[1800px] mx-auto space-y-8">
-        {/* Header */}
-        <div className="space-y-2">
-          <h1 className="text-6xl font-bold">LogiProfit 대시보드</h1>
-          <p className="text-2xl text-muted-foreground">
-            수익성 & ABC 원가 분석 모듈
-          </p>
+    <div className="min-h-screen bg-background">
+      {/* 헤더 */}
+      <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                size="lg"
+                onClick={() => navigate('/')}
+                className="gap-2"
+              >
+                <ArrowLeft className="w-5 h-5" />
+                제품 관리
+              </Button>
+              <div className="h-8 w-px bg-border" />
+              <div>
+                <h1 className="text-2xl font-bold">LogiProfit 대시보드</h1>
+                <p className="text-sm text-muted-foreground">수익성 & ABC 원가 분석 모듈</p>
+              </div>
+            </div>
+            <ThemeToggle />
+          </div>
         </div>
+      </header>
 
+      <div className="container mx-auto px-6 py-8 max-w-[1800px] space-y-8">
         {/* Section 1: Key KPI Summary */}
         <section>
-          <h2 className="text-4xl font-bold mb-6 flex items-center gap-3">
+          <h2 className="text-3xl font-bold mb-6 flex items-center gap-3">
             🥇 핵심 KPI 요약
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
@@ -189,14 +210,14 @@ export default function Analytics() {
 
         {/* Section 2: ABC-based Profitability Analysis */}
         <section>
-          <h2 className="text-4xl font-bold mb-6 flex items-center gap-3">
+          <h2 className="text-3xl font-bold mb-6 flex items-center gap-3">
             📊 활동기준원가(ABC) 및 다차원 손익 분석
           </h2>
           
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
             {/* Report 1: Activity Cost Breakdown */}
             <Card className="p-8">
-              <h3 className="text-3xl font-bold mb-6" style={{ color: COLORS.cost }}>
+              <h3 className="text-2xl font-bold mb-6" style={{ color: COLORS.cost }}>
                 물류 활동별 원가 구성
               </h3>
               <ResponsiveContainer width="100%" height={400}>
@@ -217,12 +238,16 @@ export default function Analytics() {
                   </Pie>
                   <Tooltip 
                     formatter={(value: number) => `${(value / 1000000).toFixed(1)}M원`}
-                    contentStyle={{ fontSize: "16px" }}
+                    contentStyle={{ 
+                      fontSize: "16px",
+                      backgroundColor: 'hsl(var(--card))',
+                      border: '1px solid hsl(var(--border))',
+                    }}
                   />
                 </PieChart>
               </ResponsiveContainer>
-              <div className="mt-4 p-4 bg-red-50 dark:bg-red-950/20 rounded-lg border-2 border-red-200 dark:border-red-800">
-                <p className="text-xl font-bold text-red-600 dark:text-red-400">
+              <div className="mt-4 p-4 bg-destructive/10 rounded-lg border border-border">
+                <p className="text-xl font-bold text-destructive">
                   ⚠️ 최대 비용: {highestCost.name} ({((highestCost.value / activityCostData.reduce((sum, item) => sum + item.value, 0)) * 100).toFixed(1)}%)
                 </p>
               </div>
@@ -230,33 +255,37 @@ export default function Analytics() {
 
             {/* Report 2: Customer/Route Contribution Margin */}
             <Card className="p-8">
-              <h3 className="text-3xl font-bold mb-6" style={{ color: COLORS.profit }}>
+              <h3 className="text-2xl font-bold mb-6" style={{ color: COLORS.profit }}>
                 고객/노선별 공헌이익 분석
               </h3>
               <ResponsiveContainer width="100%" height={400}>
                 <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
-                  <CartesianGrid strokeDasharray="3 3" />
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                   <XAxis 
                     type="number" 
                     dataKey="revenue" 
                     name="매출" 
                     tickFormatter={(value) => `${(value / 1000000).toFixed(0)}M`}
-                    tick={{ fontSize: 14 }}
+                    tick={{ fontSize: 14, fill: 'hsl(var(--muted-foreground))' }}
                   >
-                    <Label value="매출액" position="insideBottom" offset={-10} style={{ fontSize: 16, fontWeight: "bold" }} />
+                    <Label value="매출액" position="insideBottom" offset={-10} style={{ fontSize: 16, fontWeight: "bold", fill: 'hsl(var(--foreground))' }} />
                   </XAxis>
                   <YAxis 
                     type="number" 
                     dataKey="marginRatio" 
                     name="이익률" 
                     unit="%" 
-                    tick={{ fontSize: 14 }}
+                    tick={{ fontSize: 14, fill: 'hsl(var(--muted-foreground))' }}
                   >
-                    <Label value="공헌이익률 (%)" angle={-90} position="insideLeft" style={{ fontSize: 16, fontWeight: "bold" }} />
+                    <Label value="공헌이익률 (%)" angle={-90} position="insideLeft" style={{ fontSize: 16, fontWeight: "bold", fill: 'hsl(var(--foreground))' }} />
                   </YAxis>
                   <Tooltip 
                     cursor={{ strokeDasharray: "3 3" }}
-                    contentStyle={{ fontSize: "16px" }}
+                    contentStyle={{ 
+                      fontSize: "16px",
+                      backgroundColor: 'hsl(var(--card))',
+                      border: '1px solid hsl(var(--border))',
+                    }}
                     formatter={(value: any, name: string) => {
                       if (name === "매출") return `${(value / 1000000).toFixed(1)}M원`;
                       if (name === "이익률") return `${value}%`;
@@ -277,7 +306,7 @@ export default function Analytics() {
                   </Scatter>
                 </ScatterChart>
               </ResponsiveContainer>
-              <div className="mt-4 text-lg text-muted-foreground">
+              <div className="mt-4 text-sm text-muted-foreground">
                 버블 크기 = 물류비용 | 🟢 고수익 (35%+) | 🔴 저수익
               </div>
             </Card>
@@ -285,120 +314,122 @@ export default function Analytics() {
 
           {/* Report 3: Product Real Profit Margin */}
           <Card className="p-8">
-            <h3 className="text-3xl font-bold mb-6" style={{ color: COLORS.profit }}>
+            <h3 className="text-2xl font-bold mb-6" style={{ color: COLORS.profit }}>
               품목별 실질 수익률 (물류비 포함)
             </h3>
             <ResponsiveContainer width="100%" height={400}>
               <BarChart data={productMarginData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
-                <CartesianGrid strokeDasharray="3 3" />
+                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                 <XAxis 
                   dataKey="product" 
-                  tick={{ fontSize: 16, fontWeight: "bold" }}
+                  tick={{ fontSize: 16, fontWeight: "bold", fill: 'hsl(var(--foreground))' }}
                 />
                 <YAxis 
-                  tick={{ fontSize: 14 }}
-                  label={{ value: "수익률 (%)", angle: -90, position: "insideLeft", style: { fontSize: 16, fontWeight: "bold" } }}
+                  tick={{ fontSize: 16, fill: 'hsl(var(--muted-foreground))' }}
+                  label={{ value: "수익률 (%)", angle: -90, position: "insideLeft", style: { fontSize: 16, fontWeight: "bold", fill: 'hsl(var(--foreground))' } }}
                 />
                 <Tooltip 
-                  contentStyle={{ fontSize: "16px" }}
                   formatter={(value: number) => `${value.toFixed(1)}%`}
+                  contentStyle={{ 
+                    fontSize: "16px",
+                    backgroundColor: 'hsl(var(--card))',
+                    border: '1px solid hsl(var(--border))',
+                  }}
                 />
-                <Bar dataKey="margin" name="실질 수익률" radius={[8, 8, 0, 0]}>
+                <Bar dataKey="margin" fill={COLORS.profit} radius={[8, 8, 0, 0]}>
                   {productMarginData.map((entry, index) => (
-                    <Cell 
-                      key={`cell-${index}`} 
-                      fill={entry.margin > 30 ? COLORS.profit : entry.margin > 20 ? COLORS.efficiency : COLORS.cost}
-                    />
+                    <Cell key={`cell-${index}`} fill={entry.margin > 30 ? COLORS.profit : COLORS.profitLight} />
                   ))}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
-            <div className="mt-4 p-4 bg-green-50 dark:bg-green-950/20 rounded-lg border-2 border-green-200 dark:border-green-800">
-              <p className="text-xl font-bold text-green-600 dark:text-green-400">
-                💡 실질 수익률 = (매출 - 원가 - 물류비) / 매출 × 100
-              </p>
+            <div className="mt-4 text-sm text-muted-foreground">
+              * 실질 수익률 = (매출 - 원가 - 물류비) / 매출 × 100
             </div>
           </Card>
         </section>
 
         {/* Section 3: Forecasting & Simulation */}
         <section>
-          <h2 className="text-4xl font-bold mb-6 flex items-center gap-3">
-            🔮 예측 및 의사결정 시뮬레이션
+          <h2 className="text-3xl font-bold mb-6 flex items-center gap-3">
+            🔮 수요 예측 및 의사결정 시뮬레이션
           </h2>
+          
           <Card className="p-8">
-            <h3 className="text-3xl font-bold mb-6" style={{ color: COLORS.cost }}>
-              수요예측 기반 안전재고 시나리오 분석
+            <h3 className="text-2xl font-bold mb-6" style={{ color: COLORS.cost }}>
+              안전재고 시뮬레이션
             </h3>
-            <ResponsiveContainer width="100%" height={500}>
+            <ResponsiveContainer width="100%" height={400}>
               <LineChart data={scenarioData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
-                <CartesianGrid strokeDasharray="3 3" />
+                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                 <XAxis 
                   dataKey="month" 
-                  tick={{ fontSize: 16, fontWeight: "bold" }}
+                  tick={{ fontSize: 16, fontWeight: "bold", fill: 'hsl(var(--foreground))' }}
                 />
                 <YAxis 
-                  tick={{ fontSize: 14 }}
                   tickFormatter={(value) => `${(value / 1000000).toFixed(1)}M`}
-                  label={{ value: "총 물류비용 (원)", angle: -90, position: "insideLeft", style: { fontSize: 16, fontWeight: "bold" } }}
+                  tick={{ fontSize: 16, fill: 'hsl(var(--muted-foreground))' }}
+                  label={{ value: "물류비용 (원)", angle: -90, position: "insideLeft", style: { fontSize: 16, fontWeight: "bold", fill: 'hsl(var(--foreground))' } }}
                 />
                 <Tooltip 
-                  contentStyle={{ fontSize: "16px" }}
                   formatter={(value: number) => `${(value / 1000000).toFixed(1)}M원`}
+                  contentStyle={{ 
+                    fontSize: "16px",
+                    backgroundColor: 'hsl(var(--card))',
+                    border: '1px solid hsl(var(--border))',
+                  }}
                 />
                 <Legend 
-                  wrapperStyle={{ fontSize: "18px", fontWeight: "bold" }}
+                  wrapperStyle={{ fontSize: "16px", fontWeight: "bold" }}
                 />
                 <Line 
                   type="monotone" 
                   dataKey="scenario1" 
-                  name="시나리오 1 (낮은 재고)" 
-                  stroke={COLORS.profit} 
+                  stroke={COLORS.efficiency} 
                   strokeWidth={3}
-                  dot={{ r: 6 }}
+                  name="시나리오 1 (저재고)"
+                  dot={{ r: 5 }}
                 />
                 <Line 
                   type="monotone" 
                   dataKey="scenario2" 
-                  name="시나리오 2 (중간 재고)" 
-                  stroke={COLORS.efficiency} 
+                  stroke={COLORS.cost} 
                   strokeWidth={3}
-                  dot={{ r: 6 }}
+                  name="시나리오 2 (중재고)"
+                  dot={{ r: 5 }}
                 />
                 <Line 
                   type="monotone" 
                   dataKey="scenario3" 
-                  name="시나리오 3 (높은 재고)" 
-                  stroke={COLORS.cost} 
+                  stroke={COLORS.costLight} 
                   strokeWidth={3}
-                  dot={{ r: 6 }}
+                  name="시나리오 3 (고재고)"
+                  dot={{ r: 5 }}
                 />
               </LineChart>
             </ResponsiveContainer>
+            
             <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="p-4 bg-green-50 dark:bg-green-950/20 rounded-lg border-2 border-green-200 dark:border-green-800">
-                <p className="text-xl font-bold text-green-600 dark:text-green-400">
-                  시나리오 1: 낮은 재고
-                </p>
-                <p className="text-lg text-muted-foreground mt-2">
-                  평균 7.32M원 | 재고비↓ 결품위험↑
-                </p>
+              <div className="p-4 rounded-lg border border-border bg-card">
+                <div className="text-sm font-semibold text-muted-foreground mb-1">시나리오 1 (저재고)</div>
+                <div className="text-2xl font-bold" style={{ color: COLORS.efficiency }}>
+                  평균 7.3M원
+                </div>
+                <div className="text-sm text-muted-foreground mt-1">재고 부족 리스크 높음</div>
               </div>
-              <div className="p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border-2 border-blue-200 dark:border-blue-800">
-                <p className="text-xl font-bold text-blue-600 dark:text-blue-400">
-                  시나리오 2: 중간 재고 (권장)
-                </p>
-                <p className="text-lg text-muted-foreground mt-2">
-                  평균 8.23M원 | 균형잡힌 비용
-                </p>
+              <div className="p-4 rounded-lg border border-border bg-card">
+                <div className="text-sm font-semibold text-muted-foreground mb-1">시나리오 2 (중재고)</div>
+                <div className="text-2xl font-bold" style={{ color: COLORS.cost }}>
+                  평균 8.2M원
+                </div>
+                <div className="text-sm text-muted-foreground mt-1">최적 균형점 (권장)</div>
               </div>
-              <div className="p-4 bg-red-50 dark:bg-red-950/20 rounded-lg border-2 border-red-200 dark:border-red-800">
-                <p className="text-xl font-bold text-red-600 dark:text-red-400">
-                  시나리오 3: 높은 재고
-                </p>
-                <p className="text-lg text-muted-foreground mt-2">
-                  평균 9.77M원 | 재고비↑ 안전성↑
-                </p>
+              <div className="p-4 rounded-lg border border-border bg-card">
+                <div className="text-sm font-semibold text-muted-foreground mb-1">시나리오 3 (고재고)</div>
+                <div className="text-2xl font-bold" style={{ color: COLORS.costLight }}>
+                  평균 9.8M원
+                </div>
+                <div className="text-sm text-muted-foreground mt-1">보관비용 과다</div>
               </div>
             </div>
           </Card>
