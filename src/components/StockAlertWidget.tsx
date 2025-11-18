@@ -20,7 +20,7 @@ interface StockAlertWidgetProps {
 
 export function StockAlertWidget({ products }: StockAlertWidgetProps) {
   const { toast } = useToast();
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = useState(false);
 
   const lowStockProducts = products.filter(p => p.currentStock < p.safetyStock);
   const criticalProducts = lowStockProducts.filter(p => p.currentStock < p.safetyStock * 0.5);

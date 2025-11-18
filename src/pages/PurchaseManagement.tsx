@@ -4,7 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Search, X } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Search, X, ChevronDown, ChevronUp, Calendar } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import * as XLSX from 'xlsx';
 
 interface Purchase {
@@ -20,28 +23,22 @@ interface Purchase {
 
 const PurchaseManagement = () => {
   const [purchases] = useState<Purchase[]>([
-    {
-      id: 'P-001',
-      date: '2024-01-15 14:30',
-      vendor: '(주)글로벌물류',
-      product: '노트북 A1',
-      quantity: 50,
-      price: 25000000,
-      type: '제조사',
-      status: '완료'
-    },
-    {
-      id: 'P-002',
-      date: '2024-01-16 09:15',
-      vendor: '스마트전자',
-      product: '스마트폰 X2',
-      quantity: 10,
-      price: 8000000,
-      type: '반품',
-      status: '처리중'
-    }
+    { id: 'P-001', date: '2024-12-15 14:30', vendor: '(주)글로벌물류', product: '노트북 A1', quantity: 50, price: 25000000, type: '제조사', status: '완료' },
+    { id: 'P-002', date: '2024-12-16 09:15', vendor: '스마트전자', product: '스마트폰 X2', quantity: 10, price: 8000000, type: '반품', status: '처리중' },
+    { id: 'P-003', date: '2024-11-20 11:45', vendor: '(주)테크솔루션', product: '태블릿 T3', quantity: 30, price: 15000000, type: '제조사', status: '완료' },
+    { id: 'P-004', date: '2024-11-18 16:20', vendor: '디지털마켓', product: '모니터 M4', quantity: 5, price: 3500000, type: '반품', status: '완료' },
+    { id: 'P-005', date: '2024-10-25 10:00', vendor: '(주)글로벌물류', product: '키보드 K5', quantity: 100, price: 5000000, type: '제조사', status: '완료' },
+    { id: 'P-006', date: '2024-10-12 13:30', vendor: '스마트전자', product: '마우스 M6', quantity: 80, price: 3200000, type: '제조사', status: '완료' },
+    { id: 'P-007', date: '2023-12-28 15:45', vendor: '(주)테크솔루션', product: 'USB 드라이브', quantity: 200, price: 4000000, type: '제조사', status: '완료' },
+    { id: 'P-008', date: '2023-11-15 09:20', vendor: '디지털마켓', product: '헤드셋', quantity: 15, price: 2250000, type: '반품', status: '완료' },
   ]);
+
   const [searchTerm, setSearchTerm] = useState("");
+  const [yearFilter, setYearFilter] = useState("all");
+  const [monthFilter, setMonthFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [showCount, setShowCount] = useState(5);
 
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
@@ -60,11 +57,57 @@ const PurchaseManagement = () => {
     XLSX.writeFile(wb, "매입관리_데이터.xlsx");
   };
 
-  const filteredPurchases = purchases.filter(purchase =>
-    purchase.vendor.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    purchase.product.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    purchase.id.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const availableYears = Array.from(new Set(purchases.map(p => new Date(p.date).getFullYear()))).sort((a, b) => b - a);
+  const availableMonths = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
+
+  const filteredAndSortedPurchases = purchases
+    .filter(purchase => {
+      const matchesSearch = purchase.vendor.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          purchase.product.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          purchase.id.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const purchaseDate = new Date(purchase.date);
+      const matchesYear = yearFilter === "all" || purchaseDate.getFullYear().toString() === yearFilter;
+      const matchesMonth = monthFilter === "all" || (purchaseDate.getMonth() + 1).toString() === monthFilter;
+      const matchesType = typeFilter === "all" || purchase.type === typeFilter;
+      
+      return matchesSearch && matchesYear && matchesMonth && matchesType;
+    })
+    .sort((a, b) => {
+      const dateA = new Date(a.date).getTime();
+      const dateB = new Date(b.date).getTime();
+      return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
+    });
+
+  const displayedPurchases = filteredAndSortedPurchases.slice(0, showCount);
+
+  // 월별 매입 통계
+  const monthlyData = purchases.reduce((acc, purchase) => {
+    const date = new Date(purchase.date);
+    const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+    
+    if (!acc[monthKey]) {
+      acc[monthKey] = { month: monthKey, 제조사: 0, 반품: 0, 총액: 0 };
+    }
+    
+    if (purchase.type === '제조사') {
+      acc[monthKey].제조사 += purchase.price;
+    } else {
+      acc[monthKey].반품 += purchase.price;
+    }
+    acc[monthKey].총액 += purchase.price;
+    
+    return acc;
+  }, {} as Record<string, { month: string; 제조사: number; 반품: number; 총액: number }>);
+
+  const chartData = Object.values(monthlyData)
+    .sort((a, b) => b.month.localeCompare(a.month))
+    .slice(0, 12)
+    .reverse();
+
+  const toggleSortOrder = () => {
+    setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc');
+  };
 
   return (
     <div className="p-6 space-y-6">
@@ -83,62 +126,209 @@ const PurchaseManagement = () => {
         </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>매입 내역</CardTitle>
-          <CardDescription>일시별 매입 내역을 확인하세요</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="mb-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="매입처, 제품명, 매입번호로 검색..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-          </div>
+      <Tabs defaultValue="list" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="list">매입 내역</TabsTrigger>
+          <TabsTrigger value="chart">통계 차트</TabsTrigger>
+        </TabsList>
 
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>매입번호</TableHead>
-                <TableHead>매입일시</TableHead>
-                <TableHead>매입처</TableHead>
-                <TableHead>제품명</TableHead>
-                <TableHead>수량</TableHead>
-                <TableHead>금액</TableHead>
-                <TableHead>유형</TableHead>
-                <TableHead>상태</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredPurchases.map((purchase) => (
-                <TableRow key={purchase.id}>
-                  <TableCell className="font-medium">{purchase.id}</TableCell>
-                  <TableCell>{purchase.date}</TableCell>
-                  <TableCell>{purchase.vendor}</TableCell>
-                  <TableCell>{purchase.product}</TableCell>
-                  <TableCell>{purchase.quantity}개</TableCell>
-                  <TableCell>₩{purchase.price.toLocaleString()}</TableCell>
-                  <TableCell>
-                    <Badge variant={purchase.type === '제조사' ? 'default' : 'secondary'}>
-                      {purchase.type}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={purchase.status === '완료' ? 'default' : 'outline'}>
-                      {purchase.status}
-                    </Badge>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+        <TabsContent value="list" className="space-y-4 mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>매입 내역</CardTitle>
+              <CardDescription>최신순으로 매입 내역을 확인하세요</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-4 mb-6">
+                <div className="flex-1 min-w-[200px]">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="매입처, 제품명, 매입번호로 검색..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+
+                <Select value={yearFilter} onValueChange={setYearFilter}>
+                  <SelectTrigger className="w-[140px]">
+                    <Calendar className="h-4 w-4 mr-2" />
+                    <SelectValue placeholder="년도" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">전체 년도</SelectItem>
+                    {availableYears.map(year => (
+                      <SelectItem key={year} value={year.toString()}>{year}년</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Select value={monthFilter} onValueChange={setMonthFilter}>
+                  <SelectTrigger className="w-[120px]">
+                    <SelectValue placeholder="월" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">전체 월</SelectItem>
+                    {availableMonths.map(month => (
+                      <SelectItem key={month} value={month}>{month}월</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Select value={typeFilter} onValueChange={setTypeFilter}>
+                  <SelectTrigger className="w-[120px]">
+                    <SelectValue placeholder="유형" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">전체 유형</SelectItem>
+                    <SelectItem value="제조사">제조사</SelectItem>
+                    <SelectItem value="반품">반품</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Button variant="outline" onClick={toggleSortOrder} className="gap-2">
+                  {sortOrder === 'desc' ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+                  {sortOrder === 'desc' ? '최신순' : '오래된순'}
+                </Button>
+              </div>
+
+              <div className="rounded-lg border">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/50">
+                      <TableHead>매입번호</TableHead>
+                      <TableHead>매입일시</TableHead>
+                      <TableHead>매입처</TableHead>
+                      <TableHead>제품명</TableHead>
+                      <TableHead>수량</TableHead>
+                      <TableHead>금액</TableHead>
+                      <TableHead>유형</TableHead>
+                      <TableHead>상태</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {displayedPurchases.length > 0 ? (
+                      displayedPurchases.map((purchase) => (
+                        <TableRow key={purchase.id} className="hover:bg-muted/50">
+                          <TableCell className="font-mono font-semibold">{purchase.id}</TableCell>
+                          <TableCell>{purchase.date}</TableCell>
+                          <TableCell>{purchase.vendor}</TableCell>
+                          <TableCell className="font-semibold">{purchase.product}</TableCell>
+                          <TableCell>{purchase.quantity.toLocaleString()}</TableCell>
+                          <TableCell className="font-semibold">₩{purchase.price.toLocaleString()}</TableCell>
+                          <TableCell>
+                            <Badge variant={purchase.type === '제조사' ? 'default' : 'secondary'}>
+                              {purchase.type}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={purchase.status === '완료' ? 'default' : 'outline'}>
+                              {purchase.status}
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                          검색 결과가 없습니다
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {filteredAndSortedPurchases.length > showCount && (
+                <div className="mt-4 text-center">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setShowCount(prev => prev + 10)}
+                    className="gap-2"
+                  >
+                    <ChevronDown className="h-4 w-4" />
+                    더보기 ({filteredAndSortedPurchases.length - showCount}개 남음)
+                  </Button>
+                </div>
+              )}
+
+              {showCount > 5 && (
+                <div className="mt-2 text-center">
+                  <Button 
+                    variant="ghost" 
+                    onClick={() => setShowCount(5)}
+                    className="gap-2"
+                  >
+                    <ChevronUp className="h-4 w-4" />
+                    접기
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="chart" className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>월별 매입 통계</CardTitle>
+              <CardDescription>최근 12개월 매입 현황</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={400}>
+                <BarChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="month" />
+                  <YAxis />
+                  <Tooltip 
+                    formatter={(value: number) => `₩${value.toLocaleString()}`}
+                  />
+                  <Legend />
+                  <Bar dataKey="제조사" fill="hsl(var(--primary))" name="제조사 매입" />
+                  <Bar dataKey="반품" fill="hsl(var(--destructive))" name="반품" />
+                </BarChart>
+              </ResponsiveContainer>
+
+              <div className="grid grid-cols-3 gap-4 mt-6">
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm font-medium">총 매입액</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">
+                      ₩{purchases.reduce((sum, p) => sum + p.price, 0).toLocaleString()}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm font-medium">제조사 매입</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-primary">
+                      ₩{purchases.filter(p => p.type === '제조사').reduce((sum, p) => sum + p.price, 0).toLocaleString()}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm font-medium">반품액</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-destructive">
+                      ₩{purchases.filter(p => p.type === '반품').reduce((sum, p) => sum + p.price, 0).toLocaleString()}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
