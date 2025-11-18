@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,6 +15,8 @@ import { BarcodeScanner } from "@/components/BarcodeScanner";
 import { StockAlertSystem } from "@/components/StockAlertSystem";
 import { ExcelAdvanced } from "@/components/ExcelAdvanced";
 import { RealtimeNotifications } from "@/components/RealtimeNotifications";
+import { QRCodeGenerator } from "@/components/QRCodeGenerator";
+import { AIReorderPrediction } from "@/components/AIReorderPrediction";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Package, 
@@ -31,7 +33,9 @@ import {
   Trash2,
   Image as ImageIcon,
   Camera,
-  FolderOpen
+  FolderOpen,
+  QrCode,
+  X
 } from "lucide-react";
 import * as XLSX from 'xlsx';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
@@ -125,6 +129,20 @@ const Index = () => {
   const [deletingProduct, setDeletingProduct] = useState<Product | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const [qrCodeProduct, setQrCodeProduct] = useState<Product | null>(null);
+  const [isQRDialogOpen, setIsQRDialogOpen] = useState(false);
+  const [showAIPrediction, setShowAIPrediction] = useState(false);
+
+  // ESC 키로 페이지 닫기
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        window.history.back();
+      }
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, []);
 
   const orderData = generateOrderData();
   const purchaseData = generatePurchaseData();
