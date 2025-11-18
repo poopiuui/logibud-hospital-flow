@@ -3,13 +3,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Search, X, ChevronDown, ChevronUp, Calendar, FileDown } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
+import { useToast } from "@/hooks/use-toast";
 
 interface Purchase {
   id: string;
@@ -24,6 +27,7 @@ interface Purchase {
 }
 
 const PurchaseManagement = () => {
+  const { toast } = useToast();
   const [purchases] = useState<Purchase[]>([
     { id: 'P-001', date: '2024-12-15 14:30', vendor: '(주)글로벌물류', product: '노트북 A1', quantity: 50, price: 25000000, type: '제조사', status: '완료', salesPerson: '김영업' },
     { id: 'P-002', date: '2024-12-16 09:15', vendor: '스마트전자', product: '스마트폰 X2', quantity: 10, price: 8000000, type: '반품', status: '처리중', salesPerson: '이영업' },
@@ -43,6 +47,9 @@ const PurchaseManagement = () => {
   const [vendorFilter, setVendorFilter] = useState("all");
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [showCount, setShowCount] = useState(5);
+  const [selectedPurchases, setSelectedPurchases] = useState<string[]>([]);
+  const [selectedPurchase, setSelectedPurchase] = useState<Purchase | null>(null);
+  const [showDetailDialog, setShowDetailDialog] = useState(false);
 
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
@@ -116,6 +123,25 @@ const PurchaseManagement = () => {
     });
 
   const displayedPurchases = filteredAndSortedPurchases.slice(0, showCount);
+
+  const toggleSelectAll = () => {
+    if (selectedPurchases.length === displayedPurchases.length) {
+      setSelectedPurchases([]);
+    } else {
+      setSelectedPurchases(displayedPurchases.map(p => p.id));
+    }
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedPurchases(prev =>
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
+
+  const showDetail = (purchase: Purchase) => {
+    setSelectedPurchase(purchase);
+    setShowDetailDialog(true);
+  };
 
   // 월별 매입 통계
   const monthlyData = purchases.reduce((acc, purchase) => {
@@ -273,6 +299,12 @@ const PurchaseManagement = () => {
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-muted/50">
+                      <TableHead className="w-12">
+                        <Checkbox
+                          checked={selectedPurchases.length === displayedPurchases.length && displayedPurchases.length > 0}
+                          onCheckedChange={toggleSelectAll}
+                        />
+                      </TableHead>
                       <TableHead className="text-base">매입번호</TableHead>
                       <TableHead className="text-base">매입일시</TableHead>
                       <TableHead className="text-base">매입처</TableHead>
@@ -288,7 +320,18 @@ const PurchaseManagement = () => {
                     {displayedPurchases.length > 0 ? (
                       displayedPurchases.map((purchase) => (
                         <TableRow key={purchase.id} className="hover:bg-muted/50">
-                          <TableCell className="font-mono font-semibold text-base">{purchase.id}</TableCell>
+                          <TableCell>
+                            <Checkbox
+                              checked={selectedPurchases.includes(purchase.id)}
+                              onCheckedChange={() => toggleSelect(purchase.id)}
+                            />
+                          </TableCell>
+                          <TableCell 
+                            className="font-mono font-semibold text-base cursor-pointer text-primary hover:underline"
+                            onClick={() => showDetail(purchase)}
+                          >
+                            {purchase.id}
+                          </TableCell>
                           <TableCell className="text-base">{purchase.date}</TableCell>
                           <TableCell className="text-base">{purchase.vendor}</TableCell>
                           <TableCell className="font-semibold text-base">{purchase.product}</TableCell>
@@ -408,6 +451,67 @@ const PurchaseManagement = () => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Purchase Detail Dialog */}
+      <Dialog open={showDetailDialog} onOpenChange={setShowDetailDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>매입 세부내역</DialogTitle>
+          </DialogHeader>
+          {selectedPurchase && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">매입번호</label>
+                  <div className="text-lg font-semibold">{selectedPurchase.id}</div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">매입일시</label>
+                  <div className="text-lg">{selectedPurchase.date}</div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">매입처</label>
+                  <div className="text-lg">{selectedPurchase.vendor}</div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">제품명</label>
+                  <div className="text-lg font-semibold">{selectedPurchase.product}</div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">수량</label>
+                  <div className="text-lg">{selectedPurchase.quantity.toLocaleString()}개</div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">금액</label>
+                  <div className="text-lg font-semibold">₩{selectedPurchase.price.toLocaleString()}</div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">유형</label>
+                  <div className="mt-1">
+                    <Badge variant={selectedPurchase.type === '제조사' ? 'default' : 'secondary'}>
+                      {selectedPurchase.type}
+                    </Badge>
+                  </div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">영업사원</label>
+                  <div className="mt-1">
+                    <Badge variant="outline">{selectedPurchase.salesPerson || '-'}</Badge>
+                  </div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">상태</label>
+                  <div className="mt-1">
+                    <Badge variant={selectedPurchase.status === '완료' ? 'default' : 'outline'}>
+                      {selectedPurchase.status}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
