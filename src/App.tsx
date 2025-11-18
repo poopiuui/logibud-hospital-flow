@@ -9,7 +9,10 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { Chatbot } from "@/components/Chatbot";
 import { RealtimeNotificationSystem } from "@/components/RealtimeNotificationSystem";
 import { MobileNavigation } from "@/components/MobileNavigation";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Dashboard from "./pages/Dashboard";
+import Login from "./pages/Login";
+import Signup from "./pages/Signup";
 import Vendors from "./pages/Vendors";
 import VendorAnalytics from "./pages/VendorAnalytics";
 import RegistrationTemplates from "./pages/RegistrationTemplates";
@@ -40,15 +43,23 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <SidebarProvider>
-            <div className="flex min-h-screen w-full">
-              <AppSidebar />
-              <main className="flex-1">
-                <div className="fixed top-4 right-4 z-50 flex gap-2">
-                  <RealtimeNotificationSystem />
-                </div>
-                <Routes>
-                  <Route path="/" element={<Dashboard />} />
+          <Routes>
+            {/* Public Routes */}
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />
+
+            {/* Protected Routes */}
+            <Route path="/*" element={
+              <ProtectedRoute>
+                <SidebarProvider>
+                  <div className="flex min-h-screen w-full">
+                    <AppSidebar />
+                    <main className="flex-1">
+                      <div className="fixed top-4 right-4 z-50 flex gap-2">
+                        <RealtimeNotificationSystem />
+                      </div>
+                      <Routes>
+                        <Route path="/" element={<Dashboard />} />
                   <Route path="/vendors" element={<Vendors />} />
                   <Route path="/vendor-analytics" element={<VendorAnalytics />} />
                   <Route path="/registration-templates" element={<RegistrationTemplates />} />
@@ -67,15 +78,18 @@ const App = () => (
                   <Route path="/shipping" element={<Shipping />} />
                   <Route path="/users" element={<Users />} />
                   <Route path="/settings" element={<Settings />} />
-                  <Route path="/profile" element={<Profile />} />
-                  {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </main>
-            </div>
-            <Chatbot />
-            <MobileNavigation />
-          </SidebarProvider>
+                        <Route path="/profile" element={<Profile />} />
+                        {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                        <Route path="*" element={<NotFound />} />
+                      </Routes>
+                    </main>
+                  </div>
+                  <Chatbot />
+                  <MobileNavigation />
+                </SidebarProvider>
+              </ProtectedRoute>
+            } />
+          </Routes>
         </BrowserRouter>
       </TooltipProvider>
     </ThemeProvider>
