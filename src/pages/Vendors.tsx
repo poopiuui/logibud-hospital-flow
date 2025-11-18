@@ -8,7 +8,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Search, X } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Plus, Search, X, Pencil } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import * as XLSX from 'xlsx';
 
@@ -71,6 +72,7 @@ const Vendors = () => {
   const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [vendorType, setVendorType] = useState<'매입처' | '매출처'>('매입처');
+  const [selectedVendors, setSelectedVendors] = useState<string[]>([]);
   const [formData, setFormData] = useState({
     businessName: '',
     businessNumber: '',
@@ -126,7 +128,39 @@ const Vendors = () => {
         salesRep: selectedVendor.salesRep || '',
         logisticsManager: selectedVendor.logisticsManager || ''
       });
+      setVendorType(selectedVendor.type);
       setIsEditing(true);
+    }
+  };
+
+  const handleEditSelected = () => {
+    if (selectedVendors.length === 1) {
+      const vendor = vendors.find(v => v.id === selectedVendors[0]);
+      if (vendor) {
+        setSelectedVendor(vendor);
+        setFormData({
+          businessName: vendor.businessName,
+          businessNumber: vendor.businessNumber,
+          contactName: vendor.contactName,
+          contactPhone: vendor.contactPhone,
+          faxNumber: vendor.faxNumber,
+          paymentDate: vendor.paymentDate,
+          paymentMethod: vendor.paymentMethod,
+          bankAccount: vendor.bankAccount,
+          invoiceEmail: vendor.invoiceEmail,
+          salesRep: vendor.salesRep || '',
+          logisticsManager: vendor.logisticsManager || ''
+        });
+        setVendorType(vendor.type);
+        setIsEditing(true);
+        setIsDetailOpen(true);
+      }
+    } else if (selectedVendors.length > 1) {
+      toast({
+        title: "알림",
+        description: "한 개의 거래처만 선택하여 수정할 수 있습니다.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -134,7 +168,7 @@ const Vendors = () => {
     if (!selectedVendor) return;
     
     setVendors(vendors.map(v =>
-      v.id === selectedVendor.id ? { ...selectedVendor, ...formData } : v
+      v.id === selectedVendor.id ? { ...selectedVendor, ...formData, type: vendorType } : v
     ));
     
     toast({
@@ -143,6 +177,8 @@ const Vendors = () => {
     });
     
     setIsEditing(false);
+    setIsDetailOpen(false);
+    setSelectedVendors([]);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -213,13 +249,20 @@ const Vendors = () => {
               <CardTitle>거래처 목록</CardTitle>
               <CardDescription>등록된 매입처와 매출처를 확인하고 관리하세요</CardDescription>
             </div>
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="h-4 w-4 mr-2" />
-                  거래처 등록
+            <div className="flex gap-2">
+              {selectedVendors.length > 0 && (
+                <Button onClick={handleEditSelected} variant="outline">
+                  <Pencil className="mr-2 h-4 w-4" />
+                  정보수정 ({selectedVendors.length}개)
                 </Button>
-              </DialogTrigger>
+              )}
+              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Plus className="h-4 w-4 mr-2" />
+                    거래처 등록
+                  </Button>
+                </DialogTrigger>
               <DialogContent className="max-w-2xl">
                 <DialogHeader>
                   <DialogTitle>거래처 등록</DialogTitle>
@@ -330,6 +373,7 @@ const Vendors = () => {
                 </form>
               </DialogContent>
             </Dialog>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -355,33 +399,49 @@ const Vendors = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-12">
+                      <Checkbox
+                        checked={selectedVendors.length === filteredVendors.length && filteredVendors.length > 0}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setSelectedVendors(filteredVendors.map(v => v.id));
+                          } else {
+                            setSelectedVendors([]);
+                          }
+                        }}
+                      />
+                    </TableHead>
                     <TableHead className="text-base">코드</TableHead>
                     <TableHead className="text-base">유형</TableHead>
                     <TableHead className="text-base">사업자명</TableHead>
-                    <TableHead className="text-base">사업자번호</TableHead>
                     <TableHead className="text-base">담당자</TableHead>
                     <TableHead className="text-base">연락처</TableHead>
-                    <TableHead className="text-base">팩스</TableHead>
-                    <TableHead className="text-base">결제일</TableHead>
                     <TableHead className="text-base">결제방법</TableHead>
-                    <TableHead className="text-base">물류 출고담당</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredVendors.map((vendor) => (
-                    <TableRow key={vendor.id} className="cursor-pointer hover:bg-muted/50" onClick={() => handleViewDetail(vendor)}>
-                      <TableCell className="font-medium text-base">{vendor.code}</TableCell>
-                      <TableCell className="text-base">{vendor.type}</TableCell>
-                      <TableCell className="text-base">{vendor.businessName}</TableCell>
-                      <TableCell className="text-base">{vendor.businessNumber}</TableCell>
-                      <TableCell className="text-base">{vendor.contactName}</TableCell>
-                      <TableCell className="text-base">{vendor.contactPhone}</TableCell>
-                      <TableCell className="text-base">{vendor.faxNumber || '-'}</TableCell>
-                      <TableCell className="text-base">{vendor.paymentDate}</TableCell>
-                      <TableCell className="text-base">{vendor.paymentMethod}</TableCell>
-                      <TableCell className="text-base">
-                        <Badge variant="secondary">{vendor.logisticsManager || '-'}</Badge>
+                    <TableRow key={vendor.id} className="hover:bg-muted/50">
+                      <TableCell onClick={(e) => e.stopPropagation()}>
+                        <Checkbox
+                          checked={selectedVendors.includes(vendor.id)}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setSelectedVendors([...selectedVendors, vendor.id]);
+                            } else {
+                              setSelectedVendors(selectedVendors.filter(id => id !== vendor.id));
+                            }
+                          }}
+                        />
                       </TableCell>
+                      <TableCell className="font-medium text-base cursor-pointer" onClick={() => handleViewDetail(vendor)}>{vendor.code}</TableCell>
+                      <TableCell className="text-base cursor-pointer" onClick={() => handleViewDetail(vendor)}>
+                        <Badge variant={vendor.type === '매입처' ? 'default' : 'secondary'}>{vendor.type}</Badge>
+                      </TableCell>
+                      <TableCell className="text-base cursor-pointer" onClick={() => handleViewDetail(vendor)}>{vendor.businessName}</TableCell>
+                      <TableCell className="text-base cursor-pointer" onClick={() => handleViewDetail(vendor)}>{vendor.contactName}</TableCell>
+                      <TableCell className="text-base cursor-pointer" onClick={() => handleViewDetail(vendor)}>{vendor.contactPhone}</TableCell>
+                      <TableCell className="text-base cursor-pointer" onClick={() => handleViewDetail(vendor)}>{vendor.paymentMethod}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -565,8 +625,12 @@ const Vendors = () => {
                   </>
                 ) : (
                   <>
-                    <Button type="button" onClick={handleSaveEdit}>저장</Button>
-                    <Button type="button" variant="outline" onClick={() => setIsEditing(false)}>취소</Button>
+                    <Button type="button" onClick={handleSaveEdit}>수정완료</Button>
+                    <Button type="button" variant="outline" onClick={() => {
+                      setIsEditing(false);
+                      setIsDetailOpen(false);
+                      setSelectedVendors([]);
+                    }}>취소</Button>
                   </>
                 )}
               </div>

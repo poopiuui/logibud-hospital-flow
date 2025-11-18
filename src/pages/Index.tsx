@@ -85,6 +85,8 @@ const Index = () => {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [deletingProduct, setDeletingProduct] = useState<Product | null>(null);
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
+  const [showQuotationGenerator, setShowQuotationGenerator] = useState(false);
+  const [showQuotationGeneratorBulk, setShowQuotationGeneratorBulk] = useState(false);
   
   const [searchTerm, setSearchTerm] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
@@ -116,10 +118,6 @@ const Index = () => {
   }, []);
 
   const uniqueSuppliers = Array.from(new Set(products.map(p => p.supplier)));
-
-  const getSelectedProductsData = () => {
-    return products.filter(p => selectedProducts.includes(p.productCode));
-  };
 
   const toggleSelectAll = () => {
     if (selectedProducts.length === filteredProducts.length) {
@@ -214,6 +212,10 @@ const Index = () => {
   const openPriceCardDialog = (product: Product) => {
     setPriceCardProduct(product);
     setIsPriceCardDialogOpen(true);
+  };
+  
+  const getSelectedProductsData = () => {
+    return products.filter(p => selectedProducts.includes(p.productCode));
   };
 
   const downloadCSV = (filtered = false) => {
@@ -772,15 +774,25 @@ const Index = () => {
         />
       )}
 
-      {/* Price Card Dialog */}
-      {priceCardProduct && (
-        <PriceCardGenerator
-          productCode={priceCardProduct.productCode}
-          productName={priceCardProduct.productName}
-          barcode={priceCardProduct.barcode}
-          unitPrice={priceCardProduct.unitPrice}
-          isOpen={isPriceCardDialogOpen}
-          onClose={() => setIsPriceCardDialogOpen(false)}
+      {showQuotationGenerator && selectedProducts.length > 0 && (
+        <QuotationGeneratorEditable
+          products={products.filter(p => selectedProducts.includes(p.productCode))}
+          isOpen={showQuotationGenerator}
+          onClose={() => {
+            setShowQuotationGenerator(false);
+            setSelectedProducts([]);
+          }}
+        />
+      )}
+      
+      {showQuotationGeneratorBulk && selectedProducts.length > 0 && (
+        <QuotationGeneratorEditable
+          products={products.filter(p => selectedProducts.includes(p.productCode))}
+          isOpen={showQuotationGeneratorBulk}
+          onClose={() => {
+            setShowQuotationGeneratorBulk(false);
+            setSelectedProducts([]);
+          }}
         />
       )}
 

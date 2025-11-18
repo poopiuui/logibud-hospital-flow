@@ -249,19 +249,38 @@ const OutboundManagement = () => {
           {selectedOutbound && (
             <div className="space-y-6">
               <div className="grid grid-cols-2 gap-4">
-                <div><p className="text-sm text-muted-foreground">출고번호</p><p className="font-medium">{selectedOutbound.id}</p></div>
-                <div><p className="text-sm text-muted-foreground">출고일시</p><p className="font-medium">{selectedOutbound.date}</p></div>
-                <div><p className="text-sm text-muted-foreground">고객사</p><p className="font-medium">{selectedOutbound.customer}</p></div>
-                <div><p className="text-sm text-muted-foreground">배송지</p><p className="font-medium">{selectedOutbound.destination}</p></div>
+                <div><p className="text-sm text-muted-foreground">출고번호</p><p className="font-medium text-lg">{selectedOutbound.id}</p></div>
+                <div><p className="text-sm text-muted-foreground">출고일시</p><p className="font-medium text-lg">{selectedOutbound.date}</p></div>
+                <div><p className="text-sm text-muted-foreground">고객사</p><p className="font-medium text-lg">{selectedOutbound.customer}</p></div>
+                <div><p className="text-sm text-muted-foreground">배송지</p><p className="font-medium text-lg">{selectedOutbound.destination}</p></div>
                 <div><p className="text-sm text-muted-foreground">상태</p><Badge variant={getStatusVariant(selectedOutbound.status)}>{selectedOutbound.status}</Badge></div>
-                <div><p className="text-sm text-muted-foreground">총 금액</p><p className="font-medium text-lg text-primary">{(selectedOutbound.unitPrice * selectedOutbound.quantity).toLocaleString()}원</p></div>
               </div>
-              <div className="border rounded-lg">
-                <div className="bg-muted p-3"><h3 className="font-semibold">상품 세부내역</h3></div>
+              <div className="border rounded-lg mt-6">
+                <div className="bg-muted p-3"><h3 className="font-semibold text-lg">상품 상세내역</h3></div>
                 <Table>
-                  <TableHeader><TableRow><TableHead className="whitespace-nowrap">상품명</TableHead><TableHead className="whitespace-nowrap text-right">단가</TableHead><TableHead className="whitespace-nowrap text-right">수량</TableHead><TableHead className="whitespace-nowrap text-right">금액</TableHead></TableRow></TableHeader>
-                  <TableBody>{selectedOutbound.items?.map((item, index) => (<TableRow key={index}><TableCell className="font-medium">{item.name}</TableCell><TableCell className="text-right">{item.unitPrice.toLocaleString()}원</TableCell><TableCell className="text-right">{item.quantity.toLocaleString()}개</TableCell><TableCell className="text-right font-medium">{(item.unitPrice * item.quantity).toLocaleString()}원</TableCell></TableRow>))}</TableBody>
+                  <TableHeader><TableRow>
+                    <TableHead className="whitespace-nowrap">상품명</TableHead>
+                    <TableHead className="whitespace-nowrap text-right">상품단가</TableHead>
+                    <TableHead className="whitespace-nowrap text-right">판매수량</TableHead>
+                    <TableHead className="whitespace-nowrap text-right">합계금액</TableHead>
+                  </TableRow></TableHeader>
+                  <TableBody>{selectedOutbound.items?.map((item, index) => (
+                    <TableRow key={index}>
+                      <TableCell className="font-medium">{item.name}</TableCell>
+                      <TableCell className="text-right">{item.unitPrice.toLocaleString()}원</TableCell>
+                      <TableCell className="text-right font-semibold text-primary">{item.quantity.toLocaleString()}개</TableCell>
+                      <TableCell className="text-right font-bold text-lg">{(item.unitPrice * item.quantity).toLocaleString()}원</TableCell>
+                    </TableRow>
+                  ))}</TableBody>
                 </Table>
+              </div>
+              <div className="flex justify-end pt-4 border-t">
+                <div className="text-right">
+                  <p className="text-sm text-muted-foreground mb-1">총 출고 금액</p>
+                  <p className="text-2xl font-bold text-primary">
+                    {selectedOutbound.items?.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0).toLocaleString()}원
+                  </p>
+                </div>
               </div>
             </div>
           )}
