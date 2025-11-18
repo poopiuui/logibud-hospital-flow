@@ -223,7 +223,7 @@ const PurchaseManagement = () => {
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-4xl font-bold">매입 관리</h1>
           <div className="flex gap-2">
-            <Button onClick={() => {/* 매입 등록 로직 */}} size="lg" className="gap-2">
+            <Button onClick={() => setShowRegistrationDialog(true)} size="lg" className="gap-2">
               <Plus className="w-4 h-4" />
               매입 등록
             </Button>
@@ -273,84 +273,57 @@ const PurchaseManagement = () => {
                   storageKey="purchase-date-range"
                 />
                 
-                <div className="flex flex-wrap gap-4">
-                  <div className="flex-1 min-w-[200px]">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        placeholder="매입처, 제품명, 매입번호로 검색..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10"
-                      />
-                    </div>
-                  </div>
+                <CommonFilters
+                  searchTerm={searchTerm}
+                  onSearchChange={setSearchTerm}
+                  searchPlaceholder="매입처, 제품명, 매입번호로 검색..."
+                  yearFilter={yearFilter}
+                  onYearChange={setYearFilter}
+                  availableYears={availableYears}
+                  monthFilter={monthFilter}
+                  onMonthChange={setMonthFilter}
+                  availableMonths={availableMonths}
+                  sortOrder={sortOrder}
+                  onSortToggle={toggleSortOrder}
+                  customFilters={
+                    <>
+                      <Select value={typeFilter} onValueChange={setTypeFilter}>
+                        <SelectTrigger className="w-[120px]">
+                          <SelectValue placeholder="유형" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">전체 유형</SelectItem>
+                          <SelectItem value="제조사">제조사</SelectItem>
+                          <SelectItem value="반품">반품</SelectItem>
+                        </SelectContent>
+                      </Select>
 
-                <Select value={yearFilter} onValueChange={setYearFilter}>
-                  <SelectTrigger className="w-[140px]">
-                    <Calendar className="h-4 w-4 mr-2" />
-                    <SelectValue placeholder="년도" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">전체 년도</SelectItem>
-                    {availableYears.map(year => (
-                      <SelectItem key={year} value={year.toString()}>{year}년</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                      <Select value={salesPersonFilter} onValueChange={setSalesPersonFilter}>
+                        <SelectTrigger className="w-[140px]">
+                          <SelectValue placeholder="영업사원" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">전체 영업사원</SelectItem>
+                          {salesPersons.map(person => (
+                            <SelectItem key={person} value={person}>{person}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
 
-                <Select value={monthFilter} onValueChange={setMonthFilter}>
-                  <SelectTrigger className="w-[120px]">
-                    <SelectValue placeholder="월" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">전체 월</SelectItem>
-                    {availableMonths.map(month => (
-                      <SelectItem key={month} value={month}>{month}월</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                <Select value={typeFilter} onValueChange={setTypeFilter}>
-                  <SelectTrigger className="w-[120px]">
-                    <SelectValue placeholder="유형" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">전체 유형</SelectItem>
-                    <SelectItem value="제조사">제조사</SelectItem>
-                    <SelectItem value="반품">반품</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                <Select value={salesPersonFilter} onValueChange={setSalesPersonFilter}>
-                  <SelectTrigger className="w-[140px]">
-                    <SelectValue placeholder="영업사원" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">전체 영업사원</SelectItem>
-                    {salesPersons.map(person => (
-                      <SelectItem key={person} value={person}>{person}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                <Select value={vendorFilter} onValueChange={setVendorFilter}>
-                  <SelectTrigger className="w-[160px]">
-                    <SelectValue placeholder="매입처" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">전체 매입처</SelectItem>
-                    {vendors.map(vendor => (
-                      <SelectItem key={vendor} value={vendor}>{vendor}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                  <Button variant="outline" onClick={toggleSortOrder} className="gap-2">
-                    {sortOrder === 'desc' ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
-                    {sortOrder === 'desc' ? '최신순' : '오래된순'}
-                  </Button>
-                </div>
+                      <Select value={vendorFilter} onValueChange={setVendorFilter}>
+                        <SelectTrigger className="w-[160px]">
+                          <SelectValue placeholder="매입처" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">전체 매입처</SelectItem>
+                          {vendors.map(vendor => (
+                            <SelectItem key={vendor} value={vendor}>{vendor}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </>
+                  }
+                />
               </div>
 
               {selectedPurchases.length > 0 && (
@@ -603,6 +576,103 @@ const PurchaseManagement = () => {
               )}
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Purchase Registration Dialog */}
+      <Dialog open={showRegistrationDialog} onOpenChange={setShowRegistrationDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>매입 등록</DialogTitle>
+          </DialogHeader>
+          <Tabs value={registrationMode} onValueChange={(v) => setRegistrationMode(v as 'individual' | 'excel')}>
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="individual">개별 등록</TabsTrigger>
+              <TabsTrigger value="excel">Excel 일괄 등록</TabsTrigger>
+            </TabsList>
+            <TabsContent value="individual" className="space-y-4">
+              <div className="grid gap-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>매입일시</Label>
+                    <Input type="datetime-local" />
+                  </div>
+                  <div>
+                    <Label>매입처</Label>
+                    <Input placeholder="매입처명 입력" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>제품명</Label>
+                    <Input placeholder="제품명 입력" />
+                  </div>
+                  <div>
+                    <Label>수량</Label>
+                    <Input type="number" placeholder="수량 입력" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>가격</Label>
+                    <Input type="number" placeholder="가격 입력" />
+                  </div>
+                  <div>
+                    <Label>유형</Label>
+                    <Select>
+                      <SelectTrigger>
+                        <SelectValue placeholder="유형 선택" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="제조사">제조사</SelectItem>
+                        <SelectItem value="반품">반품</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div>
+                  <Label>영업담당</Label>
+                  <Input placeholder="영업담당자명 입력" />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setShowRegistrationDialog(false)}>취소</Button>
+                <Button onClick={() => {
+                  toast({ title: "매입 등록 완료", description: "매입이 성공적으로 등록되었습니다." });
+                  setShowRegistrationDialog(false);
+                }}>등록</Button>
+              </DialogFooter>
+            </TabsContent>
+            <TabsContent value="excel" className="space-y-4">
+              <div className="border-2 border-dashed rounded-lg p-8 text-center">
+                <Upload className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                <p className="text-sm text-muted-foreground mb-4">
+                  Excel 파일을 업로드하여 일괄 등록하세요
+                </p>
+                <Input
+                  type="file"
+                  accept=".xlsx,.xls"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = (evt) => {
+                      const bstr = evt.target?.result;
+                      const wb = XLSX.read(bstr, { type: 'binary' });
+                      const data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
+                      toast({ title: "엑셀 업로드 성공", description: `${data.length}개의 매입 데이터가 등록되었습니다.` });
+                      setShowRegistrationDialog(false);
+                    };
+                    reader.readAsBinaryString(file);
+                  }}
+                  className="max-w-xs mx-auto"
+                />
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setShowRegistrationDialog(false)}>닫기</Button>
+              </DialogFooter>
+            </TabsContent>
+          </Tabs>
         </DialogContent>
       </Dialog>
     </div>

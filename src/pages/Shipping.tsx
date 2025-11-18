@@ -9,11 +9,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Truck, Package, CheckCircle2, Download, Upload, PackagePlus, X, ChevronDown, ChevronUp, FileDown, Filter, Trash2 } from "lucide-react";
+import { Truck, Package, CheckCircle2, Download, Upload, PackagePlus, X, FileDown, Filter, Trash2, ChevronUp, ChevronDown } from "lucide-react";
 import * as XLSX from "xlsx";
 import { useToast } from "@/hooks/use-toast";
 import { DateRangeFilter } from "@/components/DateRangeFilter";
 import { SwipeableTableRow } from "@/components/SwipeableTableRow";
+import { CommonFilters } from "@/components/CommonFilters";
 
 interface Shipment {
   id: string;
@@ -71,8 +72,10 @@ export default function Shipping() {
 
   const [selectedShipments, setSelectedShipments] = useState<string[]>([]);
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
   const [productFilter, setProductFilter] = useState("");
   const [locationFilter, setLocationFilter] = useState("");
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [isBulkTrackingDialogOpen, setIsBulkTrackingDialogOpen] = useState(false);
   const [isNewShipmentDialogOpen, setIsNewShipmentDialogOpen] = useState(false);
   const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({ from: undefined, to: undefined });
@@ -91,6 +94,10 @@ export default function Shipping() {
   }, []);
 
   const filteredShipments = shipments.filter(ship => {
+    const searchMatch = searchTerm === "" ||
+      ship.customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      ship.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      ship.address.toLowerCase().includes(searchTerm.toLowerCase());
     const productMatch = productFilter === "" || ship.items.some(item => 
       item.name.toLowerCase().includes(productFilter.toLowerCase())
     );
@@ -99,7 +106,11 @@ export default function Shipping() {
     const shipDate = new Date(ship.shipDate);
     const matchesDateRange = !dateRange.from || !dateRange.to || 
       (shipDate >= dateRange.from && shipDate <= dateRange.to);
-    return productMatch && locationMatch && statusMatch && matchesDateRange;
+    return searchMatch && productMatch && locationMatch && statusMatch && matchesDateRange;
+  }).sort((a, b) => {
+    const dateA = new Date(a.shipDate).getTime();
+    const dateB = new Date(b.shipDate).getTime();
+    return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
   });
 
   const toggleSelectAll = () => {
