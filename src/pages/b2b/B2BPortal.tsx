@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LogOut, Package, ShoppingCart, TrendingUp } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Table,
   TableBody,
@@ -12,6 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useToast } from "@/hooks/use-toast";
 
 interface CustomerInfo {
   id: string;
@@ -20,9 +22,20 @@ interface CustomerInfo {
   ceo_name: string;
 }
 
+interface Order {
+  id: string;
+  order_number: string;
+  total_amount: number;
+  status: string;
+  created_at: string;
+}
+
 export default function B2BPortal() {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo | null>(null);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const customerData = sessionStorage.getItem('b2b_customer');
@@ -30,11 +43,40 @@ export default function B2BPortal() {
       navigate('/b2b/login');
       return;
     }
-    setCustomerInfo(JSON.parse(customerData));
+    const customer = JSON.parse(customerData);
+    setCustomerInfo(customer);
+    fetchOrders(customer.id);
   }, [navigate]);
+
+  const fetchOrders = async (customerId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('b2b_orders')
+        .select('*')
+        .eq('customer_id', customerId)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (error) throw error;
+      setOrders(data || []);
+    } catch (error: any) {
+      console.error('Error fetching orders:', error);
+      toast({
+        title: "주문 조회 실패",
+        description: "주문 내역을 불러올 수 없습니다.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleLogout = () => {
     sessionStorage.removeItem('b2b_customer');
+    toast({
+      title: "로그아웃",
+      description: "로그아웃되었습니다.",
+    });
     navigate('/b2b/login');
   };
 
@@ -42,12 +84,27 @@ export default function B2BPortal() {
     return null;
   }
 
-  // 더미 데이터
-  const recentOrders = [
-    { id: "ORD-001", date: "2024-11-15", status: "배송완료", amount: "₩1,250,000" },
-    { id: "ORD-002", date: "2024-11-14", status: "배송중", amount: "₩890,000" },
-    { id: "ORD-003", date: "2024-11-13", status: "출고준비중", amount: "₩2,100,000" },
-  ];
+  const getStatusBadge = (status: string) => {
+    const statusMap: Record<string, string> = {
+      pending: '주문확인중',
+      confirmed: '출고준비중',
+      shipped: '배송중',
+      delivered: '배송완료',
+      cancelled: '취소됨'
+    };
+    return statusMap[status] || status;
+  };
+
+  const stats = {
+    monthlyOrders: orders.filter(o => {
+      const orderDate = new Date(o.created_at);
+      const now = new Date();
+      return orderDate.getMonth() === now.getMonth() && 
+             orderDate.getFullYear() === now.getFullYear();
+    }).length,
+    totalAmount: orders.reduce((sum, o) => sum + o.total_amount, 0),
+    pendingOrders: orders.filter(o => o.status === 'pending' || o.status === 'confirmed').length
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted">
@@ -89,10 +146,7 @@ export default function B2BPortal() {
               <ShoppingCart className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">156건</div>
-              <p className="text-xs text-muted-foreground">
-                <span className="text-green-600">+12</span> 지난달 대비
-              </p>
+              <div className="text-2xl font-bold">{stats.monthlyOrders}건</div>
             </CardContent>
           </Card>
 
@@ -102,23 +156,17 @@ export default function B2BPortal() {
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">₩45,230,000</div>
-              <p className="text-xs text-muted-foreground">
-                <span className="text-green-600">+₩3,200,000</span> 지난달 대비
-              </p>
+              <div className="text-2xl font-bold">₩{stats.totalAmount.toLocaleString()}</div>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">배송 대기</CardTitle>
+              <CardTitle className="text-sm font-medium">처리 대기</CardTitle>
               <Package className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">23건</div>
-              <p className="text-xs text-muted-foreground">
-                <span className="text-red-600">-5</span> 전일 대비
-              </p>
+              <div className="text-2xl font-bold">{stats.pendingOrders}건</div>
             </CardContent>
           </Card>
         </div>
@@ -137,6 +185,10 @@ export default function B2BPortal() {
             variant="outline"
             size="lg"
             className="h-20 text-lg"
+            onClick={() => {
+              // 주문 탭으로 스크롤
+              document.getElementById('orders-tab')?.click();
+            }}
           >
             <Package className="w-6 h-6 mr-2" />
             주문 내역 보기
@@ -146,8 +198,7 @@ export default function B2BPortal() {
         {/* Tabs */}
         <Tabs defaultValue="orders" className="space-y-4">
           <TabsList>
-            <TabsTrigger value="orders">최근 주문</TabsTrigger>
-            <TabsTrigger value="analytics">거래 분석</TabsTrigger>
+            <TabsTrigger value="orders" id="orders-tab">최근 주문</TabsTrigger>
             <TabsTrigger value="settings">계정 설정</TabsTrigger>
           </TabsList>
 
@@ -157,39 +208,34 @@ export default function B2BPortal() {
                 <CardTitle>최근 주문 내역</CardTitle>
               </CardHeader>
               <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>주문번호</TableHead>
-                      <TableHead>주문일</TableHead>
-                      <TableHead>상태</TableHead>
-                      <TableHead className="text-right">금액</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {recentOrders.map((order) => (
-                      <TableRow key={order.id}>
-                        <TableCell className="font-medium">{order.id}</TableCell>
-                        <TableCell>{order.date}</TableCell>
-                        <TableCell>{order.status}</TableCell>
-                        <TableCell className="text-right">{order.amount}</TableCell>
+                {isLoading ? (
+                  <p className="text-center py-8">로딩중...</p>
+                ) : orders.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-8">
+                    주문 내역이 없습니다
+                  </p>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>주문번호</TableHead>
+                        <TableHead>주문일</TableHead>
+                        <TableHead>상태</TableHead>
+                        <TableHead className="text-right">금액</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="analytics">
-            <Card>
-              <CardHeader>
-                <CardTitle>거래 분석</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">
-                  거래 통계 및 분석 차트가 여기에 표시됩니다.
-                </p>
+                    </TableHeader>
+                    <TableBody>
+                      {orders.map((order) => (
+                        <TableRow key={order.id}>
+                          <TableCell className="font-medium">{order.order_number}</TableCell>
+                          <TableCell>{new Date(order.created_at).toLocaleDateString('ko-KR')}</TableCell>
+                          <TableCell>{getStatusBadge(order.status)}</TableCell>
+                          <TableCell className="text-right">₩{order.total_amount.toLocaleString()}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

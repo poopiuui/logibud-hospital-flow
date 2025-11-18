@@ -17,6 +17,7 @@ import AdminSetup from "./pages/AdminSetup";
 import B2BLogin from "./pages/b2b/B2BLogin";
 import B2BPortal from "./pages/b2b/B2BPortal";
 import B2BProducts from "./pages/b2b/B2BProducts";
+import B2BManagement from "./pages/B2BManagement";
 import Vendors from "./pages/Vendors";
 import VendorAnalytics from "./pages/VendorAnalytics";
 import RegistrationTemplates from "./pages/RegistrationTemplates";
@@ -57,6 +58,13 @@ const App = () => (
         <Route path="/b2b/login" element={<B2BLogin />} />
         <Route path="/b2b/portal" element={<B2BPortal />} />
         <Route path="/b2b/products" element={<B2BProducts />} />
+        
+        {/* Protected Routes */}
+        <Route path="/b2b-management" element={
+          <ProtectedRoute>
+            <B2BManagement />
+          </ProtectedRoute>
+        } />
 
             {/* Protected Routes */}
             <Route path="/*" element={
