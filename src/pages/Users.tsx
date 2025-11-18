@@ -124,8 +124,11 @@ export default function Users() {
   const [isAddUserDialogOpen, setIsAddUserDialogOpen] = useState(false);
   const [isPermissionDialogOpen, setIsPermissionDialogOpen] = useState(false);
   const [isPasswordChangeOpen, setIsPasswordChangeOpen] = useState(false);
+  const [isUserEditDialogOpen, setIsUserEditDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [editedUser, setEditedUser] = useState<User | null>(null);
   const [passwordChange, setPasswordChange] = useState({
+    currentPassword: "",
     newPassword: "",
     confirmPassword: ""
   });
@@ -204,6 +207,15 @@ export default function Users() {
   const handlePasswordChange = () => {
     if (!selectedUser) return;
 
+    if (!passwordChange.currentPassword) {
+      toast({
+        title: "인증 오류",
+        description: "기존 비밀번호를 입력해주세요.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     if (passwordChange.newPassword !== passwordChange.confirmPassword) {
       toast({
         title: "비밀번호 불일치",
@@ -227,7 +239,28 @@ export default function Users() {
       description: `${selectedUser.name}의 비밀번호가 변경되었습니다.`
     });
     setIsPasswordChangeOpen(false);
-    setPasswordChange({ newPassword: "", confirmPassword: "" });
+    setPasswordChange({ currentPassword: "", newPassword: "", confirmPassword: "" });
+  };
+
+  const openUserEditDialog = (user: User) => {
+    setSelectedUser(user);
+    setEditedUser({ ...user });
+    setIsUserEditDialogOpen(true);
+  };
+
+  const saveUserEdit = () => {
+    if (!editedUser) return;
+
+    setUsers(users.map(user => 
+      user.id === editedUser.id ? editedUser : user
+    ));
+    
+    toast({
+      title: "사용자 정보 수정 완료",
+      description: `${editedUser.name}님의 정보가 업데이트되었습니다.`
+    });
+    
+    setIsUserEditDialogOpen(false);
   };
 
   const activeUsers = users.filter(u => u.status === '활성');
@@ -333,10 +366,7 @@ export default function Users() {
                       <TableRow key={user.id}>
                         <TableCell 
                           className="font-mono font-semibold text-base text-primary cursor-pointer hover:underline"
-                          onClick={() => {
-                            setSelectedUser(user);
-                            setIsPasswordChangeOpen(true);
-                          }}
+                          onClick={() => openUserEditDialog(user)}
                         >
                           {user.userCode}
                         </TableCell>
@@ -552,6 +582,17 @@ export default function Users() {
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
+              <Label htmlFor="currentPassword">기존 비밀번호 *</Label>
+              <Input
+                id="currentPassword"
+                type="password"
+                value={passwordChange.currentPassword}
+                onChange={(e) => setPasswordChange({ ...passwordChange, currentPassword: e.target.value })}
+                placeholder="기존 비밀번호 입력"
+                required
+              />
+            </div>
+            <div className="grid gap-2">
               <Label htmlFor="newPassword">새 비밀번호</Label>
               <Input
                 id="newPassword"
@@ -575,9 +616,84 @@ export default function Users() {
           <DialogFooter>
             <Button variant="outline" onClick={() => {
               setIsPasswordChangeOpen(false);
-              setPasswordChange({ newPassword: "", confirmPassword: "" });
+              setPasswordChange({ currentPassword: "", newPassword: "", confirmPassword: "" });
             }}>취소</Button>
             <Button onClick={handlePasswordChange}>변경</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 사용자 정보 수정 Dialog */}
+      <Dialog open={isUserEditDialogOpen} onOpenChange={setIsUserEditDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>사용자 정보 수정 - {editedUser?.name}</DialogTitle>
+            <DialogDescription>
+              사용자 코드: {editedUser?.userCode}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="edit-name">이름</Label>
+                <Input
+                  id="edit-name"
+                  value={editedUser?.name || ''}
+                  onChange={(e) => editedUser && setEditedUser({ ...editedUser, name: e.target.value })}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="edit-email">이메일</Label>
+                <Input
+                  id="edit-email"
+                  type="email"
+                  value={editedUser?.email || ''}
+                  onChange={(e) => editedUser && setEditedUser({ ...editedUser, email: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="edit-phone">전화번호</Label>
+                <Input
+                  id="edit-phone"
+                  value={editedUser?.phone || ''}
+                  onChange={(e) => editedUser && setEditedUser({ ...editedUser, phone: e.target.value })}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="edit-role">역할/팀</Label>
+                <Input
+                  id="edit-role"
+                  value={editedUser?.role || ''}
+                  onChange={(e) => editedUser && setEditedUser({ ...editedUser, role: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="flex gap-2 pt-4">
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setIsUserEditDialogOpen(false);
+                  setSelectedUser(editedUser);
+                  setIsPasswordChangeOpen(true);
+                }}
+                className="flex-1"
+              >
+                비밀번호 변경
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => openPermissionDialog(editedUser!)}
+                className="flex-1"
+              >
+                권한 설정
+              </Button>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsUserEditDialogOpen(false)}>취소</Button>
+            <Button onClick={saveUserEdit}>저장</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

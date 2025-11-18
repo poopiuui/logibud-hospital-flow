@@ -14,6 +14,7 @@ import {
   SidebarFooter,
 } from "@/components/ui/sidebar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { CompanyInfoDialog } from "@/components/CompanyInfoDialog";
 
 const menuItems = [
   { title: "대시보드", url: "/", icon: LayoutDashboard },
@@ -43,6 +44,7 @@ export function AppSidebar() {
   const location = useLocation();
   const [companyName, setCompanyName] = useState("로지봇");
   const [companyLogo, setCompanyLogo] = useState("");
+  const [showCompanyInfo, setShowCompanyInfo] = useState(false);
   
   // 등록관리 섹션의 하위 메뉴 URL 목록
   const registrationUrls = ["/category-management", "/purchase-order-management", "/quotation-management"];
@@ -69,26 +71,27 @@ export function AppSidebar() {
   }, [isRegistrationActive]);
 
   return (
-    <Sidebar className="border-r">
-      <SidebarHeader 
-        className="border-b p-4 cursor-pointer hover:bg-accent transition-colors"
-        onClick={() => window.location.href = '/settings'}
-      >
-        <div className="flex items-center gap-3">
-          {companyLogo ? (
-            <img 
-              src={companyLogo} 
-              alt={companyName} 
-              className="w-10 h-10 rounded-lg object-cover"
-            />
-          ) : (
-            <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center">
-              <Package className="w-6 h-6 text-primary-foreground" />
-            </div>
-          )}
-          <span className="text-xl font-bold text-sidebar-foreground">{companyName}</span>
-        </div>
-      </SidebarHeader>
+    <>
+      <Sidebar className="border-r">
+        <SidebarHeader 
+          className="border-b p-4 cursor-pointer hover:bg-accent transition-colors"
+          onClick={() => setShowCompanyInfo(true)}
+        >
+          <div className="flex items-center gap-3">
+            {companyLogo ? (
+              <img 
+                src={companyLogo} 
+                alt={companyName} 
+                className="w-10 h-10 rounded-lg object-cover"
+              />
+            ) : (
+              <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center">
+                <Package className="w-6 h-6 text-primary-foreground" />
+              </div>
+            )}
+            <span className="text-xl font-bold text-sidebar-foreground">{companyName}</span>
+          </div>
+        </SidebarHeader>
 
       <SidebarContent>
         <SidebarGroup>
@@ -164,5 +167,8 @@ export function AppSidebar() {
         </NavLink>
       </SidebarFooter>
     </Sidebar>
+    
+    <CompanyInfoDialog open={showCompanyInfo} onOpenChange={setShowCompanyInfo} />
+    </>
   );
 }

@@ -16,6 +16,9 @@ export default function Settings() {
   const [companyName, setCompanyName] = useState(localStorage.getItem('companyName') || '로지봇');
   const [companyLogo, setCompanyLogo] = useState(localStorage.getItem('companyLogo') || '');
   const [companyDescription, setCompanyDescription] = useState(localStorage.getItem('companyDescription') || '');
+  const [companyBusinessNumber, setCompanyBusinessNumber] = useState(localStorage.getItem('companyBusinessNumber') || '');
+  const [companyPhone, setCompanyPhone] = useState(localStorage.getItem('companyPhone') || '');
+  const [companyFax, setCompanyFax] = useState(localStorage.getItem('companyFax') || '');
   const [logoPreview, setLogoPreview] = useState(localStorage.getItem('companyLogo') || '');
 
   const handleFontSizeChange = (value: number[]) => {
@@ -74,6 +77,9 @@ export default function Settings() {
     localStorage.setItem('companyName', companyName);
     localStorage.setItem('companyLogo', companyLogo);
     localStorage.setItem('companyDescription', companyDescription);
+    localStorage.setItem('companyBusinessNumber', companyBusinessNumber);
+    localStorage.setItem('companyPhone', companyPhone);
+    localStorage.setItem('companyFax', companyFax);
     
     toast({
       title: "회사 정보 저장",
@@ -275,6 +281,36 @@ export default function Settings() {
                 placeholder="물류 통합 관리 시스템"
                 value={companyDescription}
                 onChange={(e) => setCompanyDescription(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="company-business-number">사업자번호</Label>
+              <Input 
+                id="company-business-number" 
+                placeholder="123-45-67890" 
+                value={companyBusinessNumber}
+                onChange={(e) => setCompanyBusinessNumber(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="company-phone">전화번호</Label>
+              <Input 
+                id="company-phone" 
+                placeholder="02-1234-5678" 
+                value={companyPhone}
+                onChange={(e) => setCompanyPhone(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="company-fax">팩스번호</Label>
+              <Input 
+                id="company-fax" 
+                placeholder="02-1234-5679" 
+                value={companyFax}
+                onChange={(e) => setCompanyFax(e.target.value)}
               />
             </div>
 
