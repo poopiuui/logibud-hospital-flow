@@ -246,27 +246,17 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* 헤더 */}
-      <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-foreground">물류 관리 시스템</h1>
-              <p className="text-sm text-muted-foreground">제품 재고 및 주문 현황 통합 관리</p>
-            </div>
-            <div className="flex items-center gap-4">
-              <Button onClick={() => navigate('/analytics')} size="lg" className="gap-2 text-base font-semibold">
-                <BarChart3 className="h-5 w-5" />
-                분석 대시보드
-              </Button>
-              <ThemeToggle />
-            </div>
+    <>
+      <div className="p-8 space-y-8">
+        {/* 헤더 */}
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-4xl font-bold">대시보드</h1>
+            <p className="text-lg text-muted-foreground mt-2">물류 정보를 한눈에 확인하세요</p>
           </div>
+          <ThemeToggle />
         </div>
-      </header>
 
-      <div className="container mx-auto p-6 md:p-8 max-w-[1600px] space-y-8">
         {/* 재고 알림 시스템 */}
         <StockAlertSystem products={products} />
 
@@ -758,7 +748,7 @@ const Index = () => {
         onOpenChange={setIsScannerOpen}
         onScan={handleBarcodeScanned}
       />
-    </div>
+    </>
   );
 };
 
