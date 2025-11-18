@@ -18,6 +18,8 @@ import { DateRangeFilter } from "@/components/DateRangeFilter";
 import { SwipeableTableRow } from "@/components/SwipeableTableRow";
 import { CommonFilters } from "@/components/CommonFilters";
 
+// Purchase Management - handles purchase registration and tracking
+
 interface Purchase {
   id: string;
   date: string;
