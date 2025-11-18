@@ -183,6 +183,27 @@ export default function Settings() {
           </CardContent>
         </Card>
 
+        {/* 메뉴 관리 */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-2xl">메뉴 관리</CardTitle>
+            <CardDescription>사이드바 메뉴를 커스터마이징하세요</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              사용하지 않는 메뉴를 숨기거나 순서를 변경할 수 있습니다.
+            </p>
+            <Button variant="outline" className="w-full" onClick={() => {
+              toast({
+                title: "개발 예정",
+                description: "메뉴 커스터마이징 기능은 곧 제공될 예정입니다.",
+              });
+            }}>
+              메뉴 설정 열기
+            </Button>
+          </CardContent>
+        </Card>
+
         {/* 데이터 관리 */}
         <Card>
           <CardHeader>
