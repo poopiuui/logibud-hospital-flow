@@ -25,6 +25,7 @@ interface Vendor {
   paymentMethod: string;
   bankAccount: string;
   invoiceEmail: string;
+  salesRep?: string;
   logisticsManager?: string;
 }
 
@@ -44,6 +45,7 @@ const Vendors = () => {
       paymentMethod: '계좌이체',
       bankAccount: '국민 123-456-789012',
       invoiceEmail: 'vendor1@example.com',
+      salesRep: '김영업',
       logisticsManager: '김물류'
     },
     {
@@ -59,6 +61,7 @@ const Vendors = () => {
       paymentMethod: '현금',
       bankAccount: '신한 987-654-321098',
       invoiceEmail: 'customer1@example.com',
+      salesRep: '이영업',
       logisticsManager: '이물류'
     }
   ]);
@@ -78,6 +81,7 @@ const Vendors = () => {
     paymentMethod: '',
     bankAccount: '',
     invoiceEmail: '',
+    salesRep: '',
     logisticsManager: ''
   });
 
@@ -119,6 +123,7 @@ const Vendors = () => {
         paymentMethod: selectedVendor.paymentMethod,
         bankAccount: selectedVendor.bankAccount,
         invoiceEmail: selectedVendor.invoiceEmail,
+        salesRep: selectedVendor.salesRep || '',
         logisticsManager: selectedVendor.logisticsManager || ''
       });
       setIsEditing(true);
@@ -131,7 +136,9 @@ const Vendors = () => {
       id: Date.now().toString(),
       code: generateCode(vendorType),
       type: vendorType,
-      ...formData
+      ...formData,
+      salesRep: formData.salesRep,
+      logisticsManager: formData.logisticsManager
     };
     setVendors([...vendors, newVendor]);
     setIsDialogOpen(false);
@@ -145,6 +152,7 @@ const Vendors = () => {
       paymentMethod: '',
       bankAccount: '',
       invoiceEmail: '',
+      salesRep: '',
       logisticsManager: ''
     });
     toast({
