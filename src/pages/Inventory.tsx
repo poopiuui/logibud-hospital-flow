@@ -6,11 +6,13 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { ArrowUpCircle, Search, FileDown } from "lucide-react";
+import { ArrowUpCircle, Search, FileDown, Filter } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
+import { DateRangeFilter } from "@/components/DateRangeFilter";
+import { SwipeableTableRow } from "@/components/SwipeableTableRow";
 
 const COLORS = ['#4CAF50', '#F44336', '#2196F3', '#FF9800'];
 
@@ -43,6 +45,8 @@ export default function Inventory() {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("recent");
   const [categoryFilter, setCategoryFilter] = useState("all");
+  const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({ from: undefined, to: undefined });
+  const [showHistory, setShowHistory] = useState(true);
 
   const inventoryItems: InventoryItem[] = [
     { id: '1', productCode: 'A-001', productName: '주사기(5ml)', category: '주사기/바늘', currentStock: 850, safetyStock: 1000, lastInboundDate: '2024-01-15', location: 'A-01', createdBy: '김관리' },

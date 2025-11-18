@@ -38,10 +38,13 @@ import {
   CreditCard,
   ArrowUpDown,
   Download,
-  FileDown
+  FileDown,
+  Filter
 } from "lucide-react";
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
+import { DateRangeFilter } from "@/components/DateRangeFilter";
+import { SwipeableTableRow } from "@/components/SwipeableTableRow";
 
 interface Product {
   userCode: string;
@@ -139,7 +142,10 @@ const Index = () => {
                            product.productCode.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesCategory = filterCategory === "all" || product.category === filterCategory;
       const matchesSupplier = filterSupplier === "all" || product.supplier === filterSupplier;
-      return matchesSearch && matchesCategory && matchesSupplier;
+      const productDate = new Date(product.registeredDate);
+      const matchesDateRange = !dateRange.from || !dateRange.to || 
+        (productDate >= dateRange.from && productDate <= dateRange.to);
+      return matchesSearch && matchesCategory && matchesSupplier && matchesDateRange;
     })
     .sort((a, b) => {
       let comparison = 0;
@@ -263,6 +269,23 @@ const Index = () => {
     });
   };
 
+  const handleBulkDelete = () => {
+    if (selectedProducts.length === 0) {
+      toast({
+        title: "선택된 상품 없음",
+        description: "삭제할 상품을 선택해주세요.",
+        variant: "destructive"
+      });
+      return;
+    }
+    setProducts(products.filter(p => !selectedProducts.includes(p.productCode)));
+    toast({
+      title: "삭제 완료",
+      description: `${selectedProducts.length}개의 상품이 삭제되었습니다.`
+    });
+    setSelectedProducts([]);
+  };
+
   return (
     <>
       <div className="p-8 space-y-8">
@@ -282,6 +305,41 @@ const Index = () => {
         </div>
 
         <StockAlertSystem products={products} />
+
+        {/* 필터 섹션 */}
+        <div className="space-y-4">
+          <DateRangeFilter 
+            onDateRangeChange={setDateRange}
+            storageKey="products-date-filter"
+          />
+          
+          {/* 일괄 작업 툴바 */}
+          {selectedProducts.length > 0 && (
+            <Card className="bg-primary/10 border-primary">
+              <CardContent className="py-4">
+                <div className="flex flex-wrap items-center gap-4">
+                  <span className="text-sm font-medium">
+                    {selectedProducts.length}개 선택됨
+                  </span>
+                  <div className="flex gap-2">
+                    <Button onClick={openQuotationDialog} size="sm">
+                      <FileText className="w-4 h-4 mr-2" />
+                      견적서 생성
+                    </Button>
+                    <Button onClick={() => downloadCSV(true)} variant="outline" size="sm">
+                      <Download className="w-4 h-4 mr-2" />
+                      선택 내보내기
+                    </Button>
+                    <Button onClick={handleBulkDelete} variant="destructive" size="sm">
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      삭제
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <Card className="border-2">

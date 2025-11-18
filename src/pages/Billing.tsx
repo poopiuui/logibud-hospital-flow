@@ -7,10 +7,13 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { FileText, Download, Eye, CheckCircle2, Clock, X, FileDown, FilePlus } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { FileText, Download, Eye, CheckCircle2, Clock, X, FileDown, FilePlus, Filter, Trash2 } from "lucide-react";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import { useToast } from "@/hooks/use-toast";
+import { DateRangeFilter } from "@/components/DateRangeFilter";
+import { SwipeableTableRow } from "@/components/SwipeableTableRow";
 
 interface Invoice {
   id: string;
@@ -36,6 +39,8 @@ export default function Billing() {
   const [showInvoiceDetail, setShowInvoiceDetail] = useState(false);
   const [showNewInvoice, setShowNewInvoice] = useState(false);
   const [newInvoice, setNewInvoice] = useState({ customer: '', amount: '', date: '' });
+  const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({ from: undefined, to: undefined });
+  const [statusFilter, setStatusFilter] = useState<string>("all");
 
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
@@ -61,10 +66,62 @@ export default function Billing() {
     );
   };
 
-  const downloadInvoiceExcel = () => {
-    const invoiceData = selectedInvoices.length > 0
-      ? invoices.filter(inv => selectedInvoices.includes(inv.id))
-      : invoices;
+  const filteredInvoices = invoices.filter(inv => {
+    const matchesStatus = statusFilter === "all" || inv.status === statusFilter;
+    const invoiceDate = new Date(inv.date);
+    const matchesDateRange = !dateRange.from || !dateRange.to || 
+      (invoiceDate >= dateRange.from && invoiceDate <= dateRange.to);
+    return matchesStatus && matchesDateRange;
+  });
+
+  const handleBulkIssueInvoices = () => {
+    if (selectedInvoices.length === 0) {
+      toast({
+        title: "선택된 청구서 없음",
+        description: "발행할 청구서를 선택해주세요.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const issueDate = new Date().toISOString().split('T')[0];
+    setInvoices(invoices.map(inv => 
+      selectedInvoices.includes(inv.id) && !inv.invoiceIssued
+        ? { ...inv, invoiceIssued: true, issueDate }
+        : inv
+    ));
+
+    toast({
+      title: "일괄 청구서 발행 완료",
+      description: `${selectedInvoices.length}개의 청구서가 발행되었습니다.`
+    });
+    setSelectedInvoices([]);
+  };
+
+  const handleBulkDelete = () => {
+    if (selectedInvoices.length === 0) {
+      toast({
+        title: "선택된 청구서 없음",
+        description: "삭제할 청구서를 선택해주세요.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setInvoices(invoices.filter(inv => !selectedInvoices.includes(inv.id)));
+    toast({
+      title: "삭제 완료",
+      description: `${selectedInvoices.length}개의 청구서가 삭제되었습니다.`
+    });
+    setSelectedInvoices([]);
+  };
+
+  const downloadInvoiceExcel = (filteredOnly: boolean = false) => {
+    const invoiceData = filteredOnly 
+      ? filteredInvoices 
+      : selectedInvoices.length > 0
+        ? invoices.filter(inv => selectedInvoices.includes(inv.id))
+        : invoices;
 
     const ws = XLSX.utils.json_to_sheet(invoiceData.map(inv => ({
       '청구번호': inv.id,
