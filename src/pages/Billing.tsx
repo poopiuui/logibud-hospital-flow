@@ -631,9 +631,20 @@ export default function Billing() {
                       <>
                         <CheckCircle2 className="w-4 h-4 text-green-600" />
                         <span className="text-sm text-green-600">발행완료</span>
-                        {selectedInvoice.issueDate && (
-                          <span className="text-xs text-muted-foreground">({selectedInvoice.issueDate})</span>
-                        )}
+                        <Input 
+                          type="date" 
+                          value={selectedInvoice.issueDate || ''} 
+                          onChange={(e) => {
+                            const updatedInvoices = invoices.map(inv => 
+                              inv.id === selectedInvoice.id 
+                                ? { ...inv, issueDate: e.target.value }
+                                : inv
+                            );
+                            setInvoices(updatedInvoices);
+                            setSelectedInvoice({ ...selectedInvoice, issueDate: e.target.value });
+                          }}
+                          className="w-40 ml-2"
+                        />
                       </>
                     ) : (
                       <>
@@ -643,6 +654,25 @@ export default function Billing() {
                     )}
                   </div>
                 </div>
+                {selectedInvoice.paymentConfirmed && (
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">입금일</label>
+                    <Input 
+                      type="date" 
+                      value={selectedInvoice.paymentDate || ''} 
+                      onChange={(e) => {
+                        const updatedInvoices = invoices.map(inv => 
+                          inv.id === selectedInvoice.id 
+                            ? { ...inv, paymentDate: e.target.value }
+                            : inv
+                        );
+                        setInvoices(updatedInvoices);
+                        setSelectedInvoice({ ...selectedInvoice, paymentDate: e.target.value });
+                      }}
+                      className="w-40 mt-2"
+                    />
+                  </div>
+                )}
               </div>
               {selectedInvoice.items && selectedInvoice.items.length > 0 && (
                 <div>

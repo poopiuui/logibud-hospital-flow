@@ -109,7 +109,18 @@ export const Chatbot = () => {
       }
 
       setMessages(prev => [...prev, response]);
+      
+      // 답변 후 추천 질문 표시를 위해 상태 초기화하지 않음
     }, 800);
+  };
+
+  const handleBackToSuggestions = () => {
+    setMessages([{
+      id: '1',
+      text: `안녕하세요! ${companyName}입니다. 재고, 주문, 통계에 대해 질문해주세요.`,
+      sender: 'bot',
+      timestamp: new Date()
+    }]);
   };
 
   return (
@@ -118,10 +129,10 @@ export const Chatbot = () => {
       {!isOpen && (
         <Button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-6 w-14 h-14 rounded-full shadow-lg z-50"
+          className="fixed bottom-6 right-6 w-20 h-20 rounded-full shadow-2xl z-50 bg-gradient-to-br from-primary to-purple-600 hover:from-primary/90 hover:to-purple-700 border-4 border-white dark:border-gray-800"
           size="icon"
         >
-          <MessageCircle className="w-6 h-6" />
+          <MessageCircle className="w-10 h-10" />
         </Button>
       )}
 
@@ -188,37 +199,27 @@ export const Chatbot = () => {
                   {/* 차트 렌더링 */}
                   {message.chart && message.chartData && (
                     <div className="w-full max-w-[300px] mt-2 p-3 rounded-lg bg-card border">
-                      <ResponsiveContainer width="100%" height={200}>
-                        {message.chart === 'pie' ? (
-                          <PieChart>
-                            <Pie
-                              data={message.chartData}
-                              cx="50%"
-                              cy="50%"
-                              outerRadius={60}
-                              fill="hsl(var(--primary))"
-                              dataKey="value"
-                              label={({ name, value }) => `${name}: ${value}`}
-                            >
-                              {message.chartData.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                              ))}
-                            </Pie>
-                            <Tooltip />
-                          </PieChart>
-                        ) : (
-                          <BarChart data={message.chartData}>
-                            <XAxis dataKey="month" className="text-xs" />
-                            <YAxis className="text-xs" />
-                            <Tooltip />
-                            <Bar dataKey="매출" fill="hsl(var(--primary))" />
-                          </BarChart>
-                        )}
-                      </ResponsiveContainer>
+...
                     </div>
                   )}
                 </div>
               ))}
+              
+              {/* 답변 후 추천 질문과 뒤로 가기 */}
+              {messages.length > 1 && (
+                <div className="space-y-3 mt-4">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={handleBackToSuggestions}
+                    className="w-full"
+                  >
+                    뒤로 가기
+                  </Button>
+                  <div className="text-xs text-muted-foreground mb-2">추천 질문:</div>
+                  <ChatbotSuggestions team={selectedTeam} onSuggestionClick={handleSuggestionClick} />
+                </div>
+              )}
             </div>
           </ScrollArea>
 
