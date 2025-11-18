@@ -19,6 +19,7 @@ interface Vendor {
   businessNumber: string;
   contactName: string;
   contactPhone: string;
+  faxNumber: string;
   paymentDate: string;
   paymentMethod: string;
   bankAccount: string;
@@ -36,6 +37,7 @@ const Vendors = () => {
       businessNumber: '123-45-67890',
       contactName: '김철수',
       contactPhone: '010-1234-5678',
+      faxNumber: '02-1234-5678',
       paymentDate: '매월 말일',
       paymentMethod: '계좌이체',
       bankAccount: '국민 123-456-789012',
@@ -49,6 +51,7 @@ const Vendors = () => {
       businessNumber: '098-76-54321',
       contactName: '이영희',
       contactPhone: '010-9876-5432',
+      faxNumber: '02-9876-5432',
       paymentDate: '익월 15일',
       paymentMethod: '현금',
       bankAccount: '신한 987-654-321098',
@@ -63,6 +66,7 @@ const Vendors = () => {
     businessNumber: '',
     contactName: '',
     contactPhone: '',
+    faxNumber: '',
     paymentDate: '',
     paymentMethod: '',
     bankAccount: '',
@@ -104,6 +108,7 @@ const Vendors = () => {
       businessNumber: '',
       contactName: '',
       contactPhone: '',
+      faxNumber: '',
       paymentDate: '',
       paymentMethod: '',
       bankAccount: '',
@@ -211,6 +216,14 @@ const Vendors = () => {
                       />
                     </div>
                     <div className="space-y-2">
+                      <Label>팩스번호</Label>
+                      <Input
+                        value={formData.faxNumber}
+                        onChange={(e) => setFormData({ ...formData, faxNumber: e.target.value })}
+                        placeholder="02-1234-5678"
+                      />
+                    </div>
+                    <div className="space-y-2">
                       <Label>결제일</Label>
                       <Input
                         required
@@ -284,6 +297,7 @@ const Vendors = () => {
                     <TableHead>사업자번호</TableHead>
                     <TableHead>담당자</TableHead>
                     <TableHead>연락처</TableHead>
+                    <TableHead>팩스</TableHead>
                     <TableHead>결제일</TableHead>
                     <TableHead>결제방법</TableHead>
                   </TableRow>
@@ -297,6 +311,7 @@ const Vendors = () => {
                       <TableCell>{vendor.businessNumber}</TableCell>
                       <TableCell>{vendor.contactName}</TableCell>
                       <TableCell>{vendor.contactPhone}</TableCell>
+                      <TableCell>{vendor.faxNumber || '-'}</TableCell>
                       <TableCell>{vendor.paymentDate}</TableCell>
                       <TableCell>{vendor.paymentMethod}</TableCell>
                     </TableRow>
@@ -313,6 +328,7 @@ const Vendors = () => {
                     <TableHead>사업자번호</TableHead>
                     <TableHead>담당자</TableHead>
                     <TableHead>연락처</TableHead>
+                    <TableHead>팩스</TableHead>
                     <TableHead>결제일</TableHead>
                     <TableHead>결제방법</TableHead>
                   </TableRow>
@@ -325,6 +341,7 @@ const Vendors = () => {
                       <TableCell>{vendor.businessNumber}</TableCell>
                       <TableCell>{vendor.contactName}</TableCell>
                       <TableCell>{vendor.contactPhone}</TableCell>
+                      <TableCell>{vendor.faxNumber || '-'}</TableCell>
                       <TableCell>{vendor.paymentDate}</TableCell>
                       <TableCell>{vendor.paymentMethod}</TableCell>
                     </TableRow>
@@ -341,6 +358,7 @@ const Vendors = () => {
                     <TableHead>사업자번호</TableHead>
                     <TableHead>담당자</TableHead>
                     <TableHead>연락처</TableHead>
+                    <TableHead>팩스</TableHead>
                     <TableHead>결제일</TableHead>
                     <TableHead>결제방법</TableHead>
                   </TableRow>
@@ -353,6 +371,7 @@ const Vendors = () => {
                       <TableCell>{vendor.businessNumber}</TableCell>
                       <TableCell>{vendor.contactName}</TableCell>
                       <TableCell>{vendor.contactPhone}</TableCell>
+                      <TableCell>{vendor.faxNumber || '-'}</TableCell>
                       <TableCell>{vendor.paymentDate}</TableCell>
                       <TableCell>{vendor.paymentMethod}</TableCell>
                     </TableRow>
