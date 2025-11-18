@@ -21,6 +21,7 @@ const menuItems = [
   { title: "재고 관리", url: "/inventory", icon: ClipboardList },
   { title: "매입 관리", url: "/purchase", icon: ShoppingCart },
   { title: "출고 관리", url: "/outbound", icon: Truck },
+  { title: "매출 관리", url: "/sales", icon: FileText },
   { title: "청구 관리", url: "/billing", icon: FileText },
   { title: "배송 관리", url: "/shipping", icon: Truck },
   { title: "사용자 관리", url: "/users", icon: Users },
@@ -57,7 +58,7 @@ export function AppSidebar() {
               <Package className="w-6 h-6 text-primary-foreground" />
             </div>
           )}
-          <span className="text-xl font-bold">{companyName}</span>
+          <span className="text-xl font-bold text-sidebar-foreground">{companyName}</span>
         </div>
       </SidebarHeader>
 
@@ -71,8 +72,8 @@ export function AppSidebar() {
                     <NavLink 
                       to={item.url} 
                       end={item.url === "/"}
-                      className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-accent transition-colors"
-                      activeClassName="bg-accent text-primary font-medium"
+                      className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-sidebar-accent transition-colors text-sidebar-foreground"
+                      activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
                     >
                       <item.icon className="w-5 h-5" />
                       <span>{item.title}</span>
@@ -88,15 +89,15 @@ export function AppSidebar() {
       <SidebarFooter className="border-t p-4">
         <NavLink 
           to="/profile"
-          className="flex items-center gap-3 hover:bg-accent p-2 rounded-lg transition-colors"
-          activeClassName="bg-accent"
+          className="flex items-center gap-3 hover:bg-sidebar-accent p-2 rounded-lg transition-colors"
+          activeClassName="bg-sidebar-accent"
         >
-          <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-semibold">
+          <div className="w-10 h-10 rounded-full bg-sidebar-primary flex items-center justify-center text-sidebar-primary-foreground font-semibold">
             관
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate">관리자</p>
-            <p className="text-xs text-muted-foreground truncate">admin@logibot.com</p>
+            <p className="text-sm font-medium text-sidebar-foreground truncate">관리자</p>
+            <p className="text-xs text-sidebar-foreground/70 truncate">admin@logibot.com</p>
           </div>
         </NavLink>
       </SidebarFooter>

@@ -14,6 +14,7 @@ import Vendors from "./pages/Vendors";
 import ProductRegistration from "./pages/ProductRegistration";
 import PurchaseManagement from "./pages/PurchaseManagement";
 import OutboundManagement from "./pages/OutboundManagement";
+import SalesManagement from "./pages/SalesManagement";
 import Profile from "./pages/Profile";
 import Index from "./pages/Index";
 import Analytics from "./pages/Analytics";
@@ -48,6 +49,7 @@ const App = () => (
                   <Route path="/products" element={<Index />} />
                   <Route path="/purchase" element={<PurchaseManagement />} />
                   <Route path="/outbound" element={<OutboundManagement />} />
+                  <Route path="/sales" element={<SalesManagement />} />
                   <Route path="/analytics" element={<Analytics />} />
                   <Route path="/product/:id" element={<ProductDetail />} />
                   <Route path="/inventory" element={<Inventory />} />
