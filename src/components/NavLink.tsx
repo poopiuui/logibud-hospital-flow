@@ -17,7 +17,7 @@ const NavLink = forwardRef<HTMLAnchorElement, NavLinkCompatProps>(
         className={({ isActive, isPending }) =>
           cn(
             className, 
-            isActive && (activeClassName || "bg-sidebar-accent text-sidebar-accent-foreground font-semibold"),
+            isActive && (activeClassName || "bg-primary text-primary-foreground font-semibold"),
             isPending && pendingClassName
           )
         }

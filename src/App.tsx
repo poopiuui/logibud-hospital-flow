@@ -7,6 +7,8 @@ import { ThemeProvider } from "next-themes";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Chatbot } from "@/components/Chatbot";
+import { RealtimeNotificationSystem } from "@/components/RealtimeNotificationSystem";
+import { MobileNavigation } from "@/components/MobileNavigation";
 import Dashboard from "./pages/Dashboard";
 import Vendors from "./pages/Vendors";
 import ProductRegistration from "./pages/ProductRegistration";
@@ -36,6 +38,9 @@ const App = () => (
             <div className="flex min-h-screen w-full">
               <AppSidebar />
               <main className="flex-1">
+                <div className="fixed top-4 right-4 z-50 flex gap-2">
+                  <RealtimeNotificationSystem />
+                </div>
                 <Routes>
                   <Route path="/" element={<Dashboard />} />
                   <Route path="/vendors" element={<Vendors />} />
@@ -57,6 +62,7 @@ const App = () => (
               </main>
             </div>
             <Chatbot />
+            <MobileNavigation />
           </SidebarProvider>
         </BrowserRouter>
       </TooltipProvider>

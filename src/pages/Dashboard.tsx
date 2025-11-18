@@ -5,6 +5,7 @@ import { AIReorderPrediction } from "@/components/AIReorderPrediction";
 import { StockAlertWidget } from "@/components/StockAlertWidget";
 import { InventoryVisualization } from "@/components/InventoryVisualization";
 import { AutoReorderSystem } from "@/components/AutoReorderSystem";
+import { DashboardCustomizer } from "@/components/DashboardCustomizer";
 import { ArrowUpRight, ArrowDownRight, Package, TrendingUp, DollarSign, Users, X, RefreshCw } from "lucide-react";
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import GridLayout from "react-grid-layout";
@@ -17,6 +18,7 @@ const Dashboard = () => {
   const { toast } = useToast();
   const [lastUpdate, setLastUpdate] = useState(new Date());
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [widgetVisibility, setWidgetVisibility] = useState<Record<string, boolean>>({});
   
   const [layout, setLayout] = useState([
     { i: 'kpi', x: 0, y: 0, w: 12, h: 2 },
@@ -27,6 +29,25 @@ const Dashboard = () => {
     { i: 'auto-reorder', x: 0, y: 14, w: 12, h: 5 },
     { i: 'ai-prediction', x: 0, y: 19, w: 12, h: 4 },
   ]);
+
+  const handleSettingsChange = (settings: { widgetVisibility: Record<string, boolean>; themeColor: string }) => {
+    setWidgetVisibility(settings.widgetVisibility);
+    
+    // Apply theme color
+    if (settings.themeColor !== 'default') {
+      const colors: Record<string, string> = {
+        blue: '#3B82F6',
+        green: '#10B981',
+        purple: '#8B5CF6',
+        orange: '#F59E0B',
+      };
+      
+      const color = colors[settings.themeColor];
+      if (color) {
+        document.documentElement.style.setProperty('--primary', color);
+      }
+    }
+  };
 
   // 실시간 데이터 업데이트 (30초마다)
   useEffect(() => {
@@ -159,6 +180,7 @@ const Dashboard = () => {
           </div>
         </div>
         <div className="flex gap-2">
+          <DashboardCustomizer onSettingsChange={handleSettingsChange} />
           <Button 
             onClick={handleManualRefresh} 
             variant="outline" 
@@ -186,131 +208,145 @@ const Dashboard = () => {
         onLayoutChange={setLayout}
         draggableHandle=".drag-handle"
       >
-        <div key="kpi" className="bg-background">
-          <Card className="h-full">
-            <CardHeader className="drag-handle cursor-move">
-              <CardTitle>핵심 지표</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-4 gap-4">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <DollarSign className="h-4 w-4" />
-                    <span className="text-sm">총 매출</span>
+        {widgetVisibility['kpi'] !== false && (
+          <div key="kpi" className="bg-background">
+            <Card className="h-full">
+              <CardHeader className="drag-handle cursor-move">
+                <CardTitle>핵심 지표</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-4 gap-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <DollarSign className="h-4 w-4" />
+                      <span className="text-sm">총 매출</span>
+                    </div>
+                    <div className="text-2xl font-bold">₩32,900,000</div>
+                    <div className="flex items-center gap-1 text-sm text-green-600">
+                      <ArrowUpRight className="h-4 w-4" />
+                      <span>12.5%</span>
+                    </div>
                   </div>
-                  <div className="text-2xl font-bold">₩32,900,000</div>
-                  <div className="flex items-center gap-1 text-sm text-green-600">
-                    <ArrowUpRight className="h-4 w-4" />
-                    <span>12.5%</span>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Package className="h-4 w-4" />
+                      <span className="text-sm">재고 현황</span>
+                    </div>
+                    <div className="text-2xl font-bold">1,245개</div>
+                    <div className="flex items-center gap-1 text-sm text-orange-600">
+                      <ArrowDownRight className="h-4 w-4" />
+                      <span>3.2%</span>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <TrendingUp className="h-4 w-4" />
+                      <span className="text-sm">주문 건수</span>
+                    </div>
+                    <div className="text-2xl font-bold">187건</div>
+                    <div className="flex items-center gap-1 text-sm text-green-600">
+                      <ArrowUpRight className="h-4 w-4" />
+                      <span>8.7%</span>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Users className="h-4 w-4" />
+                      <span className="text-sm">활성 고객</span>
+                    </div>
+                    <div className="text-2xl font-bold">342명</div>
+                    <div className="flex items-center gap-1 text-sm text-green-600">
+                      <ArrowUpRight className="h-4 w-4" />
+                      <span>5.1%</span>
+                    </div>
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Package className="h-4 w-4" />
-                    <span className="text-sm">재고 현황</span>
-                  </div>
-                  <div className="text-2xl font-bold">2,150개</div>
-                  <div className="flex items-center gap-1 text-sm text-red-600">
-                    <ArrowDownRight className="h-4 w-4" />
-                    <span>3.2%</span>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <TrendingUp className="h-4 w-4" />
-                    <span className="text-sm">주문 건수</span>
-                  </div>
-                  <div className="text-2xl font-bold">1,458건</div>
-                  <div className="flex items-center gap-1 text-sm text-green-600">
-                    <ArrowUpRight className="h-4 w-4" />
-                    <span>8.7%</span>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Users className="h-4 w-4" />
-                    <span className="text-sm">신규 고객</span>
-                  </div>
-                  <div className="text-2xl font-bold">245명</div>
-                  <div className="flex items-center gap-1 text-sm text-green-600">
-                    <ArrowUpRight className="h-4 w-4" />
-                    <span>15.3%</span>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div key="stock-alert" className="bg-background">
-          <div className="drag-handle cursor-move h-full">
-            <StockAlertWidget products={sampleProducts} />
+              </CardContent>
+            </Card>
           </div>
-        </div>
+        )}
 
-        <div key="sales" className="bg-background">
-          <Card className="h-full">
-            <CardHeader className="drag-handle cursor-move">
-              <CardTitle>매출/매입 추이</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={250}>
-                <BarChart data={salesData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="매출" fill="hsl(var(--primary))" />
-                  <Bar dataKey="매입" fill="hsl(var(--secondary))" />
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div key="inventory" className="bg-background">
-          <Card className="h-full">
-            <CardHeader className="drag-handle cursor-move">
-              <CardTitle>카테고리별 재고</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={250}>
-                <LineChart data={inventoryData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="category" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Line type="monotone" dataKey="재고" stroke="hsl(var(--primary))" strokeWidth={2} />
-                </LineChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div key="inventory-viz" className="bg-background">
-          <div className="drag-handle cursor-move h-full">
-            <InventoryVisualization products={sampleProducts} />
+        {widgetVisibility['stock-alert'] !== false && (
+          <div key="stock-alert" className="bg-background">
+            <div className="drag-handle cursor-move h-full">
+              <StockAlertWidget products={sampleProducts} />
+            </div>
           </div>
-        </div>
+        )}
 
-        <div key="auto-reorder" className="bg-background">
-          <div className="drag-handle cursor-move h-full">
-            <AutoReorderSystem />
+        {widgetVisibility['sales'] !== false && (
+          <div key="sales" className="bg-background">
+            <Card className="h-full">
+              <CardHeader className="drag-handle cursor-move">
+                <CardTitle>매출/매입 추이</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={250}>
+                  <BarChart data={salesData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="매출" fill="hsl(var(--primary))" />
+                    <Bar dataKey="매입" fill="hsl(var(--secondary))" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
           </div>
-        </div>
+        )}
 
-        <div key="ai-prediction" className="bg-background">
-          <Card className="h-full">
-            <CardHeader className="drag-handle cursor-move">
-              <CardTitle>AI 재주문 예측</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <AIReorderPrediction products={sampleProducts} />
-            </CardContent>
-          </Card>
-        </div>
+        {widgetVisibility['inventory'] !== false && (
+          <div key="inventory" className="bg-background">
+            <Card className="h-full">
+              <CardHeader className="drag-handle cursor-move">
+                <CardTitle>카테고리별 재고</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={250}>
+                  <LineChart data={inventoryData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="category" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Line type="monotone" dataKey="재고" stroke="hsl(var(--primary))" strokeWidth={2} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {widgetVisibility['inventory-viz'] !== false && (
+          <div key="inventory-viz" className="bg-background">
+            <div className="drag-handle cursor-move h-full">
+              <InventoryVisualization products={sampleProducts} />
+            </div>
+          </div>
+        )}
+
+        {widgetVisibility['auto-reorder'] !== false && (
+          <div key="auto-reorder" className="bg-background">
+            <div className="drag-handle cursor-move h-full">
+              <AutoReorderSystem />
+            </div>
+          </div>
+        )}
+
+        {widgetVisibility['ai-prediction'] !== false && (
+          <div key="ai-prediction" className="bg-background">
+            <Card className="h-full">
+              <CardHeader className="drag-handle cursor-move">
+                <CardTitle>AI 재주문 예측</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <AIReorderPrediction products={sampleProducts} />
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </GridLayout>
     </div>
   );
