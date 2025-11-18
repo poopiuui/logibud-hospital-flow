@@ -14,6 +14,9 @@ import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import AdminSetup from "./pages/AdminSetup";
+import B2BLogin from "./pages/b2b/B2BLogin";
+import B2BPortal from "./pages/b2b/B2BPortal";
+import B2BProducts from "./pages/b2b/B2BProducts";
 import Vendors from "./pages/Vendors";
 import VendorAnalytics from "./pages/VendorAnalytics";
 import RegistrationTemplates from "./pages/RegistrationTemplates";
@@ -46,9 +49,14 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             {/* Public Routes */}
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Signup />} />
-            <Route path="/admin-setup" element={<AdminSetup />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
+        <Route path="/admin-setup" element={<AdminSetup />} />
+        
+        {/* B2B Portal Routes */}
+        <Route path="/b2b/login" element={<B2BLogin />} />
+        <Route path="/b2b/portal" element={<B2BPortal />} />
+        <Route path="/b2b/products" element={<B2BProducts />} />
 
             {/* Protected Routes */}
             <Route path="/*" element={
