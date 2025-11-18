@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { AlertTriangle, Printer } from "lucide-react";
 import * as XLSX from "xlsx";
@@ -16,6 +17,8 @@ interface LowStockProduct {
   supplier: string;
   unitPrice: number;
   selected: boolean;
+  confirmed: boolean;
+  confirmedBy?: string;
 }
 
 export const AutoReorderSystem = () => {
@@ -30,6 +33,7 @@ export const AutoReorderSystem = () => {
       supplier: "(주)글로벌물류",
       unitPrice: 1500,
       selected: false,
+      confirmed: false,
     },
     {
       id: "2",
@@ -40,6 +44,7 @@ export const AutoReorderSystem = () => {
       supplier: "(주)글로벌물류",
       unitPrice: 800,
       selected: false,
+      confirmed: false,
     },
     {
       id: "3",
@@ -50,6 +55,7 @@ export const AutoReorderSystem = () => {
       supplier: "스마트마켓",
       unitPrice: 3000,
       selected: false,
+      confirmed: false,
     },
   ]);
 
@@ -61,6 +67,16 @@ export const AutoReorderSystem = () => {
     setProducts(products.map(p => 
       p.id === id ? { ...p, selected: checked } : p
     ));
+  };
+
+  const handleConfirmOrder = (id: string) => {
+    setProducts(products.map(p => 
+      p.id === id ? { ...p, confirmed: true, confirmedBy: "관리자" } : p
+    ));
+    toast({
+      title: "발주 확인 완료",
+      description: "담당자가 발주를 확인했습니다.",
+    });
   };
 
   const handlePrintPurchaseOrder = () => {
@@ -308,6 +324,8 @@ export const AutoReorderSystem = () => {
                 <TableHead>공급업체</TableHead>
                 <TableHead>단가</TableHead>
                 <TableHead>발주금액</TableHead>
+                <TableHead>상태</TableHead>
+                <TableHead>작업</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -333,6 +351,24 @@ export const AutoReorderSystem = () => {
                   <TableCell>{product.unitPrice.toLocaleString()}원</TableCell>
                   <TableCell className="font-semibold">
                     {(product.suggestedOrder * product.unitPrice).toLocaleString()}원
+                  </TableCell>
+                  <TableCell>
+                    {product.confirmed ? (
+                      <Badge variant="default">확인완료</Badge>
+                    ) : (
+                      <Badge variant="secondary">대기중</Badge>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {!product.confirmed && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleConfirmOrder(product.id)}
+                      >
+                        발주 확인
+                      </Button>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}

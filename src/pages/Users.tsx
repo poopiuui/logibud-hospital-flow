@@ -123,7 +123,12 @@ export default function Users() {
 
   const [isAddUserDialogOpen, setIsAddUserDialogOpen] = useState(false);
   const [isPermissionDialogOpen, setIsPermissionDialogOpen] = useState(false);
+  const [isPasswordChangeOpen, setIsPasswordChangeOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [passwordChange, setPasswordChange] = useState({
+    newPassword: "",
+    confirmPassword: ""
+  });
   const [newUser, setNewUser] = useState({
     name: '',
     email: '',
@@ -194,6 +199,35 @@ export default function Users() {
       });
       setIsPermissionDialogOpen(false);
     }
+  };
+
+  const handlePasswordChange = () => {
+    if (!selectedUser) return;
+
+    if (passwordChange.newPassword !== passwordChange.confirmPassword) {
+      toast({
+        title: "비밀번호 불일치",
+        description: "새 비밀번호와 확인 비밀번호가 일치하지 않습니다.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (passwordChange.newPassword.length < 8) {
+      toast({
+        title: "비밀번호 오류",
+        description: "비밀번호는 8자 이상이어야 합니다.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    toast({
+      title: "비밀번호 변경 완료",
+      description: `${selectedUser.name}의 비밀번호가 변경되었습니다.`
+    });
+    setIsPasswordChangeOpen(false);
+    setPasswordChange({ newPassword: "", confirmPassword: "" });
   };
 
   const activeUsers = users.filter(u => u.status === '활성');
@@ -297,7 +331,15 @@ export default function Users() {
                   <TableBody>
                     {users.map((user) => (
                       <TableRow key={user.id}>
-                        <TableCell className="font-mono font-semibold text-base">{user.userCode}</TableCell>
+                        <TableCell 
+                          className="font-mono font-semibold text-base text-primary cursor-pointer hover:underline"
+                          onClick={() => {
+                            setSelectedUser(user);
+                            setIsPasswordChangeOpen(true);
+                          }}
+                        >
+                          {user.userCode}
+                        </TableCell>
                         <TableCell className="font-medium text-base">{user.name}</TableCell>
                         <TableCell className="text-base">
                           <div className="flex items-center gap-2">
@@ -495,6 +537,47 @@ export default function Users() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsPermissionDialogOpen(false)}>취소</Button>
             <Button onClick={savePermissions}>저장</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 비밀번호 변경 Dialog */}
+      <Dialog open={isPasswordChangeOpen} onOpenChange={setIsPasswordChangeOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>비밀번호 변경 - {selectedUser?.name}</DialogTitle>
+            <DialogDescription>
+              사용자 코드: {selectedUser?.userCode}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="newPassword">새 비밀번호</Label>
+              <Input
+                id="newPassword"
+                type="password"
+                value={passwordChange.newPassword}
+                onChange={(e) => setPasswordChange({ ...passwordChange, newPassword: e.target.value })}
+                placeholder="8자 이상 입력"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="confirmPassword">비밀번호 확인</Label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                value={passwordChange.confirmPassword}
+                onChange={(e) => setPasswordChange({ ...passwordChange, confirmPassword: e.target.value })}
+                placeholder="비밀번호 재입력"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setIsPasswordChangeOpen(false);
+              setPasswordChange({ newPassword: "", confirmPassword: "" });
+            }}>취소</Button>
+            <Button onClick={handlePasswordChange}>변경</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
