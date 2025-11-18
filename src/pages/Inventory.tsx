@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { ArrowUpCircle, FileDown, Filter } from "lucide-react";
+import { ArrowUpCircle, FileDown, Filter, Download, ChevronDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
@@ -100,6 +101,14 @@ export default function Inventory() {
       }
     });
 
+  const exportToCSV = () => {
+    const ws = XLSX.utils.json_to_sheet(filteredInventory);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "재고현황");
+    XLSX.writeFile(wb, "재고관리_데이터.csv");
+    toast({ title: "CSV 내보내기 완료", description: "재고 데이터가 CSV로 내보내졌습니다." });
+  };
+
   const exportToExcel = () => {
     const ws = XLSX.utils.json_to_sheet(filteredInventory);
     const wb = XLSX.utils.book_new();
@@ -136,14 +145,29 @@ export default function Inventory() {
             <ArrowUpCircle className="w-5 h-5" />
             매입 관리로 이동
           </Button>
-          <Button onClick={exportToExcel} size="lg" variant="secondary" className="gap-2">
-            <FileDown className="w-5 h-5" />
-            Excel
-          </Button>
-          <Button onClick={exportToPDF} size="lg" variant="outline" className="gap-2">
-            <FileDown className="w-5 h-5" />
-            PDF
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="lg" variant="outline" className="gap-2">
+                <Download className="w-5 h-5" />
+                다운로드
+                <ChevronDown className="w-4 h-4 ml-1" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={exportToCSV}>
+                <FileDown className="mr-2 h-4 w-4" />
+                CSV로 다운로드
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={exportToExcel}>
+                <FileDown className="mr-2 h-4 w-4" />
+                Excel로 다운로드
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={exportToPDF}>
+                <FileDown className="mr-2 h-4 w-4" />
+                PDF로 다운로드
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
