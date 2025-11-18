@@ -103,6 +103,7 @@ const Index = () => {
   const [isPurchaseOrderDialogOpen, setIsPurchaseOrderDialogOpen] = useState(false);
   const [historyProduct, setHistoryProduct] = useState<Product | null>(null);
   const [priceCardProduct, setPriceCardProduct] = useState<Product | null>(null);
+  const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({ from: undefined, to: undefined });
 
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
