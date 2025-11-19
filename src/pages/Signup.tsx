@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Building2, FileText, Upload } from "lucide-react";
+import { signupSchema, type SignupFormData } from "@/lib/validation";
 
 export default function Signup() {
   const navigate = useNavigate();
@@ -40,56 +41,24 @@ export default function Signup() {
   };
 
   const validateForm = () => {
-    if (!formData.username || !formData.email || !formData.password || !formData.passwordConfirm ||
-        !formData.companyName || !formData.businessNumber || !formData.ceoName || !formData.phone) {
-      toast({
-        title: "입력 오류",
-        description: "필수 항목(*)을 모두 입력하세요.",
-        variant: "destructive",
-      });
-      return false;
-    }
-
-    if (formData.username.length < 4) {
-      toast({
-        title: "입력 오류",
-        description: "아이디는 4자 이상이어야 합니다.",
-        variant: "destructive",
-      });
-      return false;
-    }
-
-    if (formData.password.length < 8) {
-      toast({
-        title: "입력 오류",
-        description: "비밀번호는 8자 이상이어야 합니다.",
-        variant: "destructive",
-      });
-      return false;
-    }
-
-    if (formData.password !== formData.passwordConfirm) {
-      toast({
-        title: "입력 오류",
-        description: "비밀번호가 일치하지 않습니다.",
-        variant: "destructive",
-      });
-      return false;
-    }
-
-    if (!formData.email.includes('@')) {
-      toast({
-        title: "입력 오류",
-        description: "올바른 이메일 형식이 아닙니다.",
-        variant: "destructive",
-      });
-      return false;
-    }
-
+    // Check file first
     if (!file) {
       toast({
         title: "파일 필요",
         description: "사업자등록증을 업로드하세요.",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    // Use zod schema validation
+    const result = signupSchema.safeParse(formData);
+    
+    if (!result.success) {
+      const firstError = result.error.errors[0];
+      toast({
+        title: "입력 오류",
+        description: firstError.message,
         variant: "destructive",
       });
       return false;
