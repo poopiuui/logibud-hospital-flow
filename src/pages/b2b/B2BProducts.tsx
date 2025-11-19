@@ -38,14 +38,38 @@ export default function B2BProducts() {
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo | null>(null);
 
   useEffect(() => {
-    const customerData = sessionStorage.getItem('b2b_customer');
-    if (!customerData) {
-      navigate('/b2b/login');
-      return;
-    }
-    setCustomerInfo(JSON.parse(customerData));
-    fetchProducts();
-  }, [navigate]);
+    const initializeAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        navigate('/b2b/login');
+        return;
+      }
+
+      // Fetch company profile for authenticated user
+      const { data: profile, error } = await supabase
+        .from('company_profiles')
+        .select('id, company_name, business_number, ceo_name')
+        .eq('user_id', session.user.id)
+        .eq('status', 'approved')
+        .single();
+
+      if (error || !profile) {
+        toast({
+          title: "인증 오류",
+          description: "승인된 기업 프로필을 찾을 수 없습니다.",
+          variant: "destructive",
+        });
+        navigate('/b2b/login');
+        return;
+      }
+
+      setCustomerInfo(profile);
+      fetchProducts();
+    };
+
+    initializeAuth();
+  }, [navigate, toast]);
 
   const fetchProducts = async () => {
     try {
