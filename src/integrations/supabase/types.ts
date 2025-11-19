@@ -425,6 +425,7 @@ export type Database = {
           outbound_number: string
           status: string | null
           total_amount: number | null
+          tracking_number: string | null
           updated_at: string | null
         }
         Insert: {
@@ -439,6 +440,7 @@ export type Database = {
           outbound_number: string
           status?: string | null
           total_amount?: number | null
+          tracking_number?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -453,6 +455,7 @@ export type Database = {
           outbound_number?: string
           status?: string | null
           total_amount?: number | null
+          tracking_number?: string | null
           updated_at?: string | null
         }
         Relationships: [
