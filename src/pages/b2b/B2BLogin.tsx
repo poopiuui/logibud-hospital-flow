@@ -14,7 +14,7 @@ export default function B2BLogin() {
   const [isLoading, setIsLoading] = useState(false);
   
   const [formData, setFormData] = useState({
-    businessNumber: "",
+    email: "",
     password: "",
   });
 
@@ -28,10 +28,10 @@ export default function B2BLogin() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.businessNumber || !formData.password) {
+    if (!formData.email || !formData.password) {
       toast({
         title: "입력 오류",
-        description: "사업자번호와 비밀번호를 입력하세요.",
+        description: "이메일과 비밀번호를 입력하세요.",
         variant: "destructive",
       });
       return;
@@ -40,33 +40,27 @@ export default function B2BLogin() {
     setIsLoading(true);
 
     try {
+      // Supabase Auth로 로그인
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: formData.email,
+        password: formData.password,
+      });
+
+      if (authError) throw authError;
+      if (!authData.user) throw new Error("로그인 실패");
+
       // 거래처 정보 확인
-      const { data: profile, error } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from('company_profiles')
         .select('*')
-        .eq('business_number', formData.businessNumber)
+        .eq('user_id', authData.user.id)
         .eq('status', 'approved')
         .single();
 
-      if (error || !profile) {
+      if (profileError || !profile) {
+        await supabase.auth.signOut();
         throw new Error("등록되지 않은 거래처이거나 승인되지 않은 계정입니다.");
       }
-
-      // 간단한 비밀번호 확인 (실제로는 더 안전한 방법 필요)
-      // 여기서는 사업자번호 뒤 5자리를 비밀번호로 사용
-      const expectedPassword = formData.businessNumber.replace(/-/g, '').slice(-5);
-      
-      if (formData.password !== expectedPassword) {
-        throw new Error("비밀번호가 올바르지 않습니다.");
-      }
-
-      // 세션 저장
-      sessionStorage.setItem('b2b_customer', JSON.stringify({
-        id: profile.id,
-        company_name: profile.company_name,
-        business_number: profile.business_number,
-        ceo_name: profile.ceo_name
-      }));
 
       toast({
         title: "로그인 성공",
@@ -76,7 +70,6 @@ export default function B2BLogin() {
       navigate('/b2b/portal');
 
     } catch (error: any) {
-      console.error('Login error:', error);
       toast({
         title: "로그인 실패",
         description: error.message || "로그인 중 오류가 발생했습니다.",
@@ -101,13 +94,13 @@ export default function B2BLogin() {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="businessNumber">사업자번호</Label>
+                <Label htmlFor="email">이메일</Label>
                 <Input
-                  id="businessNumber"
-                  name="businessNumber"
-                  type="text"
-                  placeholder="000-00-00000"
-                  value={formData.businessNumber}
+                  id="email"
+                  name="email"
+                  type="email"
+                  placeholder="이메일을 입력하세요"
+                  value={formData.email}
                   onChange={handleChange}
                   required
                 />
@@ -124,9 +117,6 @@ export default function B2BLogin() {
                   onChange={handleChange}
                   required
                 />
-                <p className="text-xs text-muted-foreground">
-                  초기 비밀번호는 사업자번호 뒤 5자리입니다
-                </p>
               </div>
             </div>
 

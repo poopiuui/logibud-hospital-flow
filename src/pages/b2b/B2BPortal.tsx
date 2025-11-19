@@ -38,14 +38,39 @@ export default function B2BPortal() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const customerData = sessionStorage.getItem('b2b_customer');
-    if (!customerData) {
-      navigate('/b2b/login');
-      return;
-    }
-    const customer = JSON.parse(customerData);
-    setCustomerInfo(customer);
-    fetchOrders(customer.id);
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        navigate('/b2b/login');
+        return;
+      }
+
+      // Fetch customer profile
+      const { data: profile, error } = await supabase
+        .from('company_profiles')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .eq('status', 'approved')
+        .single();
+
+      if (error || !profile) {
+        await supabase.auth.signOut();
+        navigate('/b2b/login');
+        return;
+      }
+
+      setCustomerInfo({
+        id: profile.id,
+        company_name: profile.company_name,
+        business_number: profile.business_number,
+        ceo_name: profile.ceo_name
+      });
+      
+      fetchOrders(profile.id);
+    };
+
+    checkAuth();
   }, [navigate]);
 
   const fetchOrders = async (customerId: string) => {
@@ -71,8 +96,8 @@ export default function B2BPortal() {
     }
   };
 
-  const handleLogout = () => {
-    sessionStorage.removeItem('b2b_customer');
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     toast({
       title: "로그아웃",
       description: "로그아웃되었습니다.",
