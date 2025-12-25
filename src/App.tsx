@@ -14,6 +14,7 @@ import Home from "./pages/Home";
 import Album from "./pages/Album";
 import Showcase from "./pages/Showcase";
 import Memorial from "./pages/Memorial";
+import PetProfile from "./pages/PetProfile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -77,6 +78,11 @@ const App = () => (
             <Route path="/album" element={
               <ProtectedRoute>
                 <Album />
+              </ProtectedRoute>
+            } />
+            <Route path="/pets/:petId" element={
+              <ProtectedRoute>
+                <PetProfile />
               </ProtectedRoute>
             } />
             

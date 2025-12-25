@@ -18,7 +18,10 @@ interface PetInfo {
   breed: string;
   birthYear: string;
   birthMonth: string;
+  birthDay: string;
 }
+
+const birthDays = Array.from({ length: 31 }, (_, i) => String(i + 1).padStart(2, "0"));
 
 const createEmptyPet = (): PetInfo => ({
   id: crypto.randomUUID(),
@@ -27,6 +30,7 @@ const createEmptyPet = (): PetInfo => ({
   breed: "",
   birthYear: "",
   birthMonth: "",
+  birthDay: "",
 });
 
 const Auth = () => {
@@ -156,32 +160,52 @@ const Auth = () => {
 
       if (authError) throw authError;
 
-      if (authData.user) {
-        // Create user profile
-        await supabase.from("user_profiles").insert({
-          user_id: authData.user.id,
-          display_name: signupData.displayName || signupData.email.split("@")[0],
+      // Ensure we have an authenticated session before inserting (RLS requires auth.uid())
+      let session = authData.session;
+      if (!session) {
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: signupData.email,
+          password: signupData.password,
         });
+        if (signInError) throw signInError;
+        const { data: sessionData } = await supabase.auth.getSession();
+        session = sessionData.session;
+      }
 
-        // Create pet profiles for all valid pets
-        const petInserts = validPets.map(pet => ({
-          user_id: authData.user!.id,
+      if (!session?.user) {
+        throw new Error("회원가입은 완료되었지만 로그인 상태를 확인할 수 없습니다. 다시 로그인해주세요.");
+      }
+
+      const userId = session.user.id;
+
+      const { error: profileError } = await supabase.from("user_profiles").insert({
+        user_id: userId,
+        display_name: signupData.displayName || signupData.email.split("@")[0],
+      });
+      if (profileError) throw profileError;
+
+      const petInserts = validPets.map((pet) => {
+        const hasDateParts = pet.birthYear && pet.birthMonth;
+        const day = pet.birthDay || "01";
+        return {
+          user_id: userId,
           name: pet.name,
           species: pet.species,
           breed: pet.breed || null,
-          birth_date: pet.birthYear && pet.birthMonth 
-            ? `${pet.birthYear}-${pet.birthMonth}-01` 
-            : null,
-        }));
+          birth_date: hasDateParts ? `${pet.birthYear}-${pet.birthMonth}-${day}` : null,
+        };
+      });
 
-        await supabase.from("pet_profiles").insert(petInserts);
+      const { error: petError } = await supabase.from("pet_profiles").insert(petInserts);
+      if (petError) throw petError;
 
-        const petNames = validPets.map(p => p.name).join(", ");
-        toast({
-          title: "가입 완료! 🎉",
-          description: `${petNames}와(과) 함께 펫라이프를 시작하세요!`,
-        });
-      }
+      const petNames = validPets.map((p) => p.name).join(", ");
+      toast({
+        title: "가입 완료! 🎉",
+        description: `${petNames}와(과) 함께 펫라이프를 시작하세요!`,
+      });
+
+      navigate("/home");
     } catch (error: any) {
       toast({
         title: "가입 실패",
@@ -395,7 +419,7 @@ const Auth = () => {
                           </div>
                         </div>
                         
-                        <div className="grid grid-cols-2 gap-2">
+                        <div className="grid grid-cols-3 gap-2">
                           <div className="space-y-2">
                             <Label>태어난 해</Label>
                             <Select 
@@ -424,6 +448,22 @@ const Auth = () => {
                               <SelectContent>
                                 {birthMonths.map(({ value, label }) => (
                                   <SelectItem key={value} value={value}>{label}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-2">
+                            <Label>일</Label>
+                            <Select 
+                              value={pet.birthDay} 
+                              onValueChange={(v) => updatePet(pet.id, "birthDay", v)}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="일" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {birthDays.map((day) => (
+                                  <SelectItem key={day} value={day}>{day}일</SelectItem>
                                 ))}
                               </SelectContent>
                             </Select>

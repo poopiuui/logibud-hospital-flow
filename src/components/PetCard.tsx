@@ -13,9 +13,10 @@ interface Pet {
 interface PetCardProps {
   pet: Pet;
   onAddPhoto: (petId: string) => void;
+  onOpenProfile: (petId: string) => void;
 }
 
-const PetCard = ({ pet, onAddPhoto }: PetCardProps) => {
+const PetCard = ({ pet, onAddPhoto, onOpenProfile }: PetCardProps) => {
   const getSpeciesEmoji = (species: string) => {
     switch (species) {
       case "dog": return "🐕";
@@ -30,18 +31,24 @@ const PetCard = ({ pet, onAddPhoto }: PetCardProps) => {
   return (
     <Card className="overflow-hidden">
       <CardContent className="p-4 flex items-center gap-4">
-        <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden flex-shrink-0">
-          {pet.profile_image_url ? (
-            <img src={pet.profile_image_url} alt={pet.name} className="w-full h-full object-cover" />
-          ) : (
-            <span className="text-2xl">{getSpeciesEmoji(pet.species)}</span>
-          )}
-        </div>
-        <div className="flex-1 min-w-0">
-          <h3 className="font-semibold truncate">{pet.name}</h3>
-          <p className="text-sm text-muted-foreground">{pet.breed || pet.species}</p>
-        </div>
-        <Button size="icon" variant="ghost" onClick={() => onAddPhoto(pet.id)}>
+        <button
+          type="button"
+          onClick={() => onOpenProfile(pet.id)}
+          className="flex items-center gap-4 flex-1 min-w-0 text-left"
+        >
+          <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden flex-shrink-0">
+            {pet.profile_image_url ? (
+              <img src={pet.profile_image_url} alt={pet.name} className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-2xl">{getSpeciesEmoji(pet.species)}</span>
+            )}
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="font-semibold truncate">{pet.name}</h3>
+            <p className="text-sm text-muted-foreground">{pet.breed || pet.species}</p>
+          </div>
+        </button>
+        <Button size="icon" variant="ghost" onClick={() => onAddPhoto(pet.id)} aria-label={`${pet.name} 사진 추가`}>
           <Camera className="h-5 w-5" />
         </Button>
       </CardContent>
