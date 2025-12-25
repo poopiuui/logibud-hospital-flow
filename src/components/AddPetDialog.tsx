@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { petBreeds, speciesLabels, birthYears, birthMonths } from "@/data/petData";
 
 interface AddPetDialogProps {
   open: boolean;
@@ -16,7 +17,19 @@ interface AddPetDialogProps {
 const AddPetDialog = ({ open, onOpenChange, onSuccess }: AddPetDialogProps) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({ name: "", species: "dog", breed: "" });
+  const [formData, setFormData] = useState({
+    name: "",
+    species: "dog",
+    breed: "",
+    birthYear: "",
+    birthMonth: "",
+  });
+
+  const availableBreeds = petBreeds[formData.species as keyof typeof petBreeds] || [];
+
+  useEffect(() => {
+    setFormData(prev => ({ ...prev, breed: "" }));
+  }, [formData.species]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,17 +39,23 @@ const AddPetDialog = ({ open, onOpenChange, onSuccess }: AddPetDialogProps) => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) throw new Error("로그인이 필요합니다");
 
+      let birthDate = null;
+      if (formData.birthYear && formData.birthMonth) {
+        birthDate = `${formData.birthYear}-${formData.birthMonth}-01`;
+      }
+
       const { error } = await supabase.from("pet_profiles").insert({
         user_id: session.user.id,
         name: formData.name,
         species: formData.species,
         breed: formData.breed || null,
+        birth_date: birthDate,
       });
 
       if (error) throw error;
 
       toast({ title: "등록 완료", description: `${formData.name}이(가) 등록되었습니다` });
-      setFormData({ name: "", species: "dog", breed: "" });
+      setFormData({ name: "", species: "dog", breed: "", birthYear: "", birthMonth: "" });
       onSuccess();
     } catch (error: any) {
       toast({ title: "오류", description: error.message, variant: "destructive" });
@@ -47,13 +66,13 @@ const AddPetDialog = ({ open, onOpenChange, onSuccess }: AddPetDialogProps) => {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>반려동물 등록</DialogTitle>
+          <DialogTitle>🐾 반려동물 등록</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <Label>이름</Label>
+            <Label>이름 *</Label>
             <Input 
               value={formData.name} 
               onChange={(e) => setFormData({...formData, name: e.target.value})}
@@ -62,26 +81,56 @@ const AddPetDialog = ({ open, onOpenChange, onSuccess }: AddPetDialogProps) => {
             />
           </div>
           <div>
-            <Label>종류</Label>
+            <Label>종류 *</Label>
             <Select value={formData.species} onValueChange={(v) => setFormData({...formData, species: v})}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="dog">🐕 강아지</SelectItem>
-                <SelectItem value="cat">🐈 고양이</SelectItem>
-                <SelectItem value="bird">🐦 새</SelectItem>
-                <SelectItem value="fish">🐟 물고기</SelectItem>
-                <SelectItem value="hamster">🐹 햄스터</SelectItem>
-                <SelectItem value="other">🐾 기타</SelectItem>
+                {Object.entries(speciesLabels).map(([value, label]) => (
+                  <SelectItem key={value} value={value}>{label}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
           <div>
-            <Label>품종 (선택)</Label>
-            <Input 
-              value={formData.breed} 
-              onChange={(e) => setFormData({...formData, breed: e.target.value})}
-              placeholder="예: 말티즈, 페르시안..."
-            />
+            <Label>품종</Label>
+            <Select value={formData.breed} onValueChange={(v) => setFormData({...formData, breed: v})}>
+              <SelectTrigger>
+                <SelectValue placeholder="품종을 선택하세요" />
+              </SelectTrigger>
+              <SelectContent>
+                {availableBreeds.map((breed) => (
+                  <SelectItem key={breed} value={breed}>{breed}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <Label>태어난 해</Label>
+              <Select value={formData.birthYear} onValueChange={(v) => setFormData({...formData, birthYear: v})}>
+                <SelectTrigger>
+                  <SelectValue placeholder="년도" />
+                </SelectTrigger>
+                <SelectContent>
+                  {birthYears.map((year) => (
+                    <SelectItem key={year} value={year}>{year}년</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>태어난 달</Label>
+              <Select value={formData.birthMonth} onValueChange={(v) => setFormData({...formData, birthMonth: v})}>
+                <SelectTrigger>
+                  <SelectValue placeholder="월" />
+                </SelectTrigger>
+                <SelectContent>
+                  {birthMonths.map(({ value, label }) => (
+                    <SelectItem key={value} value={value}>{label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? "등록 중..." : "등록하기"}

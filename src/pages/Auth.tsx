@@ -6,8 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff, Mail, Lock, User } from "lucide-react";
+import { petBreeds, speciesLabels, birthYears, birthMonths } from "@/data/petData";
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -21,8 +23,22 @@ const Auth = () => {
     password: "", 
     confirmPassword: "",
     displayName: "",
-    petName: "" 
   });
+  
+  const [petData, setPetData] = useState({
+    name: "",
+    species: "dog",
+    breed: "",
+    birthYear: "",
+    birthMonth: "",
+  });
+
+  const availableBreeds = petBreeds[petData.species as keyof typeof petBreeds] || [];
+
+  useEffect(() => {
+    // Reset breed when species changes
+    setPetData(prev => ({ ...prev, breed: "" }));
+  }, [petData.species]);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -90,6 +106,15 @@ const Auth = () => {
       return;
     }
 
+    if (!petData.name.trim()) {
+      toast({
+        title: "반려동물 이름 필요",
+        description: "반려동물 이름을 입력해주세요",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -112,18 +137,24 @@ const Auth = () => {
           display_name: signupData.displayName || signupData.email.split("@")[0],
         });
 
-        // Create first pet if name provided
-        if (signupData.petName) {
-          await supabase.from("pet_profiles").insert({
-            user_id: authData.user.id,
-            name: signupData.petName,
-            species: "dog",
-          });
+        // Calculate birth date
+        let birthDate = null;
+        if (petData.birthYear && petData.birthMonth) {
+          birthDate = `${petData.birthYear}-${petData.birthMonth}-01`;
         }
 
+        // Create pet profile
+        await supabase.from("pet_profiles").insert({
+          user_id: authData.user.id,
+          name: petData.name,
+          species: petData.species,
+          breed: petData.breed || null,
+          birth_date: birthDate,
+        });
+
         toast({
-          title: "가입 완료",
-          description: "펫라이프에 오신 것을 환영합니다!",
+          title: "가입 완료! 🎉",
+          description: `${petData.name}와(과) 함께 펫라이프를 시작하세요!`,
         });
       }
     } catch (error: any) {
@@ -199,82 +230,136 @@ const Auth = () => {
             
             <TabsContent value="signup">
               <form onSubmit={handleSignup} className="space-y-4 mt-4">
-                <div className="space-y-2">
-                  <Label htmlFor="signup-email">이메일</Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="signup-email"
-                      type="email"
-                      placeholder="email@example.com"
-                      className="pl-10"
-                      value={signupData.email}
-                      onChange={(e) => setSignupData({ ...signupData, email: e.target.value })}
-                      required
-                    />
+                {/* User Info */}
+                <div className="space-y-3">
+                  <h3 className="font-medium text-sm text-muted-foreground">계정 정보</h3>
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-email">이메일 *</Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="signup-email"
+                        type="email"
+                        placeholder="email@example.com"
+                        className="pl-10"
+                        value={signupData.email}
+                        onChange={(e) => setSignupData({ ...signupData, email: e.target.value })}
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="display-name">닉네임</Label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="display-name"
+                        type="text"
+                        placeholder="닉네임을 입력하세요"
+                        className="pl-10"
+                        value={signupData.displayName}
+                        onChange={(e) => setSignupData({ ...signupData, displayName: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="signup-password">비밀번호 *</Label>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          id="signup-password"
+                          type={showPassword ? "text" : "password"}
+                          placeholder="6자 이상"
+                          className="pl-10"
+                          value={signupData.password}
+                          onChange={(e) => setSignupData({ ...signupData, password: e.target.value })}
+                          required
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="confirm-password">비밀번호 확인 *</Label>
+                      <Input
+                        id="confirm-password"
+                        type="password"
+                        placeholder="재입력"
+                        value={signupData.confirmPassword}
+                        onChange={(e) => setSignupData({ ...signupData, confirmPassword: e.target.value })}
+                        required
+                      />
+                    </div>
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="display-name">닉네임</Label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+
+                {/* Pet Info */}
+                <div className="space-y-3 pt-2 border-t">
+                  <h3 className="font-medium text-sm text-muted-foreground pt-2">🐾 반려동물 정보</h3>
+                  <div className="space-y-2">
+                    <Label htmlFor="pet-name">반려동물 이름 *</Label>
                     <Input
-                      id="display-name"
+                      id="pet-name"
                       type="text"
-                      placeholder="닉네임을 입력하세요"
-                      className="pl-10"
-                      value={signupData.displayName}
-                      onChange={(e) => setSignupData({ ...signupData, displayName: e.target.value })}
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signup-password">비밀번호</Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="signup-password"
-                      type={showPassword ? "text" : "password"}
-                      placeholder="6자 이상"
-                      className="pl-10 pr-10"
-                      value={signupData.password}
-                      onChange={(e) => setSignupData({ ...signupData, password: e.target.value })}
-                      required
-                    />
-                    <button
-                      type="button"
-                      className="absolute right-3 top-3 text-muted-foreground hover:text-foreground"
-                      onClick={() => setShowPassword(!showPassword)}
-                    >
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="confirm-password">비밀번호 확인</Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="confirm-password"
-                      type="password"
-                      placeholder="비밀번호 재입력"
-                      className="pl-10"
-                      value={signupData.confirmPassword}
-                      onChange={(e) => setSignupData({ ...signupData, confirmPassword: e.target.value })}
+                      placeholder="예: 초코, 나비..."
+                      value={petData.name}
+                      onChange={(e) => setPetData({ ...petData, name: e.target.value })}
                       required
                     />
                   </div>
+                  <div className="space-y-2">
+                    <Label>종류 *</Label>
+                    <Select value={petData.species} onValueChange={(v) => setPetData({ ...petData, species: v })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(speciesLabels).map(([value, label]) => (
+                          <SelectItem key={value} value={value}>{label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>품종</Label>
+                    <Select value={petData.breed} onValueChange={(v) => setPetData({ ...petData, breed: v })}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="품종을 선택하세요" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableBreeds.map((breed) => (
+                          <SelectItem key={breed} value={breed}>{breed}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-2">
+                      <Label>태어난 해</Label>
+                      <Select value={petData.birthYear} onValueChange={(v) => setPetData({ ...petData, birthYear: v })}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="년도" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {birthYears.map((year) => (
+                            <SelectItem key={year} value={year}>{year}년</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>태어난 달</Label>
+                      <Select value={petData.birthMonth} onValueChange={(v) => setPetData({ ...petData, birthMonth: v })}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="월" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {birthMonths.map(({ value, label }) => (
+                            <SelectItem key={value} value={value}>{label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="pet-name">첫 반려동물 이름 (선택)</Label>
-                  <Input
-                    id="pet-name"
-                    type="text"
-                    placeholder="예: 초코, 나비..."
-                    value={signupData.petName}
-                    onChange={(e) => setSignupData({ ...signupData, petName: e.target.value })}
-                  />
-                </div>
+
                 <Button type="submit" className="w-full" disabled={isLoading}>
                   {isLoading ? "가입 중..." : "가입하기"}
                 </Button>
