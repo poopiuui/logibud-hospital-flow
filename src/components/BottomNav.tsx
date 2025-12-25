@@ -8,7 +8,6 @@ const BottomNav = () => {
     { path: "/home", icon: Home, label: "홈" },
     { path: "/album", icon: Image, label: "앨범" },
     { path: "/showcase", icon: Users, label: "자랑" },
-    { path: "/memorial", icon: Heart, label: "추모" },
   ];
 
   return (
