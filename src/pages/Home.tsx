@@ -70,7 +70,7 @@ const Home = () => {
   };
 
   const totalPhotos = recentPhotos.length;
-  const activePets = pets.filter(p => !p.is_deceased).length;
+  const totalPets = pets.length;
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -92,7 +92,7 @@ const Home = () => {
         <div className="grid grid-cols-2 gap-4">
           <Card>
             <CardContent className="p-4 text-center">
-              <div className="text-3xl font-bold text-primary">{activePets}</div>
+              <div className="text-3xl font-bold text-primary">{totalPets}</div>
               <div className="text-sm text-muted-foreground">내 반려동물</div>
             </CardContent>
           </Card>
