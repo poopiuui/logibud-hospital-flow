@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Save, Heart } from "lucide-react";
+import { ArrowLeft, Save, Heart, Plus, Stethoscope } from "lucide-react";
 import { petBreeds, speciesLabels } from "@/data/petData";
 import {
   LineChart,
@@ -21,6 +21,8 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { Switch } from "@/components/ui/switch";
+import HealthRecordDialog from "@/components/HealthRecordDialog";
+import HealthRecordList from "@/components/HealthRecordList";
 
 function calcAge(birthDateIso?: string | null) {
   if (!birthDateIso) return null;
@@ -99,6 +101,23 @@ const PetProfile = () => {
       return data || [];
     },
   });
+
+  const { data: healthRecords = [], refetch: refetchHealthRecords } = useQuery({
+    queryKey: ["pet-health-records", petId, userId],
+    enabled: !!petId && !!userId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("pet_health_records")
+        .select("*")
+        .eq("pet_id", petId)
+        .eq("user_id", userId)
+        .order("record_date", { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const [showHealthDialog, setShowHealthDialog] = useState(false);
 
   const chartData = useMemo(() => {
     return weights
@@ -406,7 +425,38 @@ const PetProfile = () => {
             </CardContent>
           </Card>
         </section>
+
+        {/* Health Records */}
+        <section>
+          <Card>
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Stethoscope className="h-4 w-4" />
+                  건강 기록
+                </CardTitle>
+                <Button size="sm" variant="outline" onClick={() => setShowHealthDialog(true)}>
+                  <Plus className="h-4 w-4 mr-1" />
+                  추가
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <HealthRecordList records={healthRecords} onDelete={refetchHealthRecords} />
+            </CardContent>
+          </Card>
+        </section>
       </main>
+
+      {petId && userId && (
+        <HealthRecordDialog
+          open={showHealthDialog}
+          onOpenChange={setShowHealthDialog}
+          petId={petId}
+          userId={userId}
+          onSuccess={refetchHealthRecords}
+        />
+      )}
 
       <BottomNav />
     </div>
