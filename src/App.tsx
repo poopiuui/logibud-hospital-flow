@@ -2,44 +2,57 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
-import { SidebarProvider } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/AppSidebar";
-import { Chatbot } from "@/components/Chatbot";
-import { RealtimeNotificationSystem } from "@/components/RealtimeNotificationSystem";
-import { MobileNavigation } from "@/components/MobileNavigation";
-import { ProtectedRoute } from "@/components/ProtectedRoute";
-import Dashboard from "./pages/Dashboard";
-import Login from "./pages/Login";
-import Signup from "./pages/Signup";
-import AdminSetup from "./pages/AdminSetup";
-import B2BLogin from "./pages/b2b/B2BLogin";
-import B2BPortal from "./pages/b2b/B2BPortal";
-import B2BProducts from "./pages/b2b/B2BProducts";
-import B2BManagement from "./pages/B2BManagement";
-import Vendors from "./pages/Vendors";
-import VendorAnalytics from "./pages/VendorAnalytics";
-import RegistrationTemplates from "./pages/RegistrationTemplates";
-import CategoryManagement from "./pages/CategoryManagement";
-import PurchaseOrderManagement from "./pages/PurchaseOrderManagement";
-import QuotationManagement from "./pages/QuotationManagement";
-import ProductRegistration from "./pages/ProductRegistration";
-import PurchaseManagement from "./pages/PurchaseManagement";
-import OutboundManagement from "./pages/OutboundManagement";
-import SalesManagement from "./pages/SalesManagement";
-import Profile from "./pages/Profile";
-import Index from "./pages/Index";
-import Analytics from "./pages/Analytics";
-import ProductDetail from "./pages/ProductDetail";
-import Inventory from "./pages/Inventory";
-import Billing from "./pages/Billing";
-import Shipping from "./pages/Shipping";
-import Users from "./pages/Users";
-import Settings from "./pages/Settings";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Session } from "@supabase/supabase-js";
+
+import Landing from "./pages/Landing";
+import Auth from "./pages/Auth";
+import Home from "./pages/Home";
+import Album from "./pages/Album";
+import Showcase from "./pages/Showcase";
+import Memorial from "./pages/Memorial";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
+
+// Protected Route Component
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+  const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setSession(session);
+        setLoading(false);
+      }
+    );
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (!session) {
+    return <Navigate to="/auth" replace />;
+  }
+
+  return <>{children}</>;
+};
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -50,63 +63,25 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             {/* Public Routes */}
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
-        <Route path="/admin-setup" element={<AdminSetup />} />
-        
-        {/* B2B Portal Routes */}
-        <Route path="/b2b/login" element={<B2BLogin />} />
-        <Route path="/b2b/portal" element={<B2BPortal />} />
-        <Route path="/b2b/products" element={<B2BProducts />} />
-        
-        {/* Protected Routes */}
-        <Route path="/b2b-management" element={
-          <ProtectedRoute>
-            <B2BManagement />
-          </ProtectedRoute>
-        } />
-
+            <Route path="/" element={<Landing />} />
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/showcase" element={<Showcase />} />
+            <Route path="/memorial" element={<Memorial />} />
+            
             {/* Protected Routes */}
-            <Route path="/*" element={
+            <Route path="/home" element={
               <ProtectedRoute>
-                <SidebarProvider>
-                  <div className="flex min-h-screen w-full">
-                    <AppSidebar />
-                    <main className="flex-1">
-                      <div className="fixed top-4 right-4 z-50 flex gap-2">
-                        <RealtimeNotificationSystem />
-                      </div>
-                      <Routes>
-                        <Route path="/" element={<Dashboard />} />
-                  <Route path="/vendors" element={<Vendors />} />
-                  <Route path="/vendor-analytics" element={<VendorAnalytics />} />
-                  <Route path="/registration-templates" element={<RegistrationTemplates />} />
-                  <Route path="/category-management" element={<CategoryManagement />} />
-                  <Route path="/purchase-order-management" element={<PurchaseOrderManagement />} />
-                  <Route path="/quotation-management" element={<QuotationManagement />} />
-                  <Route path="/product-registration" element={<ProductRegistration />} />
-                  <Route path="/products" element={<Index />} />
-                  <Route path="/purchase" element={<PurchaseManagement />} />
-                  <Route path="/outbound" element={<OutboundManagement />} />
-                  <Route path="/sales" element={<SalesManagement />} />
-                  <Route path="/analytics" element={<Analytics />} />
-                  <Route path="/product/:id" element={<ProductDetail />} />
-                  <Route path="/inventory" element={<Inventory />} />
-                  <Route path="/billing" element={<Billing />} />
-                  <Route path="/shipping" element={<Shipping />} />
-                  <Route path="/users" element={<Users />} />
-                  <Route path="/settings" element={<Settings />} />
-                        <Route path="/profile" element={<Profile />} />
-                        {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                        <Route path="*" element={<NotFound />} />
-                      </Routes>
-                    </main>
-                  </div>
-                  <Chatbot />
-                  <MobileNavigation />
-                </SidebarProvider>
+                <Home />
               </ProtectedRoute>
             } />
+            <Route path="/album" element={
+              <ProtectedRoute>
+                <Album />
+              </ProtectedRoute>
+            } />
+            
+            {/* Catch-all */}
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
       </TooltipProvider>
