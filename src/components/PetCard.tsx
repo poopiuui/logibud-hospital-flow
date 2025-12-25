@@ -2,6 +2,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Camera, Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { format, formatDistanceToNow } from "date-fns";
+import { ko } from "date-fns/locale";
 
 interface Pet {
   id: string;
@@ -16,9 +18,10 @@ interface PetCardProps {
   pet: Pet;
   onAddPhoto: (petId: string) => void;
   onOpenProfile: (petId: string) => void;
+  lastPhotoDate?: string;
 }
 
-const PetCard = ({ pet, onAddPhoto, onOpenProfile }: PetCardProps) => {
+const PetCard = ({ pet, onAddPhoto, onOpenProfile, lastPhotoDate }: PetCardProps) => {
   const getSpeciesEmoji = (species: string) => {
     switch (species) {
       case "dog": return "🐕";
@@ -27,6 +30,16 @@ const PetCard = ({ pet, onAddPhoto, onOpenProfile }: PetCardProps) => {
       case "fish": return "🐟";
       case "hamster": return "🐹";
       default: return "🐾";
+    }
+  };
+
+  const formatLastActivity = (dateStr?: string) => {
+    if (!dateStr) return null;
+    try {
+      const date = new Date(dateStr);
+      return formatDistanceToNow(date, { addSuffix: true, locale: ko });
+    } catch {
+      return null;
     }
   };
 
@@ -73,6 +86,11 @@ const PetCard = ({ pet, onAddPhoto, onOpenProfile }: PetCardProps) => {
               )}
             </div>
             <p className="text-sm text-muted-foreground">{pet.breed || pet.species}</p>
+            {lastPhotoDate && (
+              <p className="text-xs text-muted-foreground/70 mt-0.5">
+                📷 {formatLastActivity(lastPhotoDate)}
+              </p>
+            )}
           </div>
         </button>
         {!pet.is_deceased && (

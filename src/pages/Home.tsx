@@ -58,6 +58,30 @@ const Home = () => {
     enabled: !!userId,
   });
 
+  const { data: lastPhotoByPet = {} } = useQuery({
+    queryKey: ["last-photo-by-pet", userId],
+    queryFn: async () => {
+      if (!userId) return {};
+      const { data, error } = await supabase
+        .from("pet_photos")
+        .select("pet_id, photo_date")
+        .eq("user_id", userId)
+        .order("photo_date", { ascending: false });
+      if (error) throw error;
+      const result: Record<string, string> = {};
+      data?.forEach((photo) => {
+        if (!result[photo.pet_id]) {
+          result[photo.pet_id] = photo.photo_date;
+        }
+      });
+      return result;
+    },
+    enabled: !!userId,
+  });
+
+  const activePetsList = pets.filter(p => !p.is_deceased);
+  const deceasedPetsList = pets.filter(p => p.is_deceased);
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     toast({ title: "로그아웃 완료" });
@@ -111,7 +135,7 @@ const Home = () => {
           </Card>
         </div>
 
-        {/* My Pets */}
+        {/* Living Pets */}
         <section>
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-lg font-semibold">내 반려동물</h2>
@@ -132,19 +156,40 @@ const Home = () => {
                 </Button>
               </CardContent>
             </Card>
-          ) : (
+          ) : activePetsList.length > 0 ? (
             <div className="space-y-3">
-              {pets.map((pet) => (
+              {activePetsList.map((pet) => (
                 <PetCard 
                   key={pet.id} 
                   pet={pet} 
                   onAddPhoto={handleAddPhoto}
                   onOpenProfile={(petId) => navigate(`/pets/${petId}`)}
+                  lastPhotoDate={lastPhotoByPet[pet.id]}
                 />
               ))}
             </div>
+          ) : (
+            <p className="text-sm text-muted-foreground text-center py-4">함께하는 반려동물이 없습니다</p>
           )}
         </section>
+
+        {/* Deceased Pets */}
+        {deceasedPetsList.length > 0 && (
+          <section>
+            <h2 className="text-lg font-semibold mb-3">🌈 무지개다리를 건넌 아이들</h2>
+            <div className="space-y-3">
+              {deceasedPetsList.map((pet) => (
+                <PetCard 
+                  key={pet.id} 
+                  pet={pet} 
+                  onAddPhoto={handleAddPhoto}
+                  onOpenProfile={(petId) => navigate(`/pets/${petId}`)}
+                  lastPhotoDate={lastPhotoByPet[pet.id]}
+                />
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Recent Photos */}
         {recentPhotos.length > 0 && (
