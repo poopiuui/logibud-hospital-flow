@@ -8,8 +8,26 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Eye, EyeOff, Mail, Lock, User } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, User, Plus, X } from "lucide-react";
 import { petBreeds, speciesLabels, birthYears, birthMonths } from "@/data/petData";
+
+interface PetInfo {
+  id: string;
+  name: string;
+  species: string;
+  breed: string;
+  birthYear: string;
+  birthMonth: string;
+}
+
+const createEmptyPet = (): PetInfo => ({
+  id: crypto.randomUUID(),
+  name: "",
+  species: "dog",
+  breed: "",
+  birthYear: "",
+  birthMonth: "",
+});
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -25,20 +43,27 @@ const Auth = () => {
     displayName: "",
   });
   
-  const [petData, setPetData] = useState({
-    name: "",
-    species: "dog",
-    breed: "",
-    birthYear: "",
-    birthMonth: "",
-  });
+  const [pets, setPets] = useState<PetInfo[]>([createEmptyPet()]);
 
-  const availableBreeds = petBreeds[petData.species as keyof typeof petBreeds] || [];
+  const updatePet = (id: string, field: keyof PetInfo, value: string) => {
+    setPets(prev => prev.map(pet => {
+      if (pet.id !== id) return pet;
+      if (field === "species") {
+        return { ...pet, species: value, breed: "" };
+      }
+      return { ...pet, [field]: value };
+    }));
+  };
 
-  useEffect(() => {
-    // Reset breed when species changes
-    setPetData(prev => ({ ...prev, breed: "" }));
-  }, [petData.species]);
+  const addPet = () => {
+    setPets(prev => [...prev, createEmptyPet()]);
+  };
+
+  const removePet = (id: string) => {
+    if (pets.length > 1) {
+      setPets(prev => prev.filter(pet => pet.id !== id));
+    }
+  };
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -106,10 +131,11 @@ const Auth = () => {
       return;
     }
 
-    if (!petData.name.trim()) {
+    const validPets = pets.filter(p => p.name.trim());
+    if (validPets.length === 0) {
       toast({
         title: "반려동물 이름 필요",
-        description: "반려동물 이름을 입력해주세요",
+        description: "최소 한 마리의 반려동물 이름을 입력해주세요",
         variant: "destructive",
       });
       return;
@@ -137,24 +163,23 @@ const Auth = () => {
           display_name: signupData.displayName || signupData.email.split("@")[0],
         });
 
-        // Calculate birth date
-        let birthDate = null;
-        if (petData.birthYear && petData.birthMonth) {
-          birthDate = `${petData.birthYear}-${petData.birthMonth}-01`;
-        }
+        // Create pet profiles for all valid pets
+        const petInserts = validPets.map(pet => ({
+          user_id: authData.user!.id,
+          name: pet.name,
+          species: pet.species,
+          breed: pet.breed || null,
+          birth_date: pet.birthYear && pet.birthMonth 
+            ? `${pet.birthYear}-${pet.birthMonth}-01` 
+            : null,
+        }));
 
-        // Create pet profile
-        await supabase.from("pet_profiles").insert({
-          user_id: authData.user.id,
-          name: petData.name,
-          species: petData.species,
-          breed: petData.breed || null,
-          birth_date: birthDate,
-        });
+        await supabase.from("pet_profiles").insert(petInserts);
 
+        const petNames = validPets.map(p => p.name).join(", ");
         toast({
           title: "가입 완료! 🎉",
-          description: `${petData.name}와(과) 함께 펫라이프를 시작하세요!`,
+          description: `${petNames}와(과) 함께 펫라이프를 시작하세요!`,
         });
       }
     } catch (error: any) {
@@ -170,7 +195,7 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-accent/20 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
+      <Card className="w-full max-w-md max-h-[90vh] overflow-y-auto">
         <CardHeader className="text-center">
           <div className="text-4xl mb-2">🐾</div>
           <CardTitle className="text-2xl">펫라이프</CardTitle>
@@ -292,72 +317,121 @@ const Auth = () => {
                   </div>
                 </div>
 
-                {/* Pet Info */}
+                {/* Pet Info - Multiple Pets */}
                 <div className="space-y-3 pt-2 border-t">
-                  <h3 className="font-medium text-sm text-muted-foreground pt-2">🐾 반려동물 정보</h3>
-                  <div className="space-y-2">
-                    <Label htmlFor="pet-name">반려동물 이름 *</Label>
-                    <Input
-                      id="pet-name"
-                      type="text"
-                      placeholder="예: 초코, 나비..."
-                      value={petData.name}
-                      onChange={(e) => setPetData({ ...petData, name: e.target.value })}
-                      required
-                    />
+                  <div className="flex items-center justify-between pt-2">
+                    <h3 className="font-medium text-sm text-muted-foreground">🐾 반려동물 정보</h3>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={addPet}
+                      className="h-7 text-xs"
+                    >
+                      <Plus className="h-3 w-3 mr-1" />
+                      추가
+                    </Button>
                   </div>
-                  <div className="space-y-2">
-                    <Label>종류 *</Label>
-                    <Select value={petData.species} onValueChange={(v) => setPetData({ ...petData, species: v })}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {Object.entries(speciesLabels).map(([value, label]) => (
-                          <SelectItem key={value} value={value}>{label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>품종</Label>
-                    <Select value={petData.breed} onValueChange={(v) => setPetData({ ...petData, breed: v })}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="품종을 선택하세요" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {availableBreeds.map((breed) => (
-                          <SelectItem key={breed} value={breed}>{breed}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="space-y-2">
-                      <Label>태어난 해</Label>
-                      <Select value={petData.birthYear} onValueChange={(v) => setPetData({ ...petData, birthYear: v })}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="년도" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {birthYears.map((year) => (
-                            <SelectItem key={year} value={year}>{year}년</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>태어난 달</Label>
-                      <Select value={petData.birthMonth} onValueChange={(v) => setPetData({ ...petData, birthMonth: v })}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="월" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {birthMonths.map(({ value, label }) => (
-                            <SelectItem key={value} value={value}>{label}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
+
+                  {pets.map((pet, index) => {
+                    const availableBreeds = petBreeds[pet.species as keyof typeof petBreeds] || [];
+                    
+                    return (
+                      <div key={pet.id} className="space-y-2 p-3 bg-muted/30 rounded-lg relative">
+                        {pets.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => removePet(pet.id)}
+                            className="absolute top-2 right-2 text-muted-foreground hover:text-destructive"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        )}
+                        
+                        <div className="text-xs font-medium text-muted-foreground mb-2">
+                          반려동물 {index + 1}
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label>이름 *</Label>
+                          <Input
+                            type="text"
+                            placeholder="예: 초코, 나비..."
+                            value={pet.name}
+                            onChange={(e) => updatePet(pet.id, "name", e.target.value)}
+                          />
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="space-y-2">
+                            <Label>종류</Label>
+                            <Select 
+                              value={pet.species} 
+                              onValueChange={(v) => updatePet(pet.id, "species", v)}
+                            >
+                              <SelectTrigger><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                {Object.entries(speciesLabels).map(([value, label]) => (
+                                  <SelectItem key={value} value={value}>{label}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-2">
+                            <Label>품종</Label>
+                            <Select 
+                              value={pet.breed} 
+                              onValueChange={(v) => updatePet(pet.id, "breed", v)}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="선택" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {availableBreeds.map((breed) => (
+                                  <SelectItem key={breed} value={breed}>{breed}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="space-y-2">
+                            <Label>태어난 해</Label>
+                            <Select 
+                              value={pet.birthYear} 
+                              onValueChange={(v) => updatePet(pet.id, "birthYear", v)}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="년도" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {birthYears.map((year) => (
+                                  <SelectItem key={year} value={year}>{year}년</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-2">
+                            <Label>태어난 달</Label>
+                            <Select 
+                              value={pet.birthMonth} 
+                              onValueChange={(v) => updatePet(pet.id, "birthMonth", v)}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="월" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {birthMonths.map(({ value, label }) => (
+                                  <SelectItem key={value} value={value}>{label}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
 
                 <Button type="submit" className="w-full" disabled={isLoading}>
