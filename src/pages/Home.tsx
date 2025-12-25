@@ -70,7 +70,8 @@ const Home = () => {
   };
 
   const totalPhotos = recentPhotos.length;
-  const totalPets = pets.length;
+  const activePets = pets.filter(p => !p.is_deceased).length;
+  const deceasedPets = pets.filter(p => p.is_deceased).length;
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -89,17 +90,23 @@ const Home = () => {
 
       <main className="max-w-lg mx-auto p-4 space-y-6">
         {/* Stats */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-3 gap-3">
           <Card>
-            <CardContent className="p-4 text-center">
-              <div className="text-3xl font-bold text-primary">{totalPets}</div>
-              <div className="text-sm text-muted-foreground">내 반려동물</div>
+            <CardContent className="p-3 text-center">
+              <div className="text-2xl font-bold text-primary">{activePets}</div>
+              <div className="text-xs text-muted-foreground">함께하는</div>
+            </CardContent>
+          </Card>
+          <Card className="border-primary/30 bg-primary/5">
+            <CardContent className="p-3 text-center">
+              <div className="text-2xl font-bold text-primary">{deceasedPets}</div>
+              <div className="text-xs text-muted-foreground">🌈 추모</div>
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="p-4 text-center">
-              <div className="text-3xl font-bold text-primary">{totalPhotos}</div>
-              <div className="text-sm text-muted-foreground">사진</div>
+            <CardContent className="p-3 text-center">
+              <div className="text-2xl font-bold text-primary">{totalPhotos}</div>
+              <div className="text-xs text-muted-foreground">사진</div>
             </CardContent>
           </Card>
         </div>
