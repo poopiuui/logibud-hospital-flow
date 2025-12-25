@@ -93,6 +93,59 @@ export type Database = {
           },
         ]
       }
+      pet_health_records: {
+        Row: {
+          cost: number | null
+          created_at: string
+          description: string | null
+          hospital_name: string | null
+          id: string
+          next_date: string | null
+          pet_id: string
+          record_date: string
+          record_type: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cost?: number | null
+          created_at?: string
+          description?: string | null
+          hospital_name?: string | null
+          id?: string
+          next_date?: string | null
+          pet_id: string
+          record_date?: string
+          record_type: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cost?: number | null
+          created_at?: string
+          description?: string | null
+          hospital_name?: string | null
+          id?: string
+          next_date?: string | null
+          pet_id?: string
+          record_date?: string
+          record_type?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pet_health_records_pet_id_fkey"
+            columns: ["pet_id"]
+            isOneToOne: false
+            referencedRelation: "pet_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pet_photos: {
         Row: {
           caption: string | null
@@ -246,6 +299,47 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "pet_supplies_pet_id_fkey"
+            columns: ["pet_id"]
+            isOneToOne: false
+            referencedRelation: "pet_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pet_weight_records: {
+        Row: {
+          created_at: string
+          id: string
+          notes: string | null
+          pet_id: string
+          recorded_at: string
+          unit: string
+          user_id: string
+          weight: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          pet_id: string
+          recorded_at?: string
+          unit?: string
+          user_id: string
+          weight: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          pet_id?: string
+          recorded_at?: string
+          unit?: string
+          user_id?: string
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pet_weight_records_pet_id_fkey"
             columns: ["pet_id"]
             isOneToOne: false
             referencedRelation: "pet_profiles"
