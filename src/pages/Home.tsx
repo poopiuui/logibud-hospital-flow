@@ -128,7 +128,12 @@ const Home = () => {
           ) : (
             <div className="space-y-3">
               {pets.map((pet) => (
-                <PetCard key={pet.id} pet={pet} onAddPhoto={handleAddPhoto} />
+                <PetCard 
+                  key={pet.id} 
+                  pet={pet} 
+                  onAddPhoto={handleAddPhoto}
+                  onOpenProfile={(petId) => navigate(`/pets/${petId}`)}
+                />
               ))}
             </div>
           )}
