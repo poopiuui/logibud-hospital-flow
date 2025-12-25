@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Save } from "lucide-react";
+import { ArrowLeft, Save, Heart } from "lucide-react";
 import { petBreeds, speciesLabels } from "@/data/petData";
 import {
   LineChart,
@@ -20,6 +20,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import { Switch } from "@/components/ui/switch";
 
 function calcAge(birthDateIso?: string | null) {
   if (!birthDateIso) return null;
@@ -42,7 +43,9 @@ const PetProfile = () => {
     name: "",
     species: "dog",
     breed: "",
-    birth_date: "", // yyyy-mm-dd
+    birth_date: "",
+    is_deceased: false,
+    deceased_date: "",
   });
 
   useEffect(() => {
@@ -77,6 +80,8 @@ const PetProfile = () => {
       species: pet.species ?? "dog",
       breed: pet.breed ?? "",
       birth_date: pet.birth_date ?? "",
+      is_deceased: pet.is_deceased ?? false,
+      deceased_date: pet.deceased_date ?? "",
     });
   }, [pet]);
 
@@ -129,6 +134,8 @@ const PetProfile = () => {
         species: form.species,
         breed: form.breed || null,
         birth_date: form.birth_date || null,
+        is_deceased: form.is_deceased,
+        deceased_date: form.is_deceased ? form.deceased_date || null : null,
       })
       .eq("id", petId)
       .eq("user_id", userId);
@@ -248,6 +255,30 @@ const PetProfile = () => {
                 </p>
               </div>
 
+              <div className="flex items-center justify-between py-2">
+                <div className="space-y-1">
+                  <Label>무지개다리를 건넜어요</Label>
+                  <p className="text-xs text-muted-foreground">
+                    반려동물이 세상을 떠났다면 켜주세요
+                  </p>
+                </div>
+                <Switch
+                  checked={form.is_deceased}
+                  onCheckedChange={(checked) => setForm((p) => ({ ...p, is_deceased: checked }))}
+                />
+              </div>
+
+              {form.is_deceased && (
+                <div className="space-y-2">
+                  <Label>무지개다리 건넌 날</Label>
+                  <Input
+                    type="date"
+                    value={form.deceased_date}
+                    onChange={(e) => setForm((p) => ({ ...p, deceased_date: e.target.value }))}
+                  />
+                </div>
+              )}
+
               <div className="pt-1">
                 <Button onClick={saveProfile} className="w-full">
                   저장하기
@@ -256,6 +287,32 @@ const PetProfile = () => {
             </CardContent>
           </Card>
         </section>
+
+        {form.is_deceased && (
+          <section>
+            <Card className="border-primary/20 bg-primary/5">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Heart className="h-4 w-4 text-primary" />
+                  추모 공간
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  {form.name}의 추모 페이지에서 소중한 기억을 나누고 보존할 수 있어요.
+                </p>
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => navigate(`/memorial?pet=${petId}`)}
+                >
+                  <Heart className="h-4 w-4 mr-2" />
+                  추모 공간으로 이동
+                </Button>
+              </CardContent>
+            </Card>
+          </section>
+        )}
 
         <section>
           <Card>
