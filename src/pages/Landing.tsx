@@ -1,103 +1,112 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Camera, Heart, Users, Star } from "lucide-react";
+import { Feather, Heart, BookOpen, Star } from "lucide-react";
 
 const FeatureCard = ({ icon: Icon, title, description }: { icon: any; title: string; description: string }) => (
-  <Card className="border-none shadow-lg hover:shadow-xl transition-shadow bg-card/80 backdrop-blur">
+  <Card className="border-none shadow-sm hover:shadow-md transition-all duration-300 bg-card/80 backdrop-blur">
     <CardContent className="p-6 text-center">
-      <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
-        <Icon className="w-7 h-7 text-primary" />
+      <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+        <Icon className="w-5 h-5 text-primary" />
       </div>
-      <h3 className="text-lg font-semibold mb-2">{title}</h3>
-      <p className="text-muted-foreground text-sm">{description}</p>
+      <h3 className="text-base font-medium mb-2">{title}</h3>
+      <p className="text-muted-foreground text-sm leading-relaxed">{description}</p>
     </CardContent>
   </Card>
 );
 
 const Landing = () => {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-accent/20">
+    <div className="min-h-screen bg-gradient-to-b from-background via-background to-accent/10">
       {/* Header */}
       <header className="container mx-auto px-4 py-6 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="text-2xl">🐾</span>
-          <span className="text-xl font-bold text-primary">펫라이프</span>
+          <Feather className="w-6 h-6 text-primary" />
+          <span className="text-lg font-medium text-foreground">너에게 쓰는 편지</span>
         </div>
         <div className="flex gap-2">
           <Link to="/auth">
-            <Button variant="ghost">로그인</Button>
+            <Button variant="ghost" size="sm">로그인</Button>
           </Link>
           <Link to="/auth">
-            <Button>시작하기</Button>
+            <Button size="sm">시작하기</Button>
           </Link>
         </div>
       </header>
 
       {/* Hero Section */}
       <section className="container mx-auto px-4 py-16 md:py-24 text-center">
-        <div className="max-w-3xl mx-auto">
-          <div className="text-6xl mb-6 animate-float">🐶🐱</div>
-          <h1 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-primary to-accent-foreground bg-clip-text text-transparent">
-            반려동물과의 소중한 순간을<br />기록하세요
+        <div className="max-w-2xl mx-auto">
+          <div className="text-5xl mb-8">✉️</div>
+          <h1 className="text-3xl md:text-4xl font-semibold mb-6 text-foreground leading-tight">
+            함께했던 시간들을<br />
+            <span className="text-primary">편지로 간직해요</span>
           </h1>
-          <p className="text-lg text-muted-foreground mb-8">
-            사진 앨범, 성장 기록, 추억 공유까지<br />
-            반려동물과의 모든 순간을 담아보세요
+          <p className="text-muted-foreground mb-10 leading-relaxed max-w-md mx-auto">
+            소중했던 순간들, 전하지 못한 마음들을<br />
+            이 곳에 조용히 남겨두세요
           </p>
           <Link to="/auth">
-            <Button size="lg" className="text-lg px-8 py-6">
-              무료로 시작하기
+            <Button size="lg" className="px-8">
+              시작하기
             </Button>
           </Link>
         </div>
       </section>
 
+      {/* Quote */}
+      <section className="container mx-auto px-4 py-8">
+        <div className="max-w-lg mx-auto text-center">
+          <p className="text-muted-foreground italic text-sm leading-relaxed">
+            "네가 떠나고 나서야 알았어.<br />
+            네가 얼마나 많은 것을 남겨줬는지."
+          </p>
+        </div>
+      </section>
+
       {/* Features */}
       <section className="container mx-auto px-4 py-16">
-        <h2 className="text-3xl font-bold text-center mb-12">주요 기능</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 max-w-4xl mx-auto">
           <FeatureCard
-            icon={Camera}
-            title="사진 앨범"
-            description="날짜별, 기분별로 사진을 정리하고 소중한 순간을 간직하세요"
+            icon={Feather}
+            title="편지 쓰기"
+            description="전하지 못한 마음을 편지로 남겨요"
+          />
+          <FeatureCard
+            icon={BookOpen}
+            title="추억 타임라인"
+            description="함께한 순간들을 시간순으로 되돌아봐요"
           />
           <FeatureCard
             icon={Heart}
-            title="성장 기록"
-            description="반려동물의 건강, 용품, 일상을 체계적으로 관리하세요"
-          />
-          <FeatureCard
-            icon={Users}
-            title="자랑 게시판"
-            description="귀여운 반려동물 사진을 공유하고 다른 반려인들과 소통하세요"
+            title="사진 간직하기"
+            description="소중한 순간들을 사진으로 담아요"
           />
           <FeatureCard
             icon={Star}
-            title="추모 공간"
-            description="무지개다리를 건넌 아이들을 위한 온라인 추모 공간"
+            title="조용한 추모"
+            description="나만의 공간에서 조용히 기억해요"
           />
         </div>
       </section>
 
       {/* CTA */}
       <section className="container mx-auto px-4 py-16 text-center">
-        <Card className="bg-gradient-to-r from-primary/10 to-accent/20 border-none p-8 md:p-12">
-          <h2 className="text-2xl md:text-3xl font-bold mb-4">
-            지금 바로 시작해보세요! 🎉
-          </h2>
-          <p className="text-muted-foreground mb-6">
-            무료로 가입하고 반려동물과의 추억을 기록하세요
+        <Card className="bg-accent/20 border-none p-8 md:p-12 max-w-xl mx-auto">
+          <p className="text-foreground mb-6 leading-relaxed">
+            언제든, 보고싶을 때<br />
+            이 곳에서 너를 만날 수 있어
           </p>
           <Link to="/auth">
-            <Button size="lg">가입하기</Button>
+            <Button variant="outline">편지 쓰러 가기</Button>
           </Link>
         </Card>
       </section>
 
       {/* Footer */}
-      <footer className="container mx-auto px-4 py-8 text-center text-muted-foreground text-sm border-t">
-        <p>© 2024 펫라이프. 모든 반려동물을 사랑합니다 🐾</p>
+      <footer className="container mx-auto px-4 py-8 text-center text-muted-foreground text-sm border-t border-border/50">
+        <p>© 2024 너에게 쓰는 편지</p>
+        <p className="text-xs mt-1 opacity-70">영원히 기억될 거야</p>
       </footer>
     </div>
   );
