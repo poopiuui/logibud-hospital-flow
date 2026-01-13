@@ -14,6 +14,7 @@ import Home from "./pages/Home";
 import Album from "./pages/Album";
 import Showcase from "./pages/Showcase";
 import Memorial from "./pages/Memorial";
+import Guidelines from "./pages/Guidelines";
 import PetProfile from "./pages/PetProfile";
 import NotFound from "./pages/NotFound";
 
@@ -68,6 +69,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/showcase" element={<Showcase />} />
             <Route path="/memorial" element={<Memorial />} />
+            <Route path="/guidelines" element={<Guidelines />} />
             
             {/* Protected Routes */}
             <Route path="/home" element={

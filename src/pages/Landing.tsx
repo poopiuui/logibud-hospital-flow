@@ -105,6 +105,15 @@ const Landing = () => {
 
       {/* Footer */}
       <footer className="container mx-auto px-4 py-8 text-center text-muted-foreground text-sm border-t border-border/50">
+        <div className="flex items-center justify-center gap-4 mb-2">
+          <Link to="/guidelines" className="hover:text-foreground transition-colors">
+            이용 안내
+          </Link>
+          <span className="text-border">|</span>
+          <Link to="/memorial" className="hover:text-foreground transition-colors">
+            추모 공간
+          </Link>
+        </div>
         <p>© 2024 너에게 쓰는 편지</p>
         <p className="text-xs mt-1 opacity-70">영원히 기억될 거야</p>
       </footer>
