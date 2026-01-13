@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Plus, PenLine, Image, LogOut, Heart, Flower2, Cookie, Infinity } from "lucide-react";
+import { Plus, PenLine, Image, LogOut, Heart, Flower2, Cookie } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
@@ -18,8 +18,8 @@ const ActionButton = ({ icon: Icon, label, onClick }: { icon: any; label: string
     onClick={onClick}
     className="action-button p-4 text-center w-full group"
   >
-    <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition-transform">
-      <Icon className="w-4 h-4 text-primary" />
+    <div className="w-10 h-10 rounded-full bg-accent/40 flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition-transform">
+      <Icon className="w-4 h-4 text-accent-foreground" />
     </div>
     <span className="text-xs font-medium text-foreground">{label}</span>
   </button>
@@ -111,10 +111,10 @@ const Home = () => {
   return (
     <div className="min-h-screen bg-background pb-20">
       {/* Header */}
-      <header className="sticky top-0 bg-background/95 backdrop-blur border-b border-border/50 z-10 px-4 py-3">
+      <header className="sticky top-0 bg-background/95 backdrop-blur border-b border-border/30 z-10 px-4 py-3">
         <div className="flex items-center justify-between max-w-lg mx-auto">
           <div className="flex items-center gap-2">
-            <Infinity className="w-5 h-5 text-primary" />
+            <span className="text-xl">🐾</span>
             <span className="text-base font-semibold text-foreground">lovable</span>
           </div>
           <Button variant="ghost" size="icon" onClick={handleLogout}>
@@ -124,7 +124,7 @@ const Home = () => {
       </header>
 
       <main className="max-w-lg mx-auto">
-        {/* Hero Section - 40% 메인 메모리얼 */}
+        {/* Hero Section - 메인 메모리얼 (한지 스타일) */}
         {featuredPet && (
           <section className="relative hero-gradient">
             <div className="aspect-[4/3] relative overflow-hidden">
@@ -135,31 +135,33 @@ const Home = () => {
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <div className="w-full h-full bg-gradient-to-br from-primary/20 to-accent/30 flex items-center justify-center">
-                  <span className="text-6xl">🐾</span>
+                <div className="w-full h-full hanji-bg flex items-center justify-center">
+                  <div className="text-center">
+                    <span className="text-6xl">🐾</span>
+                  </div>
                 </div>
               )}
               <div className="absolute inset-0 soft-gradient" />
               <div className="absolute bottom-0 left-0 right-0 p-6 text-center">
                 <p className="text-lg font-semibold text-foreground mb-1">
-                  보고 싶은 <span className="text-primary">{featuredPet.name}</span>,
+                  나의 사랑하는 <span className="text-accent-foreground">{featuredPet.name}</span>
                 </p>
-                <p className="text-muted-foreground text-sm">오늘도 사랑해</p>
+                <p className="text-muted-foreground text-sm">오늘도 기억해</p>
               </div>
             </div>
           </section>
         )}
 
-        {/* Interaction Bar */}
+        {/* Interaction Bar - 가상 촛불과 헌화 */}
         {featuredPet && (
           <section className="px-4 -mt-3 relative z-10">
-            <Card className="border-primary/20 shadow-md">
+            <Card className="border-border/30 shadow-md hanji-bg">
               <CardContent className="p-2">
                 <div className="grid grid-cols-3 gap-2">
                   <ActionButton 
                     icon={Flower2} 
                     label="헌화하기"
-                    onClick={() => toast({ title: "💐 꽃을 바쳤어요" })}
+                    onClick={() => toast({ title: "💐 들꽃을 바쳤어요" })}
                   />
                   <ActionButton 
                     icon={PenLine} 
@@ -180,13 +182,13 @@ const Home = () => {
         <div className="p-4 space-y-6">
           {/* Welcome Message (only when no pets) */}
           {pets.length === 0 && (
-            <section className="text-center py-6">
-              <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center star-glow">
-                <span className="text-4xl">🐾</span>
+            <section className="text-center py-8">
+              <div className="w-24 h-24 mx-auto mb-4 rounded-full hanji-bg flex items-center justify-center star-glow">
+                <span className="text-5xl">🐾</span>
               </div>
               <p className="text-muted-foreground text-sm leading-relaxed letter-text">
-                기억하고 싶은 친구가 있나요?<br />
-                이름을 불러주세요
+                아이의 이름, 생일,<br />
+                그리고 가장 행복했던 순간의 사진을 준비해 주세요
               </p>
             </section>
           )}
@@ -196,10 +198,10 @@ const Home = () => {
             <section>
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-base font-semibold flex items-center gap-2">
-                  <Heart className="w-4 h-4 text-primary" />
+                  <Heart className="w-4 h-4 text-accent-foreground" />
                   최근 추억
                 </h2>
-                <Button size="sm" variant="ghost" onClick={() => navigate("/album")} className="text-sm text-primary">
+                <Button size="sm" variant="ghost" onClick={() => navigate("/album")} className="text-sm text-muted-foreground">
                   더보기
                 </Button>
               </div>
@@ -238,14 +240,14 @@ const Home = () => {
           <section>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-base font-semibold text-foreground">함께한 친구들</h2>
-              <Button size="sm" variant="ghost" onClick={() => setShowAddPet(true)} className="text-sm text-primary">
+              <Button size="sm" variant="ghost" onClick={() => setShowAddPet(true)} className="text-sm text-muted-foreground">
                 <Plus className="h-4 w-4 mr-1" />
                 추가
               </Button>
             </div>
             
             {pets.length === 0 ? (
-              <Card className="border-dashed border-primary/30">
+              <Card className="border-dashed border-border/50 hanji-bg">
                 <CardContent className="p-8 text-center">
                   <div className="text-3xl mb-3">🌟</div>
                   <p className="text-muted-foreground text-sm mb-4 leading-relaxed letter-text">
@@ -274,11 +276,11 @@ const Home = () => {
                 {deceasedPetsList.length > 0 && (
                   <>
                     <div className="flex items-center gap-3 pt-4 pb-2">
-                      <div className="h-px flex-1 bg-primary/20" />
-                      <span className="text-xs text-primary/70 font-medium">
-                        ✦ 별이 된 친구들
+                      <div className="h-px flex-1 bg-border/50" />
+                      <span className="text-xs text-muted-foreground font-medium flex items-center gap-1">
+                        <span>⭐</span> 별이 된 친구들
                       </span>
-                      <div className="h-px flex-1 bg-primary/20" />
+                      <div className="h-px flex-1 bg-border/50" />
                     </div>
                     {deceasedPetsList.map((pet) => (
                       <PetCard 
@@ -301,19 +303,19 @@ const Home = () => {
               <div className="grid grid-cols-2 gap-3">
                 <Button 
                   variant="outline" 
-                  className="h-16 flex-col gap-1.5 border-primary/20 rounded-xl card-hover"
+                  className="h-16 flex-col gap-1.5 border-border/30 rounded-xl card-hover hanji-bg"
                   onClick={() => pets[0] && handleAddPhoto(pets[0].id)}
                 >
-                  <Image className="h-5 w-5 text-primary" />
+                  <Image className="h-5 w-5 text-accent-foreground" />
                   <span className="text-xs">추억 남기기</span>
                 </Button>
                 <Button 
                   variant="outline" 
-                  className="h-16 flex-col gap-1.5 border-primary/20 rounded-xl card-hover"
+                  className="h-16 flex-col gap-1.5 border-border/30 rounded-xl card-hover hanji-bg"
                   onClick={() => navigate("/album")}
                 >
-                  <PenLine className="h-5 w-5 text-primary" />
-                  <span className="text-xs">편지 쓰기</span>
+                  <PenLine className="h-5 w-5 text-accent-foreground" />
+                  <span className="text-xs">하늘로 편지</span>
                 </Button>
               </div>
             </section>

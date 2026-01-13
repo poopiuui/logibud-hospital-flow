@@ -1,13 +1,14 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Flower2, Heart, BookOpen, Star, PenLine, MessageCircle, MapPin, Infinity } from "lucide-react";
+import { Flower2, Heart, BookOpen, Star, PenLine, MessageCircle, MapPin } from "lucide-react";
+import heroIllustration from "@/assets/hero-illustration.png";
 
 const FeatureCard = ({ icon: Icon, title, description }: { icon: any; title: string; description: string }) => (
-  <Card className="border-none shadow-sm card-hover bg-card/90 backdrop-blur">
+  <Card className="border-none shadow-sm card-hover hanji-bg">
     <CardContent className="p-6 text-center">
-      <div className="w-14 h-14 rounded-2xl bg-primary/15 flex items-center justify-center mx-auto mb-4">
-        <Icon className="w-6 h-6 text-primary" />
+      <div className="w-14 h-14 rounded-full bg-accent/50 flex items-center justify-center mx-auto mb-4 star-glow">
+        <Icon className="w-6 h-6 text-accent-foreground" />
       </div>
       <h3 className="text-base font-semibold mb-2 text-foreground">{title}</h3>
       <p className="text-muted-foreground text-sm leading-relaxed">{description}</p>
@@ -17,8 +18,8 @@ const FeatureCard = ({ icon: Icon, title, description }: { icon: any; title: str
 
 const ActionButton = ({ icon: Icon, label, description }: { icon: any; label: string; description: string }) => (
   <div className="action-button p-5 text-center cursor-pointer group">
-    <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
-      <Icon className="w-5 h-5 text-primary" />
+    <div className="w-12 h-12 rounded-full bg-accent/40 flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform candle-glow">
+      <Icon className="w-5 h-5 text-accent-foreground" />
     </div>
     <h4 className="font-medium text-foreground mb-1">{label}</h4>
     <p className="text-xs text-muted-foreground">{description}</p>
@@ -32,8 +33,8 @@ const Landing = () => {
       <header className="container mx-auto px-4 py-6 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
           <div className="relative">
-            <Infinity className="w-7 h-7 text-primary" />
-            <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-primary/40 rounded-full animate-pulse" />
+            <span className="text-2xl">🐾</span>
+            <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-accent/60 rounded-full animate-pulse" />
           </div>
           <span className="text-lg font-semibold text-foreground">lovable</span>
         </div>
@@ -42,30 +43,30 @@ const Landing = () => {
             <Button variant="ghost" size="sm" className="text-muted-foreground">로그인</Button>
           </Link>
           <Link to="/auth">
-            <Button size="sm">시작하기</Button>
+            <Button size="sm" className="rounded-full">시작하기</Button>
           </Link>
         </div>
       </header>
 
-      {/* Hero Section - 40% 메인 메모리얼 영역 */}
-      <section className="hero-gradient">
-        <div className="container mx-auto px-4 py-16 md:py-24 text-center">
+      {/* Hero Section - 수채화 스타일 스플래시 */}
+      <section className="relative overflow-hidden">
+        <div className="absolute inset-0 z-0">
+          <img 
+            src={heroIllustration} 
+            alt="무지개다리" 
+            className="w-full h-full object-cover opacity-90"
+          />
+          <div className="absolute inset-0 soft-gradient" />
+        </div>
+        
+        <div className="container mx-auto px-4 py-20 md:py-32 text-center relative z-10">
           <div className="max-w-2xl mx-auto">
-            {/* 로고 심볼 - 발바닥 + 무한대 */}
-            <div className="relative w-24 h-24 mx-auto mb-8">
-              <div className="absolute inset-0 bg-primary/10 rounded-full star-glow" />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-5xl">🐾</span>
-              </div>
-              <Infinity className="absolute -bottom-1 -right-1 w-8 h-8 text-primary opacity-70" />
-            </div>
-            
-            <p className="text-sm text-primary font-medium mb-4 tracking-wide">
+            <p className="text-sm text-muted-foreground font-medium mb-4 tracking-wide">
               영원한 사랑의 연결
             </p>
             
             <h1 className="text-3xl md:text-4xl font-semibold mb-6 text-foreground leading-tight">
-              보고 싶은 <span className="text-primary">너</span>에게,<br />
+              보고 싶은 <span className="text-accent-foreground">너</span>에게,<br />
               오늘도 사랑해
             </h1>
             
@@ -83,9 +84,9 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* Interaction Bar - 핵심 인터랙션 버튼 */}
+      {/* Interaction Bar - 손그림 스타일 버튼 */}
       <section className="container mx-auto px-4 -mt-6 relative z-10">
-        <Card className="max-w-xl mx-auto border-primary/20 shadow-lg">
+        <Card className="max-w-xl mx-auto border-border/50 shadow-lg hanji-bg">
           <CardContent className="p-4">
             <div className="grid grid-cols-3 gap-3">
               <ActionButton 
@@ -108,17 +109,19 @@ const Landing = () => {
         </Card>
       </section>
 
-      {/* Quote */}
+      {/* Quote - 감성적인 문구 */}
       <section className="container mx-auto px-4 py-12">
         <div className="max-w-lg mx-auto text-center">
-          <p className="text-muted-foreground italic text-sm leading-relaxed letter-text">
-            "네가 떠나고 나서야 알았어.<br />
-            네가 얼마나 많은 것을 남겨줬는지."
-          </p>
+          <div className="wildflower-decoration">
+            <p className="text-muted-foreground italic text-sm leading-relaxed letter-text pt-8">
+              "네가 떠나고 나서야 알았어.<br />
+              네가 얼마나 많은 것을 남겨줬는지."
+            </p>
+          </div>
         </div>
       </section>
 
-      {/* Features */}
+      {/* Features - 정갈한 카드 UI */}
       <section className="container mx-auto px-4 py-12">
         <h2 className="text-center text-xl font-semibold mb-8 text-foreground">
           소중한 기억을 위한 공간
@@ -126,8 +129,8 @@ const Landing = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 max-w-4xl mx-auto">
           <FeatureCard
             icon={PenLine}
-            title="편지 쓰기"
-            description="전하지 못한 마음을 편지로 남겨요"
+            title="하늘로 보내는 편지"
+            description="전하지 못한 마음을 한지 위에 담아요"
           />
           <FeatureCard
             icon={BookOpen}
@@ -137,7 +140,7 @@ const Landing = () => {
           <FeatureCard
             icon={Heart}
             title="사진 간직하기"
-            description="소중한 순간들을 사진으로 담아요"
+            description="가장 행복했던 순간들을 담아요"
           />
           <FeatureCard
             icon={Star}
@@ -156,27 +159,27 @@ const Landing = () => {
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Link to="/guidelines" className="group">
-                <Card className="border-primary/10 bg-card/80 card-hover h-full">
+                <Card className="border-border/30 hanji-bg card-hover h-full">
                   <CardContent className="p-5 text-center">
-                    <MessageCircle className="w-8 h-8 text-primary mx-auto mb-3 group-hover:scale-110 transition-transform" />
+                    <MessageCircle className="w-8 h-8 text-accent-foreground mx-auto mb-3 group-hover:scale-110 transition-transform" />
                     <h4 className="font-medium text-foreground mb-1">펫로스 상담소</h4>
                     <p className="text-xs text-muted-foreground">전문 상담 안내</p>
                   </CardContent>
                 </Card>
               </Link>
               <Link to="/memorial" className="group">
-                <Card className="border-primary/10 bg-card/80 card-hover h-full">
+                <Card className="border-border/30 hanji-bg card-hover h-full">
                   <CardContent className="p-5 text-center">
-                    <MapPin className="w-8 h-8 text-primary mx-auto mb-3 group-hover:scale-110 transition-transform" />
+                    <MapPin className="w-8 h-8 text-accent-foreground mx-auto mb-3 group-hover:scale-110 transition-transform" />
                     <h4 className="font-medium text-foreground mb-1">근처 추모공원</h4>
                     <p className="text-xs text-muted-foreground">장소 정보 연결</p>
                   </CardContent>
                 </Card>
               </Link>
               <Link to="/showcase" className="group">
-                <Card className="border-primary/10 bg-card/80 card-hover h-full">
+                <Card className="border-border/30 hanji-bg card-hover h-full">
                   <CardContent className="p-5 text-center">
-                    <Star className="w-8 h-8 text-primary mx-auto mb-3 group-hover:scale-110 transition-transform" />
+                    <Star className="w-8 h-8 text-accent-foreground mx-auto mb-3 group-hover:scale-110 transition-transform" />
                     <h4 className="font-medium text-foreground mb-1">무지개다리 이야기</h4>
                     <p className="text-xs text-muted-foreground">커뮤니티</p>
                   </CardContent>
@@ -187,10 +190,10 @@ const Landing = () => {
         </Card>
       </section>
 
-      {/* CTA */}
+      {/* CTA - 따뜻한 마무리 */}
       <section className="container mx-auto px-4 py-12 text-center">
-        <Card className="bg-gradient-to-br from-accent/30 via-primary/10 to-accent/30 border-primary/20 p-8 md:p-12 max-w-xl mx-auto star-glow">
-          <Infinity className="w-10 h-10 text-primary mx-auto mb-4 opacity-60" />
+        <Card className="hanji-bg border-border/30 p-8 md:p-12 max-w-xl mx-auto star-glow">
+          <div className="text-4xl mb-4">🕯️</div>
           <p className="text-foreground font-medium mb-6 leading-relaxed letter-text">
             언제든, 보고싶을 때<br />
             이 곳에서 너를 만날 수 있어
@@ -202,22 +205,22 @@ const Landing = () => {
       </section>
 
       {/* Footer */}
-      <footer className="container mx-auto px-4 py-8 text-center text-muted-foreground text-sm border-t border-border/50">
+      <footer className="container mx-auto px-4 py-8 text-center text-muted-foreground text-sm border-t border-border/30">
         <div className="flex items-center justify-center gap-4 mb-3">
-          <Link to="/guidelines" className="hover:text-primary transition-colors">
+          <Link to="/guidelines" className="hover:text-foreground transition-colors">
             이용 안내
           </Link>
           <span className="text-border">|</span>
-          <Link to="/memorial" className="hover:text-primary transition-colors">
+          <Link to="/memorial" className="hover:text-foreground transition-colors">
             추모 공간
           </Link>
           <span className="text-border">|</span>
-          <Link to="/showcase" className="hover:text-primary transition-colors">
+          <Link to="/showcase" className="hover:text-foreground transition-colors">
             커뮤니티
           </Link>
         </div>
         <div className="flex items-center justify-center gap-2 mb-2">
-          <Infinity className="w-4 h-4 text-primary/50" />
+          <span className="text-lg">🐾</span>
           <p className="font-medium">lovable</p>
         </div>
         <p className="text-xs opacity-70">영원한 사랑, 영원한 기억</p>

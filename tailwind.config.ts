@@ -69,6 +69,9 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        // 한국적 감성 커스텀 컬러
+        hanji: "hsl(var(--hanji))",
+        "warm-glow": "hsl(var(--warm-glow))",
       },
       borderRadius: {
         lg: "var(--radius)",
