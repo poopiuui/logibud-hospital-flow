@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Flower2, Heart, BookOpen, Star, PenLine, MessageCircle, MapPin } from "lucide-react";
 import heroIllustration from "@/assets/hero-illustration.png";
+import appLogo from "@/assets/app-logo.png";
 
 const FeatureCard = ({ icon: Icon, title, description }: { icon: any; title: string; description: string }) => (
   <Card className="border-none shadow-sm card-hover hanji-bg">
@@ -32,10 +33,7 @@ const Landing = () => {
       {/* Header */}
       <header className="container mx-auto px-4 py-6 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
-          <div className="relative">
-            <span className="text-2xl">🐾</span>
-            <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-accent/60 rounded-full animate-pulse" />
-          </div>
+          <img src={appLogo} alt="lovable 로고" className="w-10 h-10 rounded-full shadow-sm" />
           <span className="text-lg font-semibold text-foreground">lovable</span>
         </div>
         <div className="flex gap-2">
@@ -220,7 +218,7 @@ const Landing = () => {
           </Link>
         </div>
         <div className="flex items-center justify-center gap-2 mb-2">
-          <span className="text-lg">🐾</span>
+          <img src={appLogo} alt="lovable 로고" className="w-8 h-8 rounded-full" />
           <p className="font-medium">lovable</p>
         </div>
         <p className="text-xs opacity-70">영원한 사랑, 영원한 기억</p>
