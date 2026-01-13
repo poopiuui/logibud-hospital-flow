@@ -2,14 +2,16 @@ import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Camera, Image, LogOut } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Plus, Feather, Image, LogOut, Heart } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
 import PetCard from "@/components/PetCard";
 import AddPetDialog from "@/components/AddPetDialog";
 import PhotoUploadDialog from "@/components/PhotoUploadDialog";
+import { format, formatDistanceToNow } from "date-fns";
+import { ko } from "date-fns/locale";
 
 const Home = () => {
   const navigate = useNavigate();
@@ -48,9 +50,9 @@ const Home = () => {
       if (!userId) return [];
       const { data, error } = await supabase
         .from("pet_photos")
-        .select("*")
+        .select("*, pet_profiles(name)")
         .eq("user_id", userId)
-        .order("created_at", { ascending: false })
+        .order("photo_date", { ascending: false })
         .limit(6);
       if (error) throw error;
       return data || [];
@@ -84,7 +86,7 @@ const Home = () => {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    toast({ title: "로그아웃 완료" });
+    toast({ title: "안녕히 가세요" });
     navigate("/");
   };
 
@@ -93,71 +95,99 @@ const Home = () => {
     setShowPhotoUpload(true);
   };
 
-  const totalPhotos = recentPhotos.length;
-  const activePets = pets.filter(p => !p.is_deceased).length;
-  const deceasedPets = pets.filter(p => p.is_deceased).length;
-
   return (
     <div className="min-h-screen bg-background pb-20">
       {/* Header */}
-      <header className="sticky top-0 bg-background/95 backdrop-blur border-b z-10 px-4 py-3">
+      <header className="sticky top-0 bg-background/95 backdrop-blur border-b border-border/50 z-10 px-4 py-3">
         <div className="flex items-center justify-between max-w-lg mx-auto">
           <div className="flex items-center gap-2">
-            <span className="text-2xl">🐾</span>
-            <span className="text-lg font-bold text-primary">펫라이프</span>
+            <Feather className="w-5 h-5 text-primary" />
+            <span className="text-base font-medium text-foreground">너에게 쓰는 편지</span>
           </div>
           <Button variant="ghost" size="icon" onClick={handleLogout}>
-            <LogOut className="h-5 w-5" />
+            <LogOut className="h-4 w-4" />
           </Button>
         </div>
       </header>
 
-      <main className="max-w-lg mx-auto p-4 space-y-6">
-        {/* Stats */}
-        <div className="grid grid-cols-3 gap-3">
-          <Card>
-            <CardContent className="p-3 text-center">
-              <div className="text-2xl font-bold text-primary">{activePets}</div>
-              <div className="text-xs text-muted-foreground">함께하는</div>
-            </CardContent>
-          </Card>
-          <Card className="border-primary/30 bg-primary/5">
-            <CardContent className="p-3 text-center">
-              <div className="text-2xl font-bold text-primary">{deceasedPets}</div>
-              <div className="text-xs text-muted-foreground">🌈 추모</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-3 text-center">
-              <div className="text-2xl font-bold text-primary">{totalPhotos}</div>
-              <div className="text-xs text-muted-foreground">사진</div>
-            </CardContent>
-          </Card>
-        </div>
+      <main className="max-w-lg mx-auto p-4 space-y-8">
+        {/* Welcome Message */}
+        <section className="text-center py-4">
+          <p className="text-muted-foreground text-sm leading-relaxed">
+            오늘도 생각나는 순간이 있나요?<br />
+            천천히 기억을 되새겨 보세요
+          </p>
+        </section>
 
-        {/* Living Pets */}
+        {/* Timeline Preview - Recent Memories */}
+        {recentPhotos.length > 0 && (
+          <section>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-base font-medium flex items-center gap-2">
+                <Heart className="w-4 h-4 text-primary/70" />
+                최근 추억
+              </h2>
+              <Button size="sm" variant="ghost" onClick={() => navigate("/album")} className="text-sm">
+                더보기
+              </Button>
+            </div>
+            <div className="space-y-3">
+              {recentPhotos.slice(0, 3).map((photo: any) => (
+                <Card key={photo.id} className="memory-card overflow-hidden">
+                  <CardContent className="p-0 flex">
+                    <div className="w-24 h-24 flex-shrink-0">
+                      <img
+                        src={photo.image_url}
+                        alt={photo.caption || "추억"}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div className="p-3 flex flex-col justify-center flex-1 min-w-0">
+                      <p className="text-xs text-muted-foreground mb-1">
+                        {format(new Date(photo.photo_date), "yyyy년 M월 d일", { locale: ko })}
+                      </p>
+                      <p className="text-sm font-medium truncate">
+                        {photo.pet_profiles?.name || "소중한 순간"}
+                      </p>
+                      {photo.caption && (
+                        <p className="text-xs text-muted-foreground mt-1 truncate">
+                          {photo.caption}
+                        </p>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Companions */}
         <section>
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-semibold">내 반려동물</h2>
-            <Button size="sm" variant="outline" onClick={() => setShowAddPet(true)}>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-base font-medium">함께한 친구들</h2>
+            <Button size="sm" variant="ghost" onClick={() => setShowAddPet(true)} className="text-sm">
               <Plus className="h-4 w-4 mr-1" />
               추가
             </Button>
           </div>
           
           {pets.length === 0 ? (
-            <Card className="border-dashed">
+            <Card className="border-dashed border-border/70">
               <CardContent className="p-8 text-center">
-                <div className="text-4xl mb-2">🐕</div>
-                <p className="text-muted-foreground mb-4">아직 등록된 반려동물이 없어요</p>
-                <Button onClick={() => setShowAddPet(true)}>
-                  <Plus className="h-4 w-4 mr-1" />
-                  첫 반려동물 등록하기
+                <div className="text-3xl mb-3">🌟</div>
+                <p className="text-muted-foreground text-sm mb-4 leading-relaxed">
+                  기억하고 싶은 친구가 있나요?<br />
+                  이름을 불러주세요
+                </p>
+                <Button variant="outline" size="sm" onClick={() => setShowAddPet(true)}>
+                  친구 등록하기
                 </Button>
               </CardContent>
             </Card>
-          ) : activePetsList.length > 0 ? (
+          ) : (
             <div className="space-y-3">
+              {/* 함께하는 친구들 */}
               {activePetsList.map((pet) => (
                 <PetCard 
                   key={pet.id} 
@@ -167,73 +197,51 @@ const Home = () => {
                   lastPhotoDate={lastPhotoByPet[pet.id]}
                 />
               ))}
+              
+              {/* 떠나보낸 친구들 */}
+              {deceasedPetsList.length > 0 && (
+                <>
+                  <div className="flex items-center gap-3 pt-4 pb-2">
+                    <div className="h-px flex-1 bg-border/50" />
+                    <span className="text-xs text-muted-foreground">
+                      ✦ 별이 된 친구들
+                    </span>
+                    <div className="h-px flex-1 bg-border/50" />
+                  </div>
+                  {deceasedPetsList.map((pet) => (
+                    <PetCard 
+                      key={pet.id} 
+                      pet={pet} 
+                      onAddPhoto={handleAddPhoto}
+                      onOpenProfile={(petId) => navigate(`/pets/${petId}`)}
+                      lastPhotoDate={lastPhotoByPet[pet.id]}
+                    />
+                  ))}
+                </>
+              )}
             </div>
-          ) : (
-            <p className="text-sm text-muted-foreground text-center py-4">함께하는 반려동물이 없습니다</p>
           )}
         </section>
 
-        {/* Deceased Pets */}
-        {deceasedPetsList.length > 0 && (
-          <section>
-            <h2 className="text-lg font-semibold mb-3">🌈 무지개다리를 건넌 아이들</h2>
-            <div className="space-y-3">
-              {deceasedPetsList.map((pet) => (
-                <PetCard 
-                  key={pet.id} 
-                  pet={pet} 
-                  onAddPhoto={handleAddPhoto}
-                  onOpenProfile={(petId) => navigate(`/pets/${petId}`)}
-                  lastPhotoDate={lastPhotoByPet[pet.id]}
-                />
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* Recent Photos */}
-        {recentPhotos.length > 0 && (
-          <section>
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-lg font-semibold">최근 사진</h2>
-              <Button size="sm" variant="ghost" onClick={() => navigate("/album")}>
-                전체보기
-              </Button>
-            </div>
-            <div className="grid grid-cols-3 gap-2">
-              {recentPhotos.map((photo) => (
-                <div key={photo.id} className="aspect-square rounded-lg overflow-hidden bg-muted">
-                  <img
-                    src={photo.image_url}
-                    alt={photo.caption || "반려동물 사진"}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
         {/* Quick Actions */}
         {pets.length > 0 && (
-          <section>
-            <h2 className="text-lg font-semibold mb-3">빠른 기록</h2>
+          <section className="pt-4">
             <div className="grid grid-cols-2 gap-3">
               <Button 
                 variant="outline" 
-                className="h-20 flex-col gap-2"
+                className="h-16 flex-col gap-1.5 border-border/70"
                 onClick={() => pets[0] && handleAddPhoto(pets[0].id)}
               >
-                <Camera className="h-6 w-6" />
-                <span>사진 추가</span>
+                <Image className="h-5 w-5 text-primary/70" />
+                <span className="text-xs">추억 남기기</span>
               </Button>
               <Button 
                 variant="outline" 
-                className="h-20 flex-col gap-2"
+                className="h-16 flex-col gap-1.5 border-border/70"
                 onClick={() => navigate("/album")}
               >
-                <Image className="h-6 w-6" />
-                <span>앨범 보기</span>
+                <Feather className="h-5 w-5 text-primary/70" />
+                <span className="text-xs">편지 쓰기</span>
               </Button>
             </div>
           </section>

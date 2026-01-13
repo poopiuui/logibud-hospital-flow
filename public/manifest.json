@@ -1,11 +1,11 @@
 {
-  "name": "로지봇 - 병원 물류 관리 시스템",
-  "short_name": "로지봇",
-  "description": "병원 물류 및 재고 관리 시스템",
+  "name": "너에게 쓰는 편지",
+  "short_name": "너에게",
+  "description": "함께했던 시간들을 편지로 간직해요",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#001F3F",
+  "background_color": "#faf9f7",
+  "theme_color": "#5a7c65",
   "orientation": "portrait-primary",
   "icons": [
     {
